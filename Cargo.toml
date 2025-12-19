@@ -18,7 +18,7 @@ publish = true
 
 repository = "https://github.com/Apich-Organization/bincode"
 documentation = "https://docs.rs/bincode_next"
-readme = "./readme.md"
+readme = "./README.md"
 categories = ["encoding", "network-programming"]
 keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
 
