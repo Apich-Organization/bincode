@@ -1,4 +1,4 @@
-# Reasons for the forking (or I should say reseting)
+# Reasons for the forking (or we should say reseting)
 
 For the sad reasons that we all know about, bincode has leaved us because of those who has doxxing the original developers.
 
@@ -34,6 +34,12 @@ The Bincode Team
 [![](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 <!-- [![](https://img.shields.io/badge/bincode-rustc_1.41.1+-lightgray.svg)](https://blog.rust-lang.org/2020/02/27/Rust-1.41.1.html) -->
 [![Matrix](https://img.shields.io/matrix/bincode:matrix.org?label=Matrix%20Chat)](https://matrix.to/#/#bincode:matrix.org)
+[![Scc Count Badge Code](https://sloc.xyz/github/Apich-Organization/bincode/?category=code)](https://github.com/Apich-Organization/bincode/)
+[![Scc Count Badge Blanks](https://sloc.xyz/github/Apich-Organization/bincode/?category=blanks)](https://github.com/Apich-Organization/bincode/)
+[![Scc Count Badge Lines](https://sloc.xyz/github/Apich-Organization/bincode/?category=lines)](https://github.com/Apich-Organization/bincode/)
+[![Scc Count Badge Comments](https://sloc.xyz/github/Apich-Organization/bincode/?category=comments)](https://github.com/Apich-Organization/bincode/)
+[![Scc Count Badge Cocomo](https://sloc.xyz/github/Apich-Organization/bincode/?category=cocomo)](https://github.com/Apich-Organization/bincode/)
+[![Scc Count Badge Effort](https://sloc.xyz/github/Apich-Organization/bincode/?category=effort)](https://github.com/Apich-Organization/bincode/)
 
 A compact encoder / decoder pair that uses a binary zero-fluff encoding scheme.
 The size of the encoded object will be the same or smaller than the size that
