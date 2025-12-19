@@ -1,3 +1,21 @@
+# Reasons for the forking (or I should say reseting)
+
+For the sad reasons that we all know about, bincode has leaved us because of those who has doxxing the original developers.
+
+Apich Orgnisation strongly opsite any type of doxxing and will not tolerate it. (We also suffered from these kind of events before but only for our personal interest reasons) But in any sense, we respect the original developers and their work.
+
+For the dependency issue of RSSN and the bigger Rust community, we have decided to fork the project and continue the development. The project will be renamed to `bincode-next` and will be hosted on GitHub and Codeberg.
+
+# Special disclaimer
+
+1. We fully respect the any copyright notice from the original developers.
+2. We will not tolerate any form of doxxing or harassment.
+3. We will not tolerate any form of discrimination or hate speech.
+4. We will not tolerate any form of plagiarism or copyright infringement.
+5. As one of the mission of Apich, we will continue to test the edges of the current AI system assisted coding and development. Discussions on that is welcomed but only without hate.
+
+# Original develop teams' last messages
+
 Due to a doxxing incident bincode development has officially ceased and will not resume. Version 1.3.3 is considered a complete version of bincode that is not in need of any updates. Updates will only be pushed to the in the unlikely event of CVEs. Do not contact us for any other reason.
 
 To those of you who bothered doxxing us. Go touch grass and maybe for once consider your actions have consequences for real people.
@@ -5,11 +23,9 @@ To those of you who bothered doxxing us. Go touch grass and maybe for once consi
 Fuck off and worst regards,
 The Bincode Team
 
-
-
 # Original readme continues below
 
-#Bincode
+# Bincode
 
 <img align="right" src="./logo.svg" />
 

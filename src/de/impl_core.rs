@@ -1,4 +1,5 @@
 #![allow(unused_unsafe)]
+#![allow(unsafe_code)]
 
 //! Contains implementations for rust core that have not been stabilized
 //!

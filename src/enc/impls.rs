@@ -1,3 +1,4 @@
+#![allow(unsafe_code)]
 use super::{write::Writer, Encode, Encoder};
 use crate::{
     config::{Endianness, IntEncoding, InternalEndianConfig, InternalIntEncodingConfig},

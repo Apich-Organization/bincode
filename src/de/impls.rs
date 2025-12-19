@@ -1,3 +1,4 @@
+#![allow(unsafe_code)]
 use super::{
     read::{BorrowReader, Reader},
     BorrowDecode, BorrowDecoder, Decode, Decoder,

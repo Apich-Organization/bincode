@@ -1,2 +1,2 @@
-#[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
-pub use bincode_derive::{BorrowDecode, Decode, Encode};
+#[cfg_attr(docsrs, doc(cfg(feature = "derive-next")))]
+pub use bincode_derive_next::{BorrowDecode, Decode, Encode};

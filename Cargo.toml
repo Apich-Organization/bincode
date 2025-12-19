@@ -2,20 +2,22 @@
 members = ["derive", "compatibility"]
 
 [package]
-name = "bincode"
-version = "2.0.1" # remember to update html_root_url and bincode_derive
+name = "bincode-next"
+version = "2.0.2" # remember to update html_root_url and bincode_derive
 authors = [
+    "Xinyu Yang <pana.yang@hotmail.com>",
     "Ty Overby <ty@pre-alpha.com>",
     "Zoey Riordan <zoey@dos.cafe>",
     "Victor Koenders <bincode@trangar.com>",
+    "The bincode-next & bincode developers",
 ]
 exclude = ["logo.svg", "examples/*", ".gitignore", ".github/"]
 rust-version = "1.85.0"
 
 publish = true
 
-repository = "https://github.com/bincode-org/bincode"
-documentation = "https://docs.rs/bincode"
+repository = "https://github.com/Apich-Organization/bincode"
+documentation = "https://docs.rs/bincode_next"
 readme = "./readme.md"
 categories = ["encoding", "network-programming"]
 keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
@@ -29,10 +31,10 @@ edition = "2021"
 default = ["std", "derive"]
 std = ["alloc", "serde?/std"]
 alloc = ["serde?/alloc"]
-derive = ["bincode_derive"]
+derive = ["bincode_derive-next"]
 
 [dependencies]
-bincode_derive = { path = "derive", version = "2.0.1", optional = true }
+bincode_derive-next = { path = "derive", version = "2.0.2", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
 unty = "0.0.4"
 

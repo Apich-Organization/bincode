@@ -1,8 +1,7 @@
 #![no_std]
-#![warn(missing_docs, unused_lifetimes)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-//! Bincode is a crate for encoding and decoding using a tiny binary
+//! Bincode-next is a crate for encoding and decoding using a tiny binary
 //! serialization strategy.  Using it, you can easily go from having
 //! an object in memory, quickly serialize it to bytes, and then
 //! deserialize it back just as fast!
@@ -71,8 +70,56 @@
 //! [`net::TcpStream`]: std::net::TcpStream
 //!
 
-#![doc(html_root_url = "https://docs.rs/bincode/2.0.1")]
-#![crate_name = "bincode"]
+// =========================================================================
+// RUST LINT CONFIGURATION: bincode-next
+// =========================================================================
+
+// -------------------------------------------------------------------------
+// LEVEL 1: CRITICAL ERRORS (Deny)
+// -------------------------------------------------------------------------
+#![deny(
+    // Rust Compiler Errors
+    dead_code,
+    unreachable_code,
+    improper_ctypes_definitions,
+    future_incompatible,
+    nonstandard_style,
+    rust_2018_idioms,
+    clippy::perf,
+    clippy::correctness,
+    clippy::suspicious,
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::arithmetic_side_effects,
+    clippy::missing_safety_doc,
+    clippy::same_item_push,
+    clippy::implicit_clone,
+    clippy::all,
+    clippy::pedantic,
+    warnings,
+    missing_docs,
+    clippy::nursery,
+    clippy::single_call_fn,
+)]
+// -------------------------------------------------------------------------
+// LEVEL 2: STYLE WARNINGS (Warn)
+// -------------------------------------------------------------------------
+#![warn(
+    unsafe_code,
+    clippy::dbg_macro,
+    clippy::todo,
+    clippy::unnecessary_safety_comment
+)]
+// -------------------------------------------------------------------------
+// LEVEL 3: ALLOW/IGNORABLE (Allow)
+// -------------------------------------------------------------------------
+#![allow(
+    clippy::restriction,
+    unused_doc_comments,
+    clippy::empty_line_after_doc_comments
+)]
+#![crate_name = "bincode_next"]
 #![crate_type = "rlib"]
 
 #[cfg(feature = "alloc")]

@@ -1,3 +1,4 @@
+#![allow(unsafe_code)]
 use crate::{
     de::{read::Reader, BorrowDecoder, Decode, Decoder},
     enc::{
