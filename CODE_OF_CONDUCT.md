@@ -1,128 +1,77 @@
-# Contributor Covenant Code of Conduct
+# Code of Conduct: Bincode-next
 
-## Our Pledge
+## 1. Introduction and Purpose
 
-We as members, contributors, and leaders pledge to make participation in our
-community a harassment-free experience for everyone, regardless of age, body
-size, visible or invisible disability, ethnicity, sex characteristics, gender
-identity and expression, level of experience, education, socio-economic status,
-nationality, personal appearance, race, religion, or sexual identity
-and orientation.
+This Code of Conduct (CoC) outlines the minimum standards for acceptable behavior for all contributors, maintainers, and participants in the **Bincode-next** project, across all platforms including GitHub, Codeberg, and any related communication channels.
 
-We pledge to act and interact in ways that contribute to an open, welcoming,
-diverse, inclusive, and healthy community.
+The purpose of this CoC is to ensure a **safe, respectful, inclusive, and legally compliant** environment for everyone involved, enabling collaborative development focused on the technical goals of the project.
 
-## Our Standards
+## 2. Our Commitment to the Law and Ethical Conduct
 
-Examples of behavior that contributes to a positive environment for our
-community include:
+**All participants are required to adhere to all applicable national, state, and local laws.** This CoC is not a substitute for legal compliance, but rather reinforces our commitment to it.
 
-* Demonstrating empathy and kindness toward other people
-* Being respectful of differing opinions, viewpoints, and experiences
-* Giving and gracefully accepting constructive feedback
-* Accepting responsibility and apologizing to those affected by our mistakes,
-  and learning from the experience
-* Focusing on what is best not just for us as individuals, but for the
-  overall community
+### 2.1. Prohibition of Illegal Activities
 
-Examples of unacceptable behavior include:
+Any activity that is illegal under applicable law is strictly prohibited, including but not limited to:
 
-* The use of sexualized language or imagery, and sexual attention or
-  advances of any kind
-* Trolling, insulting or derogatory comments, and personal or political attacks
-* Public or private harassment
-* Publishing others' private information, such as a physical or email
-  address, without their explicit permission
-* Other conduct which could reasonably be considered inappropriate in a
-  professional setting
+* **Doxxing and Harassment:** As explicitly stated in the project charter, any form of doxxing (the unauthorized, malicious publication of private, identifying information about an individual or organization) or harassment is **not tolerated**. This includes cyberbullying, stalking, threats of violence, or any action intended to intimidate or cause distress.
+* **Hate Speech and Discrimination:** We will not tolerate any speech or conduct that constitutes discrimination or harassment based on race, ethnicity, national origin, religion, political affiliation, sex, gender identity or expression, sexual orientation, disability, or any other legally protected characteristic.
+* **Intellectual Property Violations:** Plagiarism, copyright infringement, and unauthorized use of others' intellectual property (IP) are strictly prohibited. **All contributions must be original work or clearly attributed and properly licensed.**
 
-## Enforcement Responsibilities
+### 2.2. Respect for Original Copyright
 
-Community leaders are responsible for clarifying and enforcing our standards of
-acceptable behavior and will take appropriate and fair corrective action in
-response to any behavior that they deem inappropriate, threatening, offensive,
-or harmful.
+We fully respect all copyright notices from the original Bincode developers. All code and documentation contributed to **Bincode-next** must maintain proper attribution and adhere to the licensing terms defined for the project.
 
-Community leaders have the right and responsibility to remove, edit, or reject
-comments, commits, code, wiki edits, issues, and other contributions that are
-not aligned to this Code of Conduct, and will communicate reasons for moderation
-decisions when appropriate.
+## 3. Expected Behavior
 
-## Scope
+The following behaviors are expected of all community members:
 
-This Code of Conduct applies within all community spaces, and also applies when
-an individual is officially representing the community in public spaces.
-Examples of representing our community include using an official e-mail address,
-posting via an official social media account, or acting as an appointed
-representative at an online or offline event.
+* **Be Welcoming and Inclusive:** We strive to be a community that welcomes and supports people of all backgrounds and identities.
+* **Be Respectful and Considerate:** Respect differing viewpoints and experiences. Engage in technical discussions constructively and avoid personal attacks.
+* **Communicate Clearly:** Use clear and professional language. Be mindful of how your words may be interpreted by others, especially across different cultures and languages.
+* **Give and Accept Constructive Feedback:** Focus feedback on the code and ideas, not the person.
+* **Be Mindful of the Project's Context:** Understand and respect the reasons for the project's fork and the need for a strict anti-harassment policy.
 
-## Enforcement
+## 4. Unacceptable Behavior
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-abuse@dos.cafe.
-All complaints will be reviewed and investigated promptly and fairly.
+The following behaviors are considered unacceptable and may result in corrective action, up to and including permanent banning from the project:
 
-All community leaders are obligated to respect the privacy and security of the
-reporter of any incident.
+| Category | Description |
+| --- | --- |
+| **Harassment** | Insults, slurs, offensive comments, unwanted attention, or repeated non-constructive criticism. |
+| **Doxxing/Threats** | Sharing private identifying information (names, addresses, employers, etc.) without explicit, lawful consent. Making threats of violence or harm. |
+| **Legal/IP Violation** | Submitting code or content that infringes on copyright, patents, or trade secrets, or any content that violates applicable law. |
+| **Spamming/Trolling** | Posting irrelevant, disruptive, or repeated messages, or engaging in behaviors intended to provoke or disrupt the community. |
+| **Retaliation** | Retaliating against anyone for reporting a violation of this CoC. |
 
-## Enforcement Guidelines
+## 5. AI-Assisted Development Discussion
 
-Community leaders will follow these Community Impact Guidelines in determining
-the consequences for any action they deem in violation of this Code of Conduct:
+The project welcomes discussions on AI system assisted coding and development as part of the Apich mission. **However, these discussions must remain respectful and focused.** Hate speech or harassment directed toward developers using or not using AI assistance is strictly prohibited.
 
-### 1. Correction
+## 6. Reporting and Enforcement
 
-**Community Impact**: Use of inappropriate language or other behavior deemed
-unprofessional or unwelcome in the community.
+### 6.1. Reporting Violations
 
-**Consequence**: A private, written warning from community leaders, providing
-clarity around the nature of the violation and an explanation of why the
-behavior was inappropriate. A public apology may be requested.
+If you experience or witness a violation of this Code of Conduct or are concerned about a potential security issue, please report it immediately:
 
-### 2. Warning
+* **For CoC Violations:** Contact the maintainers privately via email at **Pana.Yang@hotmail.com** or through a private message to a project maintainer.
+* **For Security Issues:** Contact **Pana.Yang@hotmail.com** or file a private issue report if available on the platform.
 
-**Community Impact**: A violation through a single incident or series
-of actions.
+All reports will be handled with discretion and treated with seriousness. The identity of the reporter will remain confidential unless required by law.
 
-**Consequence**: A warning with consequences for continued behavior. No
-interaction with the people involved, including unsolicited interaction with
-those enforcing the Code of Conduct, for a specified period of time. This
-includes avoiding interactions in community spaces as well as external channels
-like social media. Violating these terms may lead to a temporary or
-permanent ban.
+### 6.2. Enforcement Process
 
-### 3. Temporary Ban
+Project maintainers are responsible for clarifying the standards of acceptable behavior and enforcing this CoC. Consequences for violations may include:
 
-**Community Impact**: A serious violation of community standards, including
-sustained inappropriate behavior.
+1. **Warning:** A private or public written warning.
+2. **Temporary Ban:** A temporary exclusion from all project communication and contribution channels.
+3. **Permanent Ban:** Permanent exclusion from all project spaces.
+4. **Legal Referral:** For severe violations (e.g., doxxing, threats), maintainers reserve the right to report the activity to the appropriate legal authorities.
 
-**Consequence**: A temporary ban from any sort of interaction or public
-communication with the community for a specified period of time. No public or
-private interaction with the people involved, including unsolicited interaction
-with those enforcing the Code of Conduct, is allowed during this period.
-Violating these terms may lead to a permanent ban.
+### 6.3. Due Process
 
-### 4. Permanent Ban
+Maintainers will investigate reports diligently and fairly. Individuals accused of a violation will be given an opportunity to respond to the allegations before a final decision on enforcement is made.
 
-**Community Impact**: Demonstrating a pattern of violation of community
-standards, including sustained inappropriate behavior,  harassment of an
-individual, or aggression toward or disparagement of classes of individuals.
+## 7. Acknowledgment
 
-**Consequence**: A permanent ban from any sort of public interaction within
-the community.
-
-## Attribution
-
-This Code of Conduct is adapted from the [Contributor Covenant][homepage],
-version 2.0, available at
-https://www.contributor-covenant.org/version/2/0/code_of_conduct.html.
-
-Community Impact Guidelines were inspired by [Mozilla's code of conduct
-enforcement ladder](https://github.com/mozilla/diversity).
-
-[homepage]: https://www.contributor-covenant.org
-
-For answers to common questions about this code of conduct, see the FAQ at
-https://www.contributor-covenant.org/faq. Translations are available at
-https://www.contributor-covenant.org/translations.
+By participating in the **Bincode-next** project, you agree to abide by this Code of Conduct.
