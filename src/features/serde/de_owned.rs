@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use super::{de_borrowed::borrow_decode_from_slice, DecodeError as SerdeDecodeError};
 use crate::{
     config::Config,

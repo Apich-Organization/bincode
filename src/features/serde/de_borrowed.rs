@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use super::DecodeError as SerdeDecodeError;
 use crate::{
     config::Config,
