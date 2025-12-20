@@ -15,3 +15,6 @@ rand = "0.8"
 
 [lints.clippy]
 empty-line-after-doc-comments = "allow"
+
+[lib]
+crate-type = ["cdylib", "rlib", "staticlib"]
