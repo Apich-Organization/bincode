@@ -2,6 +2,7 @@
 
 extern crate std;
 
+extern crate bincode_next as bincode;
 use bincode::{Decode, Encode};
 use std::borrow::Cow;
 use std::string::String;
@@ -9,7 +10,7 @@ use std::string::String;
 #[derive(Decode, Encode, PartialEq, Debug)]
 #[bincode(
     decode_context = "()",
-    borrow_decode_bounds = "&'__de U<'a, A>: ::bincode::de::BorrowDecode<'__de, ()> + '__de, '__de: 'a"
+    borrow_decode_bounds = "&'__de U<'a, A>: bincode::de::BorrowDecode<'__de, ()> + '__de, '__de: 'a"
 )]
 struct T<'a, A: Clone + Encode + Decode<()>> {
     t: Cow<'a, U<'a, A>>,
@@ -18,7 +19,7 @@ struct T<'a, A: Clone + Encode + Decode<()>> {
 #[derive(Clone, Decode, Encode, PartialEq, Debug)]
 #[bincode(
     decode_context = "()",
-    borrow_decode_bounds = "&'__de A: ::bincode::de::BorrowDecode<'__de, ()> + '__de, '__de: 'a"
+    borrow_decode_bounds = "&'__de A: bincode::de::BorrowDecode<'__de, ()> + '__de, '__de: 'a"
 )]
 struct U<'a, A: Clone + Encode + Decode<()>> {
     u: Cow<'a, A>,

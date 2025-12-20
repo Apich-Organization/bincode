@@ -1,5 +1,6 @@
 #![cfg(feature = "derive")]
 
+extern crate bincode_next as bincode;
 use bincode::{Decode, Encode};
 
 #[derive(Encode, Decode, Clone)]

@@ -1,5 +1,7 @@
 use core::fmt::Debug;
 
+extern crate bincode_next as bincode;
+
 fn the_same_with_config<V, C, CMP>(element: &V, config: C, cmp: CMP)
 where
     V: TheSameTrait,

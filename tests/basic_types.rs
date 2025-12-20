@@ -8,6 +8,8 @@ use core::time::Duration;
 use std::num::*;
 use utils::{the_same, the_same_with_comparer};
 
+extern crate bincode_next as bincode;
+
 #[test]
 fn test_numbers() {
     // integer types

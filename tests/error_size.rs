@@ -1,5 +1,8 @@
 #![cfg(target_pointer_width = "64")]
 
+extern crate bincode_next as bincode;
+
+
 #[test]
 fn decode_error_size() {
     assert_eq!(std::mem::size_of::<bincode::error::DecodeError>(), 32);

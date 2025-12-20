@@ -13,6 +13,8 @@ use std::{
 };
 use utils::the_same;
 
+extern crate bincode_next as bincode;
+
 use crate::utils::the_same_with_comparer;
 
 struct Foo {

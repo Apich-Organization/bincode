@@ -1,7 +1,9 @@
 // https://github.com/bincode-org/bincode/issues/618
 
+extern crate bincode_next as bincode;
 use bincode::{Decode, Encode};
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Default, Encode, Decode)]

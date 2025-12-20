@@ -2,6 +2,7 @@
 
 extern crate std;
 
+extern crate bincode_next as bincode;
 use std::collections::BTreeMap;
 
 #[derive(bincode::Encode)]

@@ -1,3 +1,4 @@
+extern crate bincode_next as bincode;
 use bincode::config;
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand::distributions::Distribution;
