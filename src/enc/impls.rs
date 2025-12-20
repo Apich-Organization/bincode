@@ -148,8 +148,7 @@ impl Encode for NonZeroUsize {
 
 impl Encode for i8 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        #[allow(clippy::cast_sign_loss)]
-        encoder.writer().write(&[*self as u8])
+        encoder.writer().write(&self.to_ne_bytes())
     }
 }
 

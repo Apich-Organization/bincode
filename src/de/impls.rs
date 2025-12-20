@@ -211,8 +211,7 @@ impl<Context> Decode<Context> for i8 {
         decoder.claim_bytes_read(1)?;
         let mut bytes = [0u8; 1];
         decoder.reader().read(&mut bytes)?;
-        #[allow(clippy::cast_possible_wrap)]
-        Ok(bytes[0] as Self)
+        Ok(Self::from_ne_bytes(bytes))
     }
 }
 impl_borrow_decode!(i8);
