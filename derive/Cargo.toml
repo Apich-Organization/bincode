@@ -1,6 +1,6 @@
 [package]
 name = "bincode_derive-next"
-version = "2.0.2" # remember to update bincode
+version = "2.0.3" # remember to update bincode
 authors = [
     "Xinyu Yang <pana.yang@hotmail.com>",
     "Zoey Riordan <zoey@dos.cafe>",
@@ -20,6 +20,9 @@ description = "Implementation of #[derive(Encode, Decode)] for bincode-next"
 
 [lib]
 proc-macro = true
+
+[lints.clippy]
+empty-line-after-doc-comments = "allow"
 
 [dependencies]
 virtue = "0.0.18"

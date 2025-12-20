@@ -20,7 +20,7 @@
 //! |alloc | Yes    | No          |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec`|
 //! |atomic| Yes    | No          |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
 //! |derive| Yes    | No          |||Enables the `BorrowDecode`, `Decode` and `Encode` derive macros|
-//! |serde | No     | Yes (MSRV reliant on serde)|`Compat` and `BorrowCompat`, which will work for all types that implement serde's traits|serde-specific encode/decode functions in the [serde] module|Note: There are several [known issues](serde/index.html#known-issues) when using serde and bincode|
+//! |serde | No     | Yes (MSRV reliant on serde)|`Compat` and `BorrowCompat`, which will work for all types that implement serde's traits|serde-specific encode/decode functions in the [`serde`\] module|Note: There are several [known issues](serde/index.html#known-issues) when using serde and bincode|
 //!
 //! # Which functions to use
 //!
@@ -28,12 +28,12 @@
 //!
 //! |Situation|Encode|Decode|
 //! |---|---|---
-//! |You're working with [`fs::File`] or [`net::TcpStream`]|[`encode_into_std_write`]|[`decode_from_std_read`]|
-//! |you're working with in-memory buffers|[`encode_to_vec`]|[`decode_from_slice`]|
-//! |You want to use a custom [Reader] and [Writer]|[`encode_into_writer`]|[`decode_from_reader`]|
-//! |You're working with pre-allocated buffers or on embedded targets|[`encode_into_slice`]|[`decode_from_slice`]|
+//! |You're working with [`fs::File`\] or [`net::TcpStream`\]|[`encode_into_std_write`\]|[`decode_from_std_read`\]|
+//! |you're working with in-memory buffers|[`encode_to_vec`\]|[`decode_from_slice`\]|
+//! |You want to use a custom [Reader] and [Writer]|[`encode_into_writer`\]|[`decode_from_reader`\]|
+//! |You're working with pre-allocated buffers or on embedded targets|[`encode_into_slice`\]|[`decode_from_slice`\]|
 //!
-//! **Note:** If you're using `serde`, use `bincode::serde::...` instead of `bincode::...`
+//! **Note:** If you're using `serde`, use `bincode_next::serde::...` instead of `bincode_next::...`
 //!
 //! # Example
 //!
@@ -50,10 +50,10 @@
 //!     [0u8, 1u8, 2u8, 3u8]
 //! );
 //!
-//! let length = bincode::encode_into_slice(
+//! let length = bincode_next::encode_into_slice(
 //!     input,
 //!     &mut slice,
-//!     bincode::config::standard()
+//!     bincode_next::config::standard()
 //! ).unwrap();
 //!
 //! let slice = &slice[..length];
@@ -61,13 +61,13 @@
 //!
 //! // Decoding works the same as encoding.
 //! // The trait used is `Decode`, and can also be automatically implemented with the `derive` feature.
-//! let decoded: (u8, u32, i128, char, [u8; 4]) = bincode::decode_from_slice(slice, bincode::config::standard()).unwrap().0;
+//! let decoded: (u8, u32, i128, char, [u8; 4]) = bincode_next::decode_from_slice(slice, bincode_next::config::standard()).unwrap().0;
 //!
 //! assert_eq!(decoded, input);
 //! ```
 //!
-//! [`fs::File`]: std::fs::File
-//! [`net::TcpStream`]: std::net::TcpStream
+//! [`fs::File`\]: `std::fs::File`
+//! [`net::TcpStream`\]: `std::net::TcpStream`
 //!
 
 // =========================================================================
@@ -175,7 +175,7 @@ pub fn encode_into_slice<E: enc::Encode, C: Config>(
     Ok(encoder.into_writer().bytes_written())
 }
 
-/// Encode the given value into a custom [`Writer`].
+/// Encode the given value into a custom [`Writer`\].
 ///
 /// See the [config] module for more information on configurations.
 ///
@@ -196,7 +196,7 @@ pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
 
 /// Attempt to decode a given type `D` from the given slice. Returns the decoded output and the amount of bytes read.
 ///
-/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [`borrow_decode_from_slice`].
+/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [`borrow_decode_from_slice`\].
 ///
 /// See the [config] module for more information on configurations.
 ///
@@ -214,7 +214,7 @@ pub fn decode_from_slice<D: de::Decode<()>, C: Config>(
 
 /// Attempt to decode a given type `D` from the given slice with `Context`. Returns the decoded output and the amount of bytes read.
 ///
-/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [`borrow_decode_from_slice`].
+/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [`borrow_decode_from_slice`\].
 ///
 /// See the [config] module for more information on configurations.
 ///
@@ -277,7 +277,7 @@ pub fn borrow_decode_from_slice_with_context<
     Ok((result, bytes_read))
 }
 
-/// Attempt to decode a given type `D` from the given [`Reader`].
+/// Attempt to decode a given type `D` from the given [`Reader`\].
 ///
 /// See the [config] module for more information on configurations.
 ///
