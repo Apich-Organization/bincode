@@ -49,6 +49,10 @@ pub use self::encoder::EncoderImpl;
 /// From here you can add/remove fields, or add custom logic.
 pub trait Encode {
     /// Encode a given type.
+    ///
+    /// # Errors
+    ///
+    /// Returns any error encountered during encoding.
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError>;
 }
 
@@ -88,7 +92,7 @@ where
 #[inline]
 pub(crate) fn encode_option_variant<E: Encoder, T>(
     encoder: &mut E,
-    value: &Option<T>,
+    value: Option<&T>,
 ) -> Result<(), EncodeError> {
     match value {
         None => 0u8.encode(encoder),

@@ -7,3 +7,4 @@
 .idea
 rls*.log
 tarpaulin-report.html
+*.txt

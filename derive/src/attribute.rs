@@ -13,7 +13,7 @@ pub struct ContainerAttributes {
 impl Default for ContainerAttributes {
     fn default() -> Self {
         Self {
-            crate_name: "::bincode".to_string(),
+            crate_name: "::bincode_next".to_string(),
             bounds: None,
             decode_bounds: None,
             decode_context: None,

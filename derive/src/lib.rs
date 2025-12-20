@@ -3,13 +3,16 @@ mod derive_enum;
 mod derive_struct;
 
 use attribute::ContainerAttributes;
-use virtue::prelude::*;
+use virtue::prelude::{AttributeAccess, Body, Parse, Result, TokenStream};
 
 #[proc_macro_derive(Encode, attributes(bincode))]
 pub fn derive_encode(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     derive_encode_inner(input).unwrap_or_else(|e| e.into_token_stream())
 }
 
+/// # Errors
+///
+/// Returns an error if the input cannot be parsed or if the code generation fails.
 fn derive_encode_inner(input: TokenStream) -> Result<TokenStream> {
     let parse = Parse::new(input)?;
     let (mut generator, attributes, body) = parse.into_generator();
@@ -34,7 +37,7 @@ fn derive_encode_inner(input: TokenStream) -> Result<TokenStream> {
         }
     }
 
-    generator.export_to_file("bincode", "Encode");
+    generator.export_to_file("bincode_next", "Encode");
     generator.finish()
 }
 
@@ -43,6 +46,9 @@ pub fn derive_decode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
     derive_decode_inner(input).unwrap_or_else(|e| e.into_token_stream())
 }
 
+/// # Errors
+///
+/// Returns an error if the input cannot be parsed or if the code generation fails.
 fn derive_decode_inner(input: TokenStream) -> Result<TokenStream> {
     let parse = Parse::new(input)?;
     let (mut generator, attributes, body) = parse.into_generator();
@@ -67,7 +73,7 @@ fn derive_decode_inner(input: TokenStream) -> Result<TokenStream> {
         }
     }
 
-    generator.export_to_file("bincode", "Decode");
+    generator.export_to_file("bincode_next", "Decode");
     generator.finish()
 }
 
@@ -76,6 +82,9 @@ pub fn derive_borrow_decode(input: proc_macro::TokenStream) -> proc_macro::Token
     derive_borrow_decode_inner(input).unwrap_or_else(|e| e.into_token_stream())
 }
 
+/// # Errors
+///
+/// Returns an error if the input cannot be parsed or if the code generation fails.
 fn derive_borrow_decode_inner(input: TokenStream) -> Result<TokenStream> {
     let parse = Parse::new(input)?;
     let (mut generator, attributes, body) = parse.into_generator();
@@ -100,6 +109,6 @@ fn derive_borrow_decode_inner(input: TokenStream) -> Result<TokenStream> {
         }
     }
 
-    generator.export_to_file("bincode", "BorrowDecode");
+    generator.export_to_file("bincode_next", "BorrowDecode");
     generator.finish()
 }

@@ -4,6 +4,7 @@
 extern crate alloc;
 
 mod utils;
+extern crate bincode_next as bincode;
 
 use alloc::borrow::Cow;
 use alloc::collections::*;

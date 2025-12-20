@@ -24,8 +24,8 @@ use core::marker::PhantomData;
 ///
 /// The following methods are mutually exclusive and will overwrite each other. The last call to one of these methods determines the behavior of the configuration:
 ///
-/// - [with_little_endian] and [with_big_endian]
-/// - [with_fixed_int_encoding] and [with_variable_int_encoding]
+/// - [`with_little_endian`] and [`with_big_endian`]
+/// - [`with_fixed_int_encoding`] and [`with_variable_int_encoding`]
 ///
 ///
 /// [with_little_endian]: #method.with_little_endian
@@ -52,6 +52,7 @@ pub struct Configuration<E = LittleEndian, I = Varint, L = NoLimit> {
 /// The default config for bincode 2.0. By default this will be:
 /// - Little endian
 /// - Variable int encoding
+#[must_use]
 pub const fn standard() -> Configuration {
     generate()
 }
@@ -59,6 +60,7 @@ pub const fn standard() -> Configuration {
 /// Creates the "legacy" default config. This is the default config that was present in bincode 1.0
 /// - Little endian
 /// - Fixed int length encoding
+#[must_use]
 pub const fn legacy() -> Configuration<LittleEndian, Fixint, NoLimit> {
     generate()
 }
@@ -79,24 +81,26 @@ const fn generate<E, I, L>() -> Configuration<E, I, L> {
 
 impl<E, I, L> Configuration<E, I, L> {
     /// Makes bincode encode all integer types in big endian.
+    #[must_use]
     pub const fn with_big_endian(self) -> Configuration<BigEndian, I, L> {
         generate()
     }
 
     /// Makes bincode encode all integer types in little endian.
+    #[must_use]
     pub const fn with_little_endian(self) -> Configuration<LittleEndian, I, L> {
         generate()
     }
 
     /// Makes bincode encode all integer types with a variable integer encoding.
     ///
-    /// Encoding an unsigned integer v (of any type excepting u8) works as follows:
+    /// Encoding an unsigned integer `v` (of any type excepting `u8`) works as follows:
     ///
     /// 1. If `u < 251`, encode it as a single byte with that value.
-    /// 2. If `251 <= u < 2**16`, encode it as a literal byte 251, followed by a u16 with value `u`.
-    /// 3. If `2**16 <= u < 2**32`, encode it as a literal byte 252, followed by a u32 with value `u`.
-    /// 4. If `2**32 <= u < 2**64`, encode it as a literal byte 253, followed by a u64 with value `u`.
-    /// 5. If `2**64 <= u < 2**128`, encode it as a literal byte 254, followed by a u128 with value `u`.
+    /// 2. If `251 <= u < 2**16`, encode it as a literal byte `251`, followed by a `u16` with value `u`.
+    /// 3. If `2**16 <= u < 2**32`, encode it as a literal byte `252`, followed by a `u32` with value `u`.
+    /// 4. If `2**32 <= u < 2**64`, encode it as a literal byte `253`, followed by a `u64` with value `u`.
+    /// 5. If `2**64 <= u < 2**128`, encode it as a literal byte `254`, followed by a `u128` with value `u`.
     ///
     /// Then, for signed integers, we first convert to unsigned using the zigzag algorithm,
     /// and then encode them as we do for unsigned integers generally. The reason we use this
@@ -144,6 +148,7 @@ impl<E, I, L> Configuration<E, I, L> {
     ///
     /// Note that u256 and the like are unsupported by this format; if and when they are added to the
     /// language, they may be supported via the extension point given by the 255 byte.
+    #[must_use]
     pub const fn with_variable_int_encoding(self) -> Configuration<E, Varint, L> {
         generate()
     }
@@ -153,16 +158,19 @@ impl<E, I, L> Configuration<E, I, L> {
     /// * Fixed size integers are encoded directly
     /// * Enum discriminants are encoded as u32
     /// * Lengths and usize are encoded as u64
+    #[must_use]
     pub const fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, L> {
         generate()
     }
 
     /// Sets the byte limit to `limit`.
+    #[must_use]
     pub const fn with_limit<const N: usize>(self) -> Configuration<E, I, Limit<N>> {
         generate()
     }
 
     /// Clear the byte limit.
+    #[must_use]
     pub const fn with_no_limit(self) -> Configuration<E, I, NoLimit> {
         generate()
     }
@@ -246,7 +254,7 @@ impl<const N: usize> InternalLimitConfig for Limit<N> {
 }
 
 /// Endianness of a `Configuration`.
-#[derive(PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Endianness {
     /// Little Endian encoding, see `LittleEndian`.
@@ -256,7 +264,7 @@ pub enum Endianness {
 }
 
 /// Integer Encoding of a `Configuration`.
-#[derive(PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum IntEncoding {
     /// Fixed Integer Encoding, see `Fixint`.

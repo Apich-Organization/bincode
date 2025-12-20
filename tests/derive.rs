@@ -1,5 +1,6 @@
 #![cfg(feature = "derive")]
 
+extern crate bincode_next as bincode;
 use bincode::error::DecodeError;
 
 #[derive(bincode::Encode, PartialEq, Debug)]

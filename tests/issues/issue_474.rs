@@ -1,4 +1,5 @@
 #![cfg(all(feature = "serde", feature = "std"))]
+extern crate bincode_next as bincode;
 
 extern crate std;
 

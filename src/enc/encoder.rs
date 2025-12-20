@@ -6,7 +6,7 @@ use crate::{config::Config, utils::Sealed};
 /// This struct should rarely be used.
 /// In most cases, prefer any of the `encode` functions.
 ///
-/// The ByteOrder that is chosen will impact the endianness that
+/// The `ByteOrder` that is chosen will impact the endianness that
 /// is used to write integers to the writer.
 ///
 /// ```
@@ -27,8 +27,8 @@ pub struct EncoderImpl<W: Writer, C: Config> {
 
 impl<W: Writer, C: Config> EncoderImpl<W, C> {
     /// Create a new Encoder
-    pub const fn new(writer: W, config: C) -> EncoderImpl<W, C> {
-        EncoderImpl { writer, config }
+    pub const fn new(writer: W, config: C) -> Self {
+        Self { writer, config }
     }
 
     /// Return the underlying writer

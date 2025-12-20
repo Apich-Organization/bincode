@@ -29,7 +29,7 @@ impl Encode for AtomicBool {
 #[cfg(target_has_atomic = "8")]
 impl<Context> Decode<Context> for AtomicBool {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
-        Ok(AtomicBool::new(Decode::decode(decoder)?))
+        Ok(Self::new(Decode::decode(decoder)?))
     }
 }
 #[cfg(target_has_atomic = "8")]
@@ -48,7 +48,7 @@ impl Encode for AtomicU8 {
 #[cfg(target_has_atomic = "8")]
 impl<Context> Decode<Context> for AtomicU8 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
-        Ok(AtomicU8::new(Decode::decode(decoder)?))
+        Ok(Self::new(Decode::decode(decoder)?))
     }
 }
 #[cfg(target_has_atomic = "8")]
@@ -67,7 +67,7 @@ impl Encode for AtomicU16 {
 #[cfg(target_has_atomic = "16")]
 impl<Context> Decode<Context> for AtomicU16 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
-        Ok(AtomicU16::new(Decode::decode(decoder)?))
+        Ok(Self::new(Decode::decode(decoder)?))
     }
 }
 #[cfg(target_has_atomic = "16")]
@@ -86,7 +86,7 @@ impl Encode for AtomicU32 {
 #[cfg(target_has_atomic = "32")]
 impl<Context> Decode<Context> for AtomicU32 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
-        Ok(AtomicU32::new(Decode::decode(decoder)?))
+        Ok(Self::new(Decode::decode(decoder)?))
     }
 }
 #[cfg(target_has_atomic = "32")]
@@ -105,7 +105,7 @@ impl Encode for AtomicU64 {
 #[cfg(target_has_atomic = "64")]
 impl<Context> Decode<Context> for AtomicU64 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
-        Ok(AtomicU64::new(Decode::decode(decoder)?))
+        Ok(Self::new(Decode::decode(decoder)?))
     }
 }
 #[cfg(target_has_atomic = "64")]
@@ -124,7 +124,7 @@ impl Encode for AtomicUsize {
 #[cfg(target_has_atomic = "ptr")]
 impl<Context> Decode<Context> for AtomicUsize {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
-        Ok(AtomicUsize::new(Decode::decode(decoder)?))
+        Ok(Self::new(Decode::decode(decoder)?))
     }
 }
 #[cfg(target_has_atomic = "ptr")]
@@ -143,7 +143,7 @@ impl Encode for AtomicI8 {
 #[cfg(target_has_atomic = "8")]
 impl<Context> Decode<Context> for AtomicI8 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
-        Ok(AtomicI8::new(Decode::decode(decoder)?))
+        Ok(Self::new(Decode::decode(decoder)?))
     }
 }
 #[cfg(target_has_atomic = "8")]
@@ -162,7 +162,7 @@ impl Encode for AtomicI16 {
 #[cfg(target_has_atomic = "16")]
 impl<Context> Decode<Context> for AtomicI16 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
-        Ok(AtomicI16::new(Decode::decode(decoder)?))
+        Ok(Self::new(Decode::decode(decoder)?))
     }
 }
 #[cfg(target_has_atomic = "16")]
@@ -181,7 +181,7 @@ impl Encode for AtomicI32 {
 #[cfg(target_has_atomic = "32")]
 impl<Context> Decode<Context> for AtomicI32 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
-        Ok(AtomicI32::new(Decode::decode(decoder)?))
+        Ok(Self::new(Decode::decode(decoder)?))
     }
 }
 #[cfg(target_has_atomic = "32")]
@@ -200,7 +200,7 @@ impl Encode for AtomicI64 {
 #[cfg(target_has_atomic = "64")]
 impl<Context> Decode<Context> for AtomicI64 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
-        Ok(AtomicI64::new(Decode::decode(decoder)?))
+        Ok(Self::new(Decode::decode(decoder)?))
     }
 }
 #[cfg(target_has_atomic = "64")]
@@ -219,7 +219,7 @@ impl Encode for AtomicIsize {
 #[cfg(target_has_atomic = "ptr")]
 impl<Context> Decode<Context> for AtomicIsize {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
-        Ok(AtomicIsize::new(Decode::decode(decoder)?))
+        Ok(Self::new(Decode::decode(decoder)?))
     }
 }
 #[cfg(target_has_atomic = "ptr")]

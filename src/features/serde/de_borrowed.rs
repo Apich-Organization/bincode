@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use super::DecodeError as SerdeDecodeError;
 use crate::{
     config::Config,
@@ -5,7 +6,10 @@ use crate::{
     error::DecodeError,
 };
 use core::marker::PhantomData;
-use serde::de::*;
+use serde::de::{
+    Deserialize, DeserializeSeed, Deserializer, EnumAccess, IntoDeserializer, MapAccess, SeqAccess,
+    VariantAccess, Visitor,
+};
 
 /// Serde decoder encapsulating a borrowed reader.
 pub struct BorrowedSerdeDecoder<'de, DE: BorrowDecoder<'de>> {
@@ -27,11 +31,7 @@ impl<'de, DE: BorrowDecoder<'de>> BorrowedSerdeDecoder<'de, DE> {
 
 impl<'de, C: Config, Context> BorrowedSerdeDecoder<'de, DecoderImpl<SliceReader<'de>, C, Context>> {
     /// Creates the decoder from a borrowed slice.
-    pub fn from_slice(
-        slice: &'de [u8],
-        config: C,
-        context: Context,
-    ) -> BorrowedSerdeDecoder<'de, DecoderImpl<SliceReader<'de>, C, Context>>
+    pub const fn from_slice(slice: &'de [u8], config: C, context: Context) -> Self
     where
         C: Config,
     {
@@ -47,6 +47,9 @@ impl<'de, C: Config, Context> BorrowedSerdeDecoder<'de, DecoderImpl<SliceReader<
 /// Attempt to decode a given type `D` from the given slice. Returns the decoded output and the amount of bytes read.
 ///
 /// See the [config](../config/index.html) module for more information on configurations.
+/// # Errors
+///
+/// Returns a `DecodeError` if the slice cannot be decoded.
 pub fn borrow_decode_from_slice<'de, D, C>(
     slice: &'de [u8],
     config: C,
@@ -63,6 +66,9 @@ where
 }
 
 /// Decode a borrowed type from the given slice using a seed. Some parts of the decoded type are expected to be referring to the given slice
+/// # Errors
+///
+/// Returns a `DecodeError` if the slice cannot be decoded.
 pub fn seed_decode_from_slice<'de, D, C>(
     seed: D,
     slice: &'de [u8],

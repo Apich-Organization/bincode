@@ -1,3 +1,4 @@
+#![allow(clippy::cast_lossless, clippy::cast_possible_truncation)]
 use super::{SINGLE_BYTE_MAX, U128_BYTE, U16_BYTE, U32_BYTE, U64_BYTE};
 use crate::{config::Endianness, enc::write::Writer, error::EncodeError};
 

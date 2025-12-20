@@ -1,5 +1,9 @@
+#![allow(clippy::cast_sign_loss)]
 use super::{varint_encode_u128, varint_encode_u16, varint_encode_u32, varint_encode_u64};
 use crate::{config::Endianness, enc::write::Writer, error::EncodeError};
+
+#[cfg(test)]
+use crate::enc::write::SliceWriter;
 
 pub fn varint_encode_i16<W: Writer>(
     writer: &mut W,
@@ -109,7 +113,6 @@ fn test_encode_i16() {
         ),
     ];
 
-    use crate::enc::write::SliceWriter;
     let mut buffer = [0u8; 20];
     for &(value, expected_le, expected_be) in cases {
         std::dbg!(value);
@@ -158,7 +161,6 @@ fn test_encode_i32() {
         ),
     ];
 
-    use crate::enc::write::SliceWriter;
     let mut buffer = [0u8; 20];
     for &(value, expected_le, expected_be) in cases {
         std::dbg!(value);
@@ -212,7 +214,6 @@ fn test_encode_i64() {
         ),
     ];
 
-    use crate::enc::write::SliceWriter;
     let mut buffer = [0u8; 20];
     for &(value, expected_le, expected_be) in cases {
         std::dbg!(value);
@@ -296,7 +297,6 @@ fn test_encode_i128() {
         ),
     ];
 
-    use crate::enc::write::SliceWriter;
     let mut buffer = [0u8; 20];
     for &(value, expected_le, expected_be) in cases {
         std::dbg!(value);

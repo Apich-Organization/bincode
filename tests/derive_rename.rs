@@ -1,6 +1,6 @@
 #![cfg(feature = "derive")]
 
-extern crate bincode as bincode_new;
+extern crate bincode_next as bincode_new;
 
 // Make sure that the `bincode` crate exists, just symlink it to `core.
 extern crate core as bincode;

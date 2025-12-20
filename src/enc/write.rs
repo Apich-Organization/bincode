@@ -9,6 +9,10 @@ use crate::error::EncodeError;
 /// [Encode]: ../trait.Encode.html
 pub trait Writer {
     /// Write `bytes` to the underlying writer. Exactly `bytes.len()` bytes must be written, or else an error should be returned.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError::UnexpectedEnd` if the writer does not have enough space.
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError>;
 }
 
@@ -38,16 +42,17 @@ pub struct SliceWriter<'storage> {
 
 impl<'storage> SliceWriter<'storage> {
     /// Create a new instance of `SliceWriter` with the given byte array.
-    pub fn new(bytes: &'storage mut [u8]) -> SliceWriter<'storage> {
+    pub const fn new(bytes: &'storage mut [u8]) -> Self {
         let original = bytes.len();
-        SliceWriter {
+        Self {
             slice: bytes,
             original_length: original,
         }
     }
 
     /// Return the amount of bytes written so far.
-    pub fn bytes_written(&self) -> usize {
+    #[must_use]
+    pub const fn bytes_written(&self) -> usize {
         self.original_length - self.slice.len()
     }
 }

@@ -23,7 +23,7 @@ pub use self::decoder::DecoderImpl;
 ///
 /// Some types may require specific contexts. For example, to decode arena-based collections, an arena allocator must be provided as a context. In these cases, the context type `Context` should be specified or bounded.
 ///
-/// This trait should be implemented for types which do not have references to data in the reader. For types that contain e.g. `&str` and `&[u8]`, implement [BorrowDecode] instead.
+/// This trait should be implemented for types which do not have references to data in the reader. For types that contain e.g. `&str` and `&[u8]`, implement [`BorrowDecode`] instead.
 ///
 /// Whenever you derive `Decode` for your type, the base trait `BorrowDecode` is automatically implemented.
 ///
@@ -101,17 +101,25 @@ pub use self::decoder::DecoderImpl;
 /// # }
 /// ```
 pub trait Decode<Context>: Sized {
-    /// Attempt to decode this type with the given [Decode].
+    /// Attempt to decode this type with the given [`Decode`].
+    ///
+    /// # Errors
+    ///
+    /// Returns any error encountered during decoding.
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError>;
 }
 
 /// Trait that makes a type able to be decoded, akin to serde's `Deserialize` trait.
 ///
-/// This trait should be implemented for types that contain borrowed data, like `&str` and `&[u8]`. If your type does not have borrowed data, consider implementing [Decode] instead.
+/// This trait should be implemented for types that contain borrowed data, like `&str` and `&[u8]`. If your type does not have borrowed data, consider implementing [`Decode`] instead.
 ///
 /// This trait will be automatically implemented if you enable the `derive` feature and add `#[derive(bincode::Decode)]` to a type with a lifetime.
 pub trait BorrowDecode<'de, Context>: Sized {
-    /// Attempt to decode this type with the given [BorrowDecode].
+    /// Attempt to decode this type with the given [`BorrowDecode`].
+    ///
+    /// # Errors
+    ///
+    /// Returns any error encountered during decoding.
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D,
     ) -> Result<Self, DecodeError>;
@@ -175,16 +183,24 @@ pub trait Decoder: Sealed {
 
     /// Claim that `n` bytes are going to be read from the decoder.
     /// This can be used to validate `Configuration::Limit<N>()`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `DecodeError::LimitExceeded` if the limit is exceeded.
     fn claim_bytes_read(&mut self, n: usize) -> Result<(), DecodeError>;
 
     /// Claim that we're going to read a container which contains `len` entries of `T`.
     /// This will correctly handle overflowing if `len * size_of::<T>() > usize::max_value`
+    ///
+    /// # Errors
+    ///
+    /// Returns `DecodeError::LimitExceeded` if the limit is exceeded or if `len * size_of::<T>()` overflows.
     fn claim_container_read<T>(&mut self, len: usize) -> Result<(), DecodeError> {
         if <Self::C as InternalLimitConfig>::LIMIT.is_some() {
-            match len.checked_mul(core::mem::size_of::<T>()) {
-                Some(val) => self.claim_bytes_read(val),
-                None => Err(DecodeError::LimitExceeded),
-            }
+            len.checked_mul(core::mem::size_of::<T>())
+                .map_or(Err(DecodeError::LimitExceeded), |val| {
+                    self.claim_bytes_read(val)
+                })
         } else {
             Ok(())
         }
@@ -256,7 +272,7 @@ pub trait Decoder: Sealed {
 ///
 /// This is an extension of [Decode] that can also return borrowed data.
 pub trait BorrowDecoder<'de>: Decoder {
-    /// The concrete [BorrowReader] type
+    /// The concrete [`BorrowReader`] type
     type BR: BorrowReader<'de>;
 
     /// Returns a mutable reference to the borrow reader
@@ -288,7 +304,7 @@ where
 
     #[inline]
     fn unclaim_bytes_read(&mut self, n: usize) {
-        T::unclaim_bytes_read(self, n)
+        T::unclaim_bytes_read(self, n);
     }
 
     fn context(&mut self) -> &mut Self::Context {
@@ -318,7 +334,7 @@ pub(crate) fn decode_option_variant<D: Decoder>(
         0 => Ok(None),
         1 => Ok(Some(())),
         x => Err(DecodeError::UnexpectedVariant {
-            found: x as u32,
+            found: u32::from(x),
             allowed: &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
             type_name,
         }),

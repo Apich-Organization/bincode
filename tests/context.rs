@@ -6,6 +6,8 @@ use bincode::{
 };
 use bumpalo::{collections::Vec, vec, Bump};
 
+extern crate bincode_next as bincode;
+
 #[derive(PartialEq, Eq, Debug)]
 struct CodableVec<'bump, T: 'bump>(Vec<'bump, T>);
 
