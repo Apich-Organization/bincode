@@ -38,7 +38,7 @@ impl<'r, C: Config, R: std::io::Read> OwnedSerdeDecoder<DecoderImpl<IoReader<&'r
 }
 
 impl<C: Config, R: Reader> OwnedSerdeDecoder<DecoderImpl<R, C, ()>> {
-    /// Creates the decoder from a \[`Reader`\] implementor.
+    /// Creates the decoder from a [`Reader`\] implementor.
     pub const fn from_reader(reader: R, config: C) -> Self {
         let decoder = DecoderImpl::new(reader, config, ());
         Self { de: decoder }
@@ -47,7 +47,7 @@ impl<C: Config, R: Reader> OwnedSerdeDecoder<DecoderImpl<R, C, ()>> {
 
 /// Attempt to decode a given type `D` from the given slice. Returns the decoded output and the amount of bytes read.
 ///
-/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use \[`borrow_decode_from_slice`\].
+/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [`borrow_decode_from_slice`\].
 ///
 /// See the [config] module for more information on configurations.
 ///

@@ -23,7 +23,7 @@ pub use self::decoder::DecoderImpl;
 ///
 /// Some types may require specific contexts. For example, to decode arena-based collections, an arena allocator must be provided as a context. In these cases, the context type `Context` should be specified or bounded.
 ///
-/// This trait should be implemented for types which do not have references to data in the reader. For types that contain e.g. `&str` and `&[u8]`, implement \[`BorrowDecode`\] instead.
+/// This trait should be implemented for types which do not have references to data in the reader. For types that contain e.g. `&str` and `&[u8]`, implement [`BorrowDecode`\] instead.
 ///
 /// Whenever you derive `Decode` for your type, the base trait `BorrowDecode` is automatically implemented.
 ///
@@ -101,7 +101,7 @@ pub use self::decoder::DecoderImpl;
 /// # }
 /// ```
 pub trait Decode<Context>: Sized {
-    /// Attempt to decode this type with the given \[`Decode`\].
+    /// Attempt to decode this type with the given [`Decode`\].
     ///
     /// # Errors
     ///
@@ -111,11 +111,11 @@ pub trait Decode<Context>: Sized {
 
 /// Trait that makes a type able to be decoded, akin to serde's `Deserialize` trait.
 ///
-/// This trait should be implemented for types that contain borrowed data, like `&str` and `&[u8]`. If your type does not have borrowed data, consider implementing \[`Decode`\] instead.
+/// This trait should be implemented for types that contain borrowed data, like `&str` and `&[u8]`. If your type does not have borrowed data, consider implementing [`Decode`\] instead.
 ///
 /// This trait will be automatically implemented if you enable the `derive` feature and add `#[derive(bincode::Decode)]` to a type with a lifetime.
 pub trait BorrowDecode<'de, Context>: Sized {
-    /// Attempt to decode this type with the given \[`BorrowDecode`\].
+    /// Attempt to decode this type with the given [`BorrowDecode`\].
     ///
     /// # Errors
     ///
@@ -272,7 +272,7 @@ pub trait Decoder: Sealed {
 ///
 /// This is an extension of [Decode] that can also return borrowed data.
 pub trait BorrowDecoder<'de>: Decoder {
-    /// The concrete \[`BorrowReader`\] type
+    /// The concrete [`BorrowReader`\] type
     type BR: BorrowReader<'de>;
 
     /// Returns a mutable reference to the borrow reader

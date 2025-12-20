@@ -15,8 +15,8 @@ By default, this serialization format uses little-endian byte order for basic nu
 
 Endianness can be configured with the following methods, allowing for big-endian serialization when required:
 
-- \[`with_big_endian`\](<https://docs.rs/bincode/2/bincode/config/struct.Configuration.html#method.with_big_endian>)
-- \[`with_little_endian`\](<https://docs.rs/bincode/2/bincode/config/struct.Configuration.html#method.with_little_endian>)
+- [`with_big_endian`\](<https://docs.rs/bincode/2/bincode/config/struct.Configuration.html#method.with_big_endian>)
+- [`with_little_endian`\](<https://docs.rs/bincode/2/bincode/config/struct.Configuration.html#method.with_little_endian>)
 
 ### Byte Order Considerations
 
@@ -31,7 +31,7 @@ Endianness can be configured with the following methods, allowing for big-endian
 - Encoded as a single byte
 - `false` is represented by `0`
 - `true` is represented by `1`
-- During deserialization, values other than 0 and 1 will result in an error \[`DecodeError::InvalidBooleanValue`\](<https://docs.rs/bincode/2/bincode/error/enum.DecodeError.html#variant.InvalidBooleanValue>)
+- During deserialization, values other than 0 and 1 will result in an error [`DecodeError::InvalidBooleanValue`\](<https://docs.rs/bincode/2/bincode/error/enum.DecodeError.html#variant.InvalidBooleanValue>)
 
 ### Numeric Types
 
@@ -62,7 +62,7 @@ Endianness can be configured with the following methods, allowing for big-endian
 - Surrogate code points (0xD800 to 0xDFFF) are not valid
 - Invalid Unicode characters can be acquired via unsafe code, this is handled as:
   - during serialization: data is written as-is
-  - during deserialization: an error is raised \[`DecodeError::InvalidCharEncoding`\](<https://docs.rs/bincode/2/bincode/error/enum.DecodeError.html#variant.InvalidCharEncoding>)
+  - during deserialization: an error is raised [`DecodeError::InvalidCharEncoding`\](<https://docs.rs/bincode/2/bincode/error/enum.DecodeError.html#variant.InvalidCharEncoding>)
 - No additional metadata or encoding scheme beyond the raw code point value
 
 All tuples have no additional bytes, and are encoded in their specified order, e.g.
@@ -232,7 +232,7 @@ assert_eq!(encoded.as_slice(), &[
 - During serialization, the string is encoded as a sequence of the given bytes.
   - Rust strings are UTF-8 encoded by default, but this is not enforced by bincode
 - No normalization or transformation of text
-- If an invalid UTF-8 sequence is encountered during decoding, an \[`DecodeError::Utf8`\](<https://docs.rs/bincode/2/bincode/error/enum.DecodeError.html#variant.Utf8>) error is raised
+- If an invalid UTF-8 sequence is encountered during decoding, an [`DecodeError::Utf8`\](<https://docs.rs/bincode/2/bincode/error/enum.DecodeError.html#variant.Utf8>) error is raised
 
 ```rust
 use bincode_next::config;

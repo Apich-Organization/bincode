@@ -97,9 +97,9 @@ where
 /// really are in an initialized state.
 /// Calling this when the content is not yet fully initialized causes undefined behavior.
 ///
-/// See \[`assume_init_mut`\] for more details and examples.
+/// See [`assume_init_mut`\] for more details and examples.
 ///
-/// \[`assume_init_mut`\]: `MaybeUninit::assume_init_mut`
+/// [`assume_init_mut`\]: `MaybeUninit::assume_init_mut`
 // #[unstable(feature = "maybe_uninit_slice", issue = "63569")]
 // #[rustc_const_unstable(feature = "const_maybe_uninit_assume_init", issue = "none")]
 #[inline(always)]
