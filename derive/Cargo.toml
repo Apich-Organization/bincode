@@ -21,5 +21,8 @@ description = "Implementation of #[derive(Encode, Decode)] for bincode-next"
 [lib]
 proc-macro = true
 
+[lints.clippy]
+empty-line-after-doc-comments = "allow"
+
 [dependencies]
 virtue = "0.0.18"

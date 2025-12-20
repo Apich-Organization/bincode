@@ -70,6 +70,24 @@ codegen-units = 1
 debug = 1
 lto = true
 
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+opt-level = 3
+strip = true
+
+[profile.dev]
+lto = false
+opt-level = 0
+debug = true
+
+[lints.clippy]
+empty-line-after-doc-comments = "allow"
+
+[lib]
+crate-type = ["cdylib", "rlib", "staticlib"]
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
