@@ -148,6 +148,7 @@ impl Encode for NonZeroUsize {
 
 impl Encode for i8 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        #[allow(clippy::cast_sign_loss)]
         encoder.writer().write(&[*self as u8])
     }
 }
@@ -303,7 +304,7 @@ where
 
         if unty::type_equal::<T, u8>() {
             // Safety: T = u8
-            let t: &[u8] = unsafe { core::mem::transmute(self) };
+            let t: &[u8] = unsafe { &*(core::ptr::from_ref::<[T]>(self) as *const [u8]) };
             encoder.writer().write(t)?;
             return Ok(());
         }
@@ -366,7 +367,7 @@ where
                 unsafe { core::slice::from_raw_parts(self.as_ptr().cast(), N) };
             encoder.writer().write(array_slice)
         } else {
-            for item in self.iter() {
+            for item in self {
                 item.encode(encoder)?;
             }
             Ok(())
@@ -379,7 +380,7 @@ where
     T: Encode,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        super::encode_option_variant(encoder, self)?;
+        super::encode_option_variant(encoder, self.as_ref())?;
         if let Some(val) = self {
             val.encode(encoder)?;
         }
@@ -424,7 +425,7 @@ where
             .try_borrow()
             .map_err(|e| EncodeError::RefCellAlreadyBorrowed {
                 inner: e,
-                type_name: core::any::type_name::<RefCell<T>>(),
+                type_name: core::any::type_name::<Self>(),
             })?;
         T::encode(&borrow_guard, encoder)
     }

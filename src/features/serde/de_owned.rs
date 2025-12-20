@@ -5,7 +5,10 @@ use crate::{
     de::{read::Reader, Decode, Decoder, DecoderImpl},
     error::DecodeError,
 };
-use serde::de::*;
+use serde::de::{
+    DeserializeOwned, DeserializeSeed, Deserializer, EnumAccess, IntoDeserializer, MapAccess,
+    SeqAccess, VariantAccess, Visitor,
+};
 
 #[cfg(feature = "std")]
 use crate::features::IoReader;
@@ -27,13 +30,10 @@ impl<DE: Decoder> OwnedSerdeDecoder<DE> {
 #[cfg(feature = "std")]
 impl<'r, C: Config, R: std::io::Read> OwnedSerdeDecoder<DecoderImpl<IoReader<&'r mut R>, C, ()>> {
     /// Creates the decoder from an `std::io::Read` implementor.
-    pub fn from_std_read(
+    pub const fn from_std_read(
         src: &'r mut R,
         config: C,
-    ) -> OwnedSerdeDecoder<DecoderImpl<IoReader<&'r mut R>, C, ()>>
-    where
-        C: Config,
-    {
+    ) -> Self {
         let reader = IoReader::new(src);
         let decoder = DecoderImpl::new(reader, config, ());
         Self { de: decoder }
@@ -42,10 +42,7 @@ impl<'r, C: Config, R: std::io::Read> OwnedSerdeDecoder<DecoderImpl<IoReader<&'r
 
 impl<C: Config, R: Reader> OwnedSerdeDecoder<DecoderImpl<R, C, ()>> {
     /// Creates the decoder from a [`Reader`] implementor.
-    pub fn from_reader(reader: R, config: C) -> OwnedSerdeDecoder<DecoderImpl<R, C, ()>>
-    where
-        C: Config,
-    {
+    pub const fn from_reader(reader: R, config: C) -> Self {
         let decoder = DecoderImpl::new(reader, config, ());
         Self { de: decoder }
     }
@@ -53,9 +50,13 @@ impl<C: Config, R: Reader> OwnedSerdeDecoder<DecoderImpl<R, C, ()>> {
 
 /// Attempt to decode a given type `D` from the given slice. Returns the decoded output and the amount of bytes read.
 ///
-/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [borrow_decode_from_slice].
+/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [`borrow_decode_from_slice`].
 ///
 /// See the [config] module for more information on configurations.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the slice cannot be decoded.
 ///
 /// [borrow_decode_from_slice]: fn.borrow_decode_from_slice.html
 /// [config]: ../config/index.html
@@ -72,6 +73,9 @@ where
 /// See the [config] module for more information about config options.
 ///
 /// [config]: ../config/index.html
+/// # Errors
+///
+/// Returns a `DecodeError` if the reader fails or the data is invalid.
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub fn decode_from_std_read<'r, D: DeserializeOwned, C: Config, R: std::io::Read>(
@@ -88,6 +92,9 @@ pub fn decode_from_std_read<'r, D: DeserializeOwned, C: Config, R: std::io::Read
 /// See the [config] module for more information on configurations.
 ///
 /// [config]: ../config/index.html
+/// # Errors
+///
+/// Returns a `DecodeError` if the reader fails or the data is invalid.
 pub fn decode_from_reader<D: DeserializeOwned, R: Reader, C: Config>(
     reader: R,
     config: C,
@@ -101,6 +108,9 @@ pub fn decode_from_reader<D: DeserializeOwned, R: Reader, C: Config>(
 /// See the [config] module for more information about config options.
 ///
 /// [config]: ../config/index.html
+/// # Errors
+///
+/// Returns a `DecodeError` if the reader fails or the data is invalid.
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub fn seed_decode_from_std_read<'de, 'r, D, C, R>(

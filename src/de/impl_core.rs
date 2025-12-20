@@ -9,6 +9,24 @@
 
 use core::mem::{self, MaybeUninit};
 
+struct Guard<'a, T, const N: usize> {
+    array_mut: &'a mut [MaybeUninit<T>; N],
+    initialized: usize,
+}
+
+impl<T, const N: usize> Drop for Guard<'_, T, N> {
+    fn drop(&mut self) {
+        debug_assert!(self.initialized <= N);
+
+        // SAFETY: this slice will contain only initialized objects.
+        unsafe {
+            core::ptr::drop_in_place(slice_assume_init_mut(
+                self.array_mut.get_unchecked_mut(..self.initialized),
+            ));
+        }
+    }
+}
+
 /// Pulls `N` items from `iter` and returns them as an array. If the iterator
 /// yields fewer than `N` items, `None` is returned and all already yielded
 /// items are dropped.
@@ -29,23 +47,6 @@ where
         return unsafe { Some(Ok(mem::zeroed())) };
     }
 
-    struct Guard<'a, T, const N: usize> {
-        array_mut: &'a mut [MaybeUninit<T>; N],
-        initialized: usize,
-    }
-
-    impl<T, const N: usize> Drop for Guard<'_, T, N> {
-        fn drop(&mut self) {
-            debug_assert!(self.initialized <= N);
-
-            // SAFETY: this slice will contain only initialized objects.
-            unsafe {
-                core::ptr::drop_in_place(slice_assume_init_mut(
-                    self.array_mut.get_unchecked_mut(..self.initialized),
-                ));
-            }
-        }
-    }
 
     let mut array = uninit_array::<T, N>();
     let mut guard = Guard {
@@ -78,7 +79,7 @@ where
 
             // SAFETY: the condition above asserts that all elements are
             // initialized.
-            let out = unsafe { array_assume_init(array) };
+            let out = unsafe { array_assume_init(&array) };
             return Some(Ok(out));
         }
     }
@@ -106,7 +107,7 @@ where
 pub unsafe fn slice_assume_init_mut<T>(slice: &mut [MaybeUninit<T>]) -> &mut [T] {
     // SAFETY: similar to safety notes for `slice_get_ref`, but we have a
     // mutable reference which is also guaranteed to be valid for writes.
-    unsafe { &mut *(slice as *mut [MaybeUninit<T>] as *mut [T]) }
+    unsafe { &mut *(core::ptr::from_mut::<[MaybeUninit<T>]>(slice) as *mut [T]) }
 }
 
 /// Create a new array of `MaybeUninit<T>` items, in an uninitialized state.
@@ -174,7 +175,7 @@ fn uninit_array<T, const LEN: usize>() -> [MaybeUninit<T>; LEN] {
 /// ```
 // #[unstable(feature = "maybe_uninit_array_assume_init", issue = "80908")]
 #[inline(always)]
-pub unsafe fn array_assume_init<T, const N: usize>(array: [MaybeUninit<T>; N]) -> [T; N] {
+pub unsafe fn array_assume_init<T, const N: usize>(array: &[MaybeUninit<T>; N]) -> [T; N] {
     // SAFETY:
     // * The caller guarantees that all elements of the array are initialized
     // * `MaybeUninit<T>` and T are guaranteed to have the same layout
@@ -182,6 +183,6 @@ pub unsafe fn array_assume_init<T, const N: usize>(array: [MaybeUninit<T>; N]) -
     // And thus the conversion is safe
     unsafe {
         // intrinsics::assert_inhabited::<[T; N]>();
-        (&array as *const _ as *const [T; N]).read()
+        core::ptr::from_ref(array).cast::<[T; N]>().read()
     }
 }

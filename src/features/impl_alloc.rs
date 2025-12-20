@@ -29,6 +29,7 @@ pub struct VecWriter {
 
 impl VecWriter {
     /// Create a new vec writer with the given capacity
+    #[must_use]
     pub fn with_capacity(cap: usize) -> Self {
         Self {
             inner: Vec::with_capacity(cap),
@@ -42,7 +43,7 @@ impl VecWriter {
 }
 
 impl enc::write::Writer for VecWriter {
-    #[inline(always)]
+    #[inline]
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
         self.inner.extend_from_slice(bytes);
         Ok(())
@@ -190,7 +191,7 @@ where
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 
-        let mut map = BTreeSet::new();
+        let mut map = Self::new();
         for _ in 0..len {
             // See the documentation on `unclaim_bytes_read` as to why we're doing this here
             decoder.unclaim_bytes_read(core::mem::size_of::<T>());
@@ -208,7 +209,7 @@ where
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         crate::enc::encode_slice_len(encoder, self.len())?;
-        for item in self.iter() {
+        for item in self {
             item.encode(encoder)?;
         }
         Ok(())
@@ -253,7 +254,7 @@ where
             encoder.writer().write(slices.0)?;
             encoder.writer().write(slices.1)?;
         } else {
-            for item in self.iter() {
+            for item in self {
                 item.encode(encoder)?;
             }
         }
@@ -268,16 +269,14 @@ where
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
 
+        decoder.claim_container_read::<T>(len)?;
         if unty::type_equal::<T, u8>() {
-            decoder.claim_container_read::<T>(len)?;
             // optimize for reading u8 vecs
             let mut vec = alloc::vec![0u8; len];
             decoder.reader().read(&mut vec)?;
             // Safety: Vec<T> is Vec<u8>
-            Ok(unsafe { core::mem::transmute::<Vec<u8>, Vec<T>>(vec) })
+            Ok(unsafe { core::mem::transmute::<Vec<u8>, Self>(vec) })
         } else {
-            decoder.claim_container_read::<T>(len)?;
-
             let mut vec = Self::with_capacity(len);
             for _ in 0..len {
                 // See the documentation on `unclaim_bytes_read` as to why we're doing this here
@@ -299,16 +298,14 @@ where
     ) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
 
+        decoder.claim_container_read::<T>(len)?;
         if unty::type_equal::<T, u8>() {
-            decoder.claim_container_read::<T>(len)?;
             // optimize for reading u8 vecs
             let mut vec = alloc::vec![0u8; len];
             decoder.reader().read(&mut vec)?;
             // Safety: Vec<T> is Vec<u8>
-            Ok(unsafe { core::mem::transmute::<Vec<u8>, Vec<T>>(vec) })
+            Ok(unsafe { core::mem::transmute::<Vec<u8>, Self>(vec) })
         } else {
-            decoder.claim_container_read::<T>(len)?;
-
             let mut vec = Self::with_capacity(len);
             for _ in 0..len {
                 // See the documentation on `unclaim_bytes_read` as to why we're doing this here
@@ -329,22 +326,21 @@ where
         crate::enc::encode_slice_len(encoder, self.len())?;
         if unty::type_equal::<T, u8>() {
             // Safety: T == u8
-            let slice: &[u8] = unsafe { core::mem::transmute(self.as_slice()) };
+            let slice: &[u8] = unsafe { &*(core::ptr::from_ref::<[T]>(self.as_slice()) as *const [u8]) };
             encoder.writer().write(slice)?;
-            Ok(())
         } else {
-            for item in self.iter() {
+            for item in self {
                 item.encode(encoder)?;
             }
-            Ok(())
         }
+        Ok(())
     }
 }
 
 impl<Context> Decode<Context> for String {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let bytes = Vec::<u8>::decode(decoder)?;
-        String::from_utf8(bytes).map_err(|e| DecodeError::Utf8 {
+        Self::from_utf8(bytes).map_err(|e| DecodeError::Utf8 {
             inner: e.utf8_error(),
         })
     }
@@ -370,7 +366,7 @@ where
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
-        Ok(Box::new(t))
+        Ok(Self::new(t))
     }
 }
 impl<'de, T, Context> BorrowDecode<'de, Context> for Box<T>
@@ -381,7 +377,7 @@ where
         decoder: &mut D,
     ) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
-        Ok(Box::new(t))
+        Ok(Self::new(t))
     }
 }
 
@@ -468,7 +464,7 @@ where
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
-        Ok(Rc::new(t))
+        Ok(Self::new(t))
     }
 }
 
@@ -487,7 +483,7 @@ where
         decoder: &mut D,
     ) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
-        Ok(Rc::new(t))
+        Ok(Self::new(t))
     }
 }
 
@@ -538,7 +534,7 @@ where
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
-        Ok(Arc::new(t))
+        Ok(Self::new(t))
     }
 }
 
@@ -559,7 +555,7 @@ where
         decoder: &mut D,
     ) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
-        Ok(Arc::new(t))
+        Ok(Self::new(t))
     }
 }
 

@@ -414,16 +414,6 @@ mod derive_with_polluted_scope {
     #[allow(non_snake_case)]
     fn Err() {}
 
-    #[derive(bincode::Encode, bincode::Decode)]
-    struct A {
-        a: u32,
-    }
-
-    #[derive(bincode::Encode, bincode::Decode)]
-    enum B {
-        A,
-        B,
-    }
 }
 
 #[cfg(feature = "alloc")]

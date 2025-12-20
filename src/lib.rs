@@ -116,6 +116,7 @@
 // -------------------------------------------------------------------------
 #![allow(
     clippy::restriction,
+    clippy::inline_always,
     unused_doc_comments,
     clippy::empty_line_after_doc_comments
 )]
@@ -158,6 +159,10 @@ use config::Config;
 ///
 /// See the [config] module for more information on configurations.
 ///
+/// # Errors
+///
+/// Returns an `EncodeError` if the slice is too small or the value cannot be encoded.
+///
 /// [config]: config/index.html
 pub fn encode_into_slice<E: enc::Encode, C: Config>(
     val: E,
@@ -170,9 +175,13 @@ pub fn encode_into_slice<E: enc::Encode, C: Config>(
     Ok(encoder.into_writer().bytes_written())
 }
 
-/// Encode the given value into a custom [Writer].
+/// Encode the given value into a custom [`Writer`].
 ///
 /// See the [config] module for more information on configurations.
+///
+/// # Errors
+///
+/// Returns an `EncodeError` if the writer fails or the value cannot be encoded.
 ///
 /// [config]: config/index.html
 pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
@@ -187,9 +196,13 @@ pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
 
 /// Attempt to decode a given type `D` from the given slice. Returns the decoded output and the amount of bytes read.
 ///
-/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [borrow_decode_from_slice].
+/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [`borrow_decode_from_slice`].
 ///
 /// See the [config] module for more information on configurations.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the slice is too small or the data is invalid.
 ///
 /// [config]: config/index.html
 pub fn decode_from_slice<D: de::Decode<()>, C: Config>(
@@ -201,9 +214,13 @@ pub fn decode_from_slice<D: de::Decode<()>, C: Config>(
 
 /// Attempt to decode a given type `D` from the given slice with `Context`. Returns the decoded output and the amount of bytes read.
 ///
-/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [borrow_decode_from_slice].
+/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [`borrow_decode_from_slice`].
 ///
 /// See the [config] module for more information on configurations.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the slice is too small or the data is invalid.
 ///
 /// [config]: config/index.html
 pub fn decode_from_slice_with_context<Context, D: de::Decode<Context>, C: Config>(
@@ -222,6 +239,10 @@ pub fn decode_from_slice_with_context<Context, D: de::Decode<Context>, C: Config
 ///
 /// See the [config] module for more information on configurations.
 ///
+/// # Errors
+///
+/// Returns a `DecodeError` if the slice is too small or the data is invalid.
+///
 /// [config]: config/index.html
 pub fn borrow_decode_from_slice<'a, D: de::BorrowDecode<'a, ()>, C: Config>(
     src: &'a [u8],
@@ -233,6 +254,10 @@ pub fn borrow_decode_from_slice<'a, D: de::BorrowDecode<'a, ()>, C: Config>(
 /// Attempt to decode a given type `D` from the given slice with `Context`. Returns the decoded output and the amount of bytes read.
 ///
 /// See the [config] module for more information on configurations.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the slice is too small or the data is invalid.
 ///
 /// [config]: config/index.html
 pub fn borrow_decode_from_slice_with_context<
@@ -252,9 +277,13 @@ pub fn borrow_decode_from_slice_with_context<
     Ok((result, bytes_read))
 }
 
-/// Attempt to decode a given type `D` from the given [Reader].
+/// Attempt to decode a given type `D` from the given [`Reader`].
 ///
 /// See the [config] module for more information on configurations.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the reader fails or the data is invalid.
 ///
 /// [config]: config/index.html
 pub fn decode_from_reader<D: de::Decode<()>, R: Reader, C: Config>(

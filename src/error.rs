@@ -11,7 +11,7 @@ pub enum EncodeError {
     RefCellAlreadyBorrowed {
         /// The inner borrow error
         inner: core::cell::BorrowError,
-        /// the type name of the RefCell being encoded that is currently borrowed.
+        /// the type name of the `RefCell` being encoded that is currently borrowed.
         type_name: &'static str,
     },
 
@@ -45,9 +45,9 @@ pub enum EncodeError {
     /// The encoder tried to encode a `SystemTime`, but it was before `SystemTime::UNIX_EPOCH`
     #[cfg(feature = "std")]
     InvalidSystemTime {
-        /// The error that was thrown by the SystemTime
+        /// The error that was thrown by the `SystemTime`
         inner: std::time::SystemTimeError,
-        /// The SystemTime that caused the error
+        /// The `SystemTime` that caused the error
         time: std::boxed::Box<std::time::SystemTime>,
     },
 
@@ -59,7 +59,7 @@ pub enum EncodeError {
 impl core::fmt::Display for EncodeError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         // TODO: Improve this?
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -171,7 +171,7 @@ pub enum DecodeError {
         nanos: u32,
     },
 
-    /// The decoder tried to decode a SystemTime and overflowed
+    /// The decoder tried to decode a `SystemTime` and overflowed
     InvalidSystemTime {
         /// The duration which could not have been added to
         /// [`UNIX_EPOCH`](std::time::SystemTime::UNIX_EPOCH)
@@ -214,17 +214,17 @@ pub enum DecodeError {
 impl core::fmt::Display for DecodeError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         // TODO: Improve this?
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
 impl DecodeError {
     /// If the current error is `InvalidIntegerType`, change the `expected` and
     /// `found` values from `Ux` to `Ix`. This is needed to have correct error
-    /// reporting in src/varint/decode_signed.rs since this calls
-    /// src/varint/decode_unsigned.rs and needs to correct the `expected` and
+    /// reporting in `src/varint/decode_signed.rs` since this calls
+    /// `src/varint/decode_unsigned.rs` and needs to correct the `expected` and
     /// `found` types.
-    pub(crate) fn change_integer_type_to_signed(self) -> DecodeError {
+    pub(crate) fn change_integer_type_to_signed(self) -> Self {
         match self {
             Self::InvalidIntegerType { expected, found } => Self::InvalidIntegerType {
                 expected: expected.into_signed(),
@@ -246,7 +246,7 @@ pub enum AllowedEnumVariants {
     Allowed(&'static [u32]),
 }
 
-/// Integer types. Used by [DecodeError]. These types have no purpose other than being shown in errors.
+/// Integer types. Used by [`DecodeError`]. These types have no purpose other than being shown in errors.
 #[non_exhaustive]
 #[derive(Debug, PartialEq, Eq)]
 #[allow(missing_docs)]

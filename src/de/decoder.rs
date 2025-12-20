@@ -9,7 +9,7 @@ use crate::{config::Config, error::DecodeError, utils::Sealed};
 /// This struct should rarely be used.
 /// In most cases, prefer any of the `decode` functions.
 ///
-/// The ByteOrder that is chosen will impact the endianness that
+/// The `ByteOrder` that is chosen will impact the endianness that
 /// is used to read integers out of the reader.
 ///
 /// ```
@@ -30,8 +30,8 @@ pub struct DecoderImpl<R, C: Config, Context> {
 
 impl<R: Reader, C: Config, Context> DecoderImpl<R, C, Context> {
     /// Construct a new Decoder
-    pub fn new(reader: R, config: C, context: Context) -> DecoderImpl<R, C, Context> {
-        DecoderImpl {
+    pub const fn new(reader: R, config: C, context: Context) -> Self {
+        Self {
             reader,
             config,
             bytes_read: 0,
@@ -130,7 +130,7 @@ impl<Context, D: Decoder + ?Sized> Decoder for WithContext<'_, D, Context> {
     }
 
     fn unclaim_bytes_read(&mut self, n: usize) {
-        self.decoder.unclaim_bytes_read(n)
+        self.decoder.unclaim_bytes_read(n);
     }
 }
 

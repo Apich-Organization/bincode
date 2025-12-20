@@ -1,14 +1,14 @@
 //! Support for serde integration. Enable this with the `serde` feature.
 //!
 //! To encode/decode type that implement serde's trait, you can use:
-//! - [borrow_decode_from_slice]
-//! - [decode_from_slice]
-//! - [encode_into_slice]
-//! - [encode_to_vec]
+//! - [`borrow_decode_from_slice`]
+//! - [`decode_from_slice`]
+//! - [`encode_into_slice`]
+//! - [`encode_to_vec`]
 //!
 //! For interop with bincode's [Decode]/[Encode], you can use:
-//! - [Compat]
-//! - [BorrowCompat]
+//! - [`Compat`]
+//! - [`BorrowCompat`]
 //!
 //! For interop with bincode's `derive` feature, you can use the `#[bincode(with_serde)]` attribute on each field that implements serde's traits.
 //!
@@ -176,9 +176,9 @@ impl serde::ser::Error for crate::error::EncodeError {
     }
 }
 
-/// Wrapper struct that implements [Decode] and [Encode] on any type that implements serde's [DeserializeOwned] and [Serialize] respectively.
+/// Wrapper struct that implements [`crate::Decode`] and [`crate::Encode`] on any type that implements serde's [`DeserializeOwned`] and [`Serialize`] respectively.
 ///
-/// This works for most types, but if you're dealing with borrowed data consider using [BorrowCompat] instead.
+/// This works for most types, but if you're dealing with borrowed data consider using [`BorrowCompat`] instead.
 ///
 /// [Decode]: ../de/trait.Decode.html
 /// [Encode]: ../enc/trait.Encode.html
@@ -240,12 +240,11 @@ where
     }
 }
 
-/// Wrapper struct that implements [BorrowDecode] and [Encode] on any type that implements serde's [Deserialize] and [Serialize] respectively. This is mostly used on `&[u8]` and `&str`, for other types consider using [Compat] instead.
+/// Wrapper struct that implements [`crate::de::BorrowDecode`] and [`crate::Encode`] on any type that implements serde's [`Deserialize`] and [`Serialize`] respectively.
 ///
-/// [BorrowDecode]: ../de/trait.BorrowDecode.html
-/// [Encode]: ../enc/trait.Encode.html
-/// [Deserialize]: https://docs.rs/serde/1/serde/de/trait.Deserialize.html
-/// [Serialize]: https://docs.rs/serde/1/serde/trait.Serialize.html
+/// This is mostly used on `&[u8]` and `&str`, for other types consider using [`Compat`] instead.
+/// [Deserialize]: <https://docs.rs/serde/1/serde/de/trait.Deserialize.html>
+/// [Serialize]: <https://docs.rs/serde/1/serde/trait.Serialize.html>
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct BorrowCompat<T>(pub T);
 

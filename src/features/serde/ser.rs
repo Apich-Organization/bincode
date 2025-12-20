@@ -7,11 +7,14 @@ use crate::{
 };
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
-use serde::ser::*;
+use serde::ser::{
+    Serialize, Serializer, SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant,
+    SerializeTuple, SerializeTupleStruct, SerializeTupleVariant,
+};
 
-/// Encode the given value into a `Vec<u8>` with the given `Config`. See the [config] module for more information.
+/// # Errors
 ///
-/// [config]: ../config/index.html
+/// Returns an `EncodeError` if the encoding fails.
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn encode_to_vec<E, C>(val: E, config: C) -> Result<Vec<u8>, EncodeError>
@@ -25,11 +28,9 @@ where
     Ok(encoder.into_writer().collect())
 }
 
-/// Encode the given value into the given slice. Returns the amount of bytes that have been written.
+/// # Errors
 ///
-/// See the [config] module for more information on configurations.
-///
-/// [config]: ../config/index.html
+/// Returns an `EncodeError` if the encoding fails.
 pub fn encode_into_slice<E, C>(val: E, dst: &mut [u8], config: C) -> Result<usize, EncodeError>
 where
     E: Serialize,
@@ -42,11 +43,9 @@ where
     Ok(encoder.into_writer().bytes_written())
 }
 
-/// Encode the given value into a custom [Writer].
+/// # Errors
 ///
-/// See the [config] module for more information on configurations.
-///
-/// [config]: ../config/index.html
+/// Returns an `EncodeError` if the encoding fails.
 pub fn encode_into_writer<E: Serialize, W: Writer, C: Config>(
     val: E,
     writer: W,
@@ -58,10 +57,9 @@ pub fn encode_into_writer<E: Serialize, W: Writer, C: Config>(
     Ok(())
 }
 
-/// Encode the given value into any type that implements `std::io::Write`, e.g. `std::fs::File`, with the given `Config`.
-/// See the [config] module for more information.
+/// # Errors
 ///
-/// [config]: ../config/index.html
+/// Returns an `EncodeError` if the encoding fails.
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 #[cfg(feature = "std")]
 pub fn encode_into_std_write<E: Serialize, C: Config, W: std::io::Write>(
@@ -221,7 +219,7 @@ where
     fn serialize_seq(mut self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
         let len = len.ok_or_else(|| SerdeEncodeError::SequenceMustHaveLength.into())?;
         len.encode(&mut self.enc)?;
-        Ok(Compound { enc: self.enc })
+        Ok(self)
     }
 
     fn serialize_tuple(self, _: usize) -> Result<Self::SerializeTuple, Self::Error> {
@@ -233,7 +231,7 @@ where
         _name: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleStruct, Self::Error> {
-        Ok(Compound { enc: self.enc })
+        Ok(self)
     }
 
     fn serialize_tuple_variant(
@@ -244,13 +242,13 @@ where
         _len: usize,
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
         variant_index.encode(&mut self.enc)?;
-        Ok(Compound { enc: self.enc })
+        Ok(self)
     }
 
     fn serialize_map(mut self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
         let len = len.ok_or_else(|| SerdeEncodeError::SequenceMustHaveLength.into())?;
         len.encode(&mut self.enc)?;
-        Ok(Compound { enc: self.enc })
+        Ok(self)
     }
 
     fn serialize_struct(
@@ -258,7 +256,7 @@ where
         _name: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStruct, Self::Error> {
-        Ok(Compound { enc: self.enc })
+        Ok(self)
     }
 
     fn serialize_struct_variant(
@@ -269,7 +267,7 @@ where
         _len: usize,
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
         variant_index.encode(&mut self.enc)?;
-        Ok(Compound { enc: self.enc })
+        Ok(self)
     }
 
     #[cfg(not(feature = "alloc"))]
