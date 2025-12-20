@@ -1,4 +1,5 @@
 #![cfg(all(feature = "std", feature = "derive"))]
+#![allow(dead_code)]
 
 extern crate std;
 

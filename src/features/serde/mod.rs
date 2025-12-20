@@ -1,21 +1,21 @@
 //! Support for serde integration. Enable this with the `serde` feature.
 //!
 //! To encode/decode type that implement serde's trait, you can use:
-//! - [`borrow_decode_from_slice`]
-//! - [`decode_from_slice`]
-//! - [`encode_into_slice`]
-//! - [`encode_to_vec`]
+//! - \[`borrow_decode_from_slice`\]
+//! - \[`decode_from_slice`\]
+//! - \[`encode_into_slice`\]
+//! - \[`encode_to_vec`\]
 //!
 //! For interop with bincode's [Decode]/[Encode], you can use:
-//! - [`Compat`]
-//! - [`BorrowCompat`]
+//! - \[`Compat`\]
+//! - \[`BorrowCompat`\]
 //!
 //! For interop with bincode's `derive` feature, you can use the `#[bincode(with_serde)]` attribute on each field that implements serde's traits.
 //!
 //! ```
 //! # #[cfg(feature = "derive")]
 //! # mod foo {
-//! # use bincode::{Decode, Encode};
+//! # use bincode_next::{Decode, Encode};
 //! # use serde_derive::{Deserialize, Serialize};
 //! #[derive(Serialize, Deserialize)]
 //! pub struct SerdeType {
@@ -58,13 +58,13 @@
 //! - The issues documented above with attributes.
 //! - Serde has chosen to not have a MSRV ([source](https://github.com/serde-rs/serde/pull/2257)). We think MSRV is important, bincode 1 still compiles with rust 1.18.
 //! - Before serde we had rustc-serializer. Serde has more than replaced rustc-serializer, but we can imagine a future where serde is replaced by something else.
-//! - We believe that less dependencies is better, and that you should be able to choose your own dependencies. If you disable all features, bincode 2 only has 1 dependency. ([`unty`], a micro crate we manage ourselves)
+//! - We believe that less dependencies is better, and that you should be able to choose your own dependencies. If you disable all features, bincode 2 only has 1 dependency. (\[`unty`\], a micro crate we manage ourselves)
 //!
 //! **note:** just because we're making serde an optional dependency, it does not mean we're dropping support for serde. Serde will still be fully supported, we're just giving you the option to not use it.
 //!
 //! [Decode]: ../de/trait.Decode.html
 //! [Encode]: ../enc/trait.Encode.html
-//! [`unty`]: https://crates.io/crates/unty
+//! \[`unty`\]: <https://crates.io/crates/unty>
 
 mod de_borrowed;
 mod de_owned;
@@ -176,9 +176,9 @@ impl serde::ser::Error for crate::error::EncodeError {
     }
 }
 
-/// Wrapper struct that implements [`crate::Decode`] and [`crate::Encode`] on any type that implements serde's [`DeserializeOwned`] and [`Serialize`] respectively.
+/// Wrapper struct that implements \[`crate::Decode`\] and \[`crate::Encode`\] on any type that implements serde's \[`DeserializeOwned`\] and \[`Serialize`\] respectively.
 ///
-/// This works for most types, but if you're dealing with borrowed data consider using [`BorrowCompat`] instead.
+/// This works for most types, but if you're dealing with borrowed data consider using \[`BorrowCompat`\] instead.
 ///
 /// [Decode]: ../de/trait.Decode.html
 /// [Encode]: ../enc/trait.Encode.html
@@ -240,11 +240,11 @@ where
     }
 }
 
-/// Wrapper struct that implements [`crate::de::BorrowDecode`] and [`crate::Encode`] on any type that implements serde's [`Deserialize`] and [`Serialize`] respectively.
+/// Wrapper struct that implements \[`crate::de::BorrowDecode`\] and \[`crate::Encode`\] on any type that implements serde's \[`Deserialize`\] and \[`Serialize`\] respectively.
 ///
-/// This is mostly used on `&[u8]` and `&str`, for other types consider using [`Compat`] instead.
-/// [Deserialize]: <https://docs.rs/serde/1/serde/de/trait.Deserialize.html>
-/// [Serialize]: <https://docs.rs/serde/1/serde/trait.Serialize.html>
+/// This is mostly used on `&[u8]` and `&str`, for other types consider using \[`Compat`\] instead.
+/// \[`Deserialize`\]: <https://docs.rs/serde/1/serde/de/trait.Deserialize.html>
+/// \[`Serialize`\]: <https://docs.rs/serde/1/serde/trait.Serialize.html>
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct BorrowCompat<T>(pub T);
 

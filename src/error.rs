@@ -174,7 +174,7 @@ pub enum DecodeError {
     /// The decoder tried to decode a `SystemTime` and overflowed
     InvalidSystemTime {
         /// The duration which could not have been added to
-        /// [`UNIX_EPOCH`](std::time::SystemTime::UNIX_EPOCH)
+        /// \[`UNIX_EPOCH`\](`std::time::SystemTime::UNIX_EPOCH`)
         duration: core::time::Duration,
     },
 
@@ -246,7 +246,7 @@ pub enum AllowedEnumVariants {
     Allowed(&'static [u32]),
 }
 
-/// Integer types. Used by [`DecodeError`]. These types have no purpose other than being shown in errors.
+/// Integer types. Used by \[`DecodeError`\]. These types have no purpose other than being shown in errors.
 #[non_exhaustive]
 #[derive(Debug, PartialEq, Eq)]
 #[allow(missing_docs)]

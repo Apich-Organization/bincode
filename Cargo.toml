@@ -3,7 +3,7 @@ members = ["derive", "compatibility"]
 
 [package]
 name = "bincode-next"
-version = "2.0.2" # remember to update html_root_url and bincode_derive
+version = "2.0.3" # remember to update html_root_url and bincode_derive
 authors = [
     "Xinyu Yang <pana.yang@hotmail.com>",
     "Ty Overby <ty@pre-alpha.com>",

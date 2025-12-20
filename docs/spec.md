@@ -15,8 +15,8 @@ By default, this serialization format uses little-endian byte order for basic nu
 
 Endianness can be configured with the following methods, allowing for big-endian serialization when required:
 
-- [`with_big_endian`](https://docs.rs/bincode/2/bincode/config/struct.Configuration.html#method.with_big_endian)
-- [`with_little_endian`](https://docs.rs/bincode/2/bincode/config/struct.Configuration.html#method.with_little_endian)
+- \[`with_big_endian`\](<https://docs.rs/bincode/2/bincode/config/struct.Configuration.html#method.with_big_endian>)
+- \[`with_little_endian`\](<https://docs.rs/bincode/2/bincode/config/struct.Configuration.html#method.with_little_endian>)
 
 ### Byte Order Considerations
 
@@ -31,7 +31,7 @@ Endianness can be configured with the following methods, allowing for big-endian
 - Encoded as a single byte
 - `false` is represented by `0`
 - `true` is represented by `1`
-- During deserialization, values other than 0 and 1 will result in an error [`DecodeError::InvalidBooleanValue`](https://docs.rs/bincode/2/bincode/error/enum.DecodeError.html#variant.InvalidBooleanValue)
+- During deserialization, values other than 0 and 1 will result in an error \[`DecodeError::InvalidBooleanValue`\](<https://docs.rs/bincode/2/bincode/error/enum.DecodeError.html#variant.InvalidBooleanValue>)
 
 ### Numeric Types
 
@@ -62,14 +62,16 @@ Endianness can be configured with the following methods, allowing for big-endian
 - Surrogate code points (0xD800 to 0xDFFF) are not valid
 - Invalid Unicode characters can be acquired via unsafe code, this is handled as:
   - during serialization: data is written as-is
-  - during deserialization: an error is raised [`DecodeError::InvalidCharEncoding`](https://docs.rs/bincode/2/bincode/error/enum.DecodeError.html#variant.InvalidCharEncoding)
+  - during deserialization: an error is raised \[`DecodeError::InvalidCharEncoding`\](<https://docs.rs/bincode/2/bincode/error/enum.DecodeError.html#variant.InvalidCharEncoding>)
 - No additional metadata or encoding scheme beyond the raw code point value
 
 All tuples have no additional bytes, and are encoded in their specified order, e.g.
 
 ```rust
+use bincode_next::config;
+
 let tuple = (u32::min_value(), i32::max_value()); // 8 bytes
-let encoded = bincode::encode_to_vec(tuple, bincode::config::legacy()).unwrap();
+let encoded = bincode_next::encode_to_vec(tuple, config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     0,   0,   0,   0,  // 4 bytes for first type:  u32
     255, 255, 255, 127 // 4 bytes for second type: i32
@@ -92,7 +94,7 @@ Encoding an unsigned integer v (of any type excepting u8/i8) works as follows:
 
 `usize` is being encoded/decoded as a `u64` and `isize` is being encoded/decoded as a `i64`.
 
-See the documentation of [VarintEncoding](https://docs.rs/bincode/2/bincode/config/struct.Configuration.html#method.with_variable_int_encoding) for more information.
+See the documentation of [VarintEncoding](<https://docs.rs/bincode/2/bincode/config/struct.Configuration.html#method.with_variable_int_encoding>) for more information.
 
 ### FixintEncoding
 
@@ -100,7 +102,7 @@ See the documentation of [VarintEncoding](https://docs.rs/bincode/2/bincode/conf
 - Enum discriminants are encoded as u32
 - Lengths and usize are encoded as u64
 
-See the documentation of [FixintEncoding](https://docs.rs/bincode/2/bincode/config/struct.Configuration.html#method.with_fixed_int_encoding) for more information.
+See the documentation of [FixintEncoding](<https://docs.rs/bincode/2/bincode/config/struct.Configuration.html#method.with_fixed_int_encoding>) for more information.
 
 ## Enums
 
@@ -109,7 +111,9 @@ Enums are encoded with their variant first, followed by optionally the variant f
 Both named and unnamed fields are serialized with their values only, and therefore encode to the same value.
 
 ```rust
-#[derive(bincode::Encode)]
+use bincode_next::config;
+
+#[derive(bincode_next::Encode)]
 pub enum SomeEnum {
     A,
     B(u32),
@@ -117,21 +121,21 @@ pub enum SomeEnum {
 }
 
 // SomeEnum::A
-let encoded = bincode::encode_to_vec(SomeEnum::A, bincode::config::legacy()).unwrap();
+let encoded = bincode_next::encode_to_vec(SomeEnum::A, config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     0, 0, 0, 0, // first variant, A
     // no extra bytes because A has no fields
 ]);
 
 // SomeEnum::B(0)
-let encoded = bincode::encode_to_vec(SomeEnum::B(0), bincode::config::legacy()).unwrap();
+let encoded = bincode_next::encode_to_vec(SomeEnum::B(0), config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     1, 0, 0, 0, // second variant, B
     0, 0, 0, 0  // B has 1 unnamed field, which is an u32, so 4 bytes
 ]);
 
 // SomeEnum::C { value: 0u32 }
-let encoded = bincode::encode_to_vec(SomeEnum::C { value: 0u32 }, bincode::config::legacy()).unwrap();
+let encoded = bincode_next::encode_to_vec(SomeEnum::C { value: 0u32 }, config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     2, 0, 0, 0, // third variant, C
     0, 0, 0, 0  // C has 1 named field which is a u32, so 4 bytes
@@ -143,14 +147,16 @@ assert_eq!(encoded.as_slice(), &[
 `Option<T>` is always serialized using a single byte for the discriminant, even in `Fixint` encoding (which normally uses a `u32` for discriminant).
 
 ```rust
+use bincode_next::config;
+
 let data: Option<u32> = Some(123);
-let encoded = bincode::encode_to_vec(data, bincode::config::legacy()).unwrap();
+let encoded = bincode_next::encode_to_vec(data, config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     1, 123, 0, 0, 0  // the Some(..) tag is the leading 1
 ]);
 
 let data: Option<u32> = None;
-let encoded = bincode::encode_to_vec(data, bincode::config::legacy()).unwrap();
+let encoded = bincode_next::encode_to_vec(data, config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     0 // the None tag is simply 0
 ]);
@@ -180,8 +186,10 @@ Collections are encoded with their length value first, followed by each entry of
 - Each item serialized sequentially
 
 ```rust
+use bincode_next::config;
+
 let list = vec![0u8, 1u8, 2u8];
-let encoded = bincode::encode_to_vec(list, bincode::config::legacy()).unwrap();
+let encoded = bincode_next::encode_to_vec(list, config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     3, 0, 0, 0, 0, 0, 0, 0, // length of 3u64
     0, // entry 0
@@ -224,12 +232,14 @@ assert_eq!(encoded.as_slice(), &[
 - During serialization, the string is encoded as a sequence of the given bytes.
   - Rust strings are UTF-8 encoded by default, but this is not enforced by bincode
 - No normalization or transformation of text
-- If an invalid UTF-8 sequence is encountered during decoding, an [`DecodeError::Utf8`](https://docs.rs/bincode/2/bincode/error/enum.DecodeError.html#variant.Utf8) error is raised
+- If an invalid UTF-8 sequence is encountered during decoding, an \[`DecodeError::Utf8`\](<https://docs.rs/bincode/2/bincode/error/enum.DecodeError.html#variant.Utf8>) error is raised
 
 ```rust
+use bincode_next::config;
+
 let str = "Hello 🌍"; // Mixed ASCII and Unicode
 
-let encoded = bincode::encode_to_vec(str, bincode::config::legacy()).unwrap();
+let encoded = bincode_next::encode_to_vec(str, config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     10, 0, 0, 0, 0, 0, 0, 0, // length of the string, 10 bytes
     b'H', b'e', b'l', b'l', b'o', b' ', 0xF0, 0x9F, 0x8C, 0x8D // UTF-8 encoded string
@@ -248,8 +258,10 @@ Array length is never encoded.
 Note that `&[T]` is encoded as a [Collection](#collections).
 
 ```rust
+use bincode_next::config;
+
 let arr: [u8; 5] = [10, 20, 30, 40, 50];
-let encoded = bincode::encode_to_vec(arr, bincode::config::legacy()).unwrap();
+let encoded = bincode_next::encode_to_vec(arr, config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     10, 20, 30, 40, 50, // the bytes
 ]);
@@ -259,7 +271,9 @@ assert_eq!(encoded.as_slice(), &[
 This applies to any type `T` that implements `Encode`/`Decode`
 
 ```rust
-#[derive(bincode::Encode)]
+use bincode_next::config;
+
+#[derive(bincode_next::Encode)]
 struct Foo {
     first: u8,
     second: u8
@@ -276,7 +290,7 @@ let arr: [Foo; 2] = [
     },
 ];
 
-let encoded = bincode::encode_to_vec(&arr, bincode::config::legacy()).unwrap();
+let encoded = bincode_next::encode_to_vec(&arr, config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     10, 20, // First Foo
     30, 40, // Second Foo

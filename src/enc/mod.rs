@@ -34,13 +34,13 @@ pub use self::encoder::EncoderImpl;
 /// #     pub x: f32,
 /// #     pub y: f32,
 /// # }
-/// impl bincode::Encode for Entity {
-///     fn encode<E: bincode::enc::Encoder>(
+/// impl bincode_next::Encode for Entity {
+///     fn encode<E: bincode_next::enc::Encoder>(
 ///         &self,
 ///         encoder: &mut E,
-///     ) -> core::result::Result<(), bincode::error::EncodeError> {
-///         bincode::Encode::encode(&self.x, encoder)?;
-///         bincode::Encode::encode(&self.y, encoder)?;
+///     ) -> core::result::Result<(), bincode_next::error::EncodeError> {
+///         bincode_next::Encode::encode(&self.x, encoder)?;
+///         bincode_next::Encode::encode(&self.y, encoder)?;
 ///         Ok(())
 ///     }
 /// }

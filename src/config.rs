@@ -5,7 +5,7 @@
 //! To use a config, first create a type of [Configuration]. This type will implement trait [Config] for use with bincode.
 //!
 //! ```
-//! let config = bincode::config::standard()
+//! let config = bincode_next::config::standard()
 //!     // pick one of:
 //!     .with_big_endian()
 //!     .with_little_endian()
@@ -24,8 +24,8 @@ use core::marker::PhantomData;
 ///
 /// The following methods are mutually exclusive and will overwrite each other. The last call to one of these methods determines the behavior of the configuration:
 ///
-/// - [`with_little_endian`] and [`with_big_endian`]
-/// - [`with_fixed_int_encoding`] and [`with_variable_int_encoding`]
+/// - \[`with_little_endian`\] and \[`with_big_endian`\]
+/// - \[`with_fixed_int_encoding`\] and \[`with_variable_int_encoding`\]
 ///
 ///
 /// [with_little_endian]: #method.with_little_endian

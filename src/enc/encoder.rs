@@ -10,9 +10,9 @@ use crate::{config::Config, utils::Sealed};
 /// is used to write integers to the writer.
 ///
 /// ```
-/// # use bincode::enc::{write::SliceWriter, EncoderImpl, Encode};
+/// # use bincode_next::enc::{write::SliceWriter, EncoderImpl, Encode};
 /// let slice: &mut [u8] = &mut [0, 0, 0, 0];
-/// let config = bincode::config::legacy().with_big_endian();
+/// let config = bincode_next::config::legacy().with_big_endian();
 ///
 /// let mut encoder = EncoderImpl::new(SliceWriter::new(slice), config);
 /// // this u32 can be any Encodable
