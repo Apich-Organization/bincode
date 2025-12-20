@@ -1,7 +1,6 @@
 #![cfg(all(feature = "serde", feature = "derive", feature = "std"))]
 extern crate bincode_next as bincode;
 
-
 extern crate std;
 
 type NodeId = u64;

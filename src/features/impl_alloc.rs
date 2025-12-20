@@ -12,7 +12,7 @@ use crate::{
 use alloc::{
     borrow::{Cow, ToOwned},
     boxed::Box,
-    collections::{BinaryHeap, BTreeMap, BTreeSet, VecDeque},
+    collections::{BTreeMap, BTreeSet, BinaryHeap, VecDeque},
     rc::Rc,
     string::String,
     vec::Vec,
@@ -326,7 +326,8 @@ where
         crate::enc::encode_slice_len(encoder, self.len())?;
         if unty::type_equal::<T, u8>() {
             // Safety: T == u8
-            let slice: &[u8] = unsafe { &*(core::ptr::from_ref::<[T]>(self.as_slice()) as *const [u8]) };
+            let slice: &[u8] =
+                unsafe { &*(core::ptr::from_ref::<[T]>(self.as_slice()) as *const [u8]) };
             encoder.writer().write(slice)?;
         } else {
             for item in self {

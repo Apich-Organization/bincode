@@ -113,7 +113,6 @@ fn test_encode_i16() {
         ),
     ];
 
-
     let mut buffer = [0u8; 20];
     for &(value, expected_le, expected_be) in cases {
         std::dbg!(value);
@@ -161,7 +160,6 @@ fn test_encode_i32() {
             &[super::U32_BYTE, 255, 255, 255, 254],
         ),
     ];
-
 
     let mut buffer = [0u8; 20];
     for &(value, expected_le, expected_be) in cases {
@@ -215,7 +213,6 @@ fn test_encode_i64() {
             &[super::U64_BYTE, 255, 255, 255, 255, 255, 255, 255, 254],
         ),
     ];
-
 
     let mut buffer = [0u8; 20];
     for &(value, expected_le, expected_be) in cases {
@@ -299,7 +296,6 @@ fn test_encode_i128() {
             ],
         ),
     ];
-
 
     let mut buffer = [0u8; 20];
     for &(value, expected_le, expected_be) in cases {

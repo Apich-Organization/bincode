@@ -31,11 +31,7 @@ impl<'de, DE: BorrowDecoder<'de>> BorrowedSerdeDecoder<'de, DE> {
 
 impl<'de, C: Config, Context> BorrowedSerdeDecoder<'de, DecoderImpl<SliceReader<'de>, C, Context>> {
     /// Creates the decoder from a borrowed slice.
-    pub const fn from_slice(
-        slice: &'de [u8],
-        config: C,
-        context: Context,
-    ) -> Self
+    pub const fn from_slice(slice: &'de [u8], config: C, context: Context) -> Self
     where
         C: Config,
     {

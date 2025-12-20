@@ -47,7 +47,6 @@ where
         return unsafe { Some(Ok(mem::zeroed())) };
     }
 
-
     let mut array = uninit_array::<T, N>();
     let mut guard = Guard {
         array_mut: &mut array,

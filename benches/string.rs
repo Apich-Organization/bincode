@@ -3,8 +3,8 @@
 extern crate bincode_next as bincode;
 use bincode::{Decode, Encode};
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 use serde::{Deserialize, Serialize};
+use std::hint::black_box;
 
 #[derive(Serialize, Deserialize, Default, Encode, Decode)]
 pub struct MyStruct {

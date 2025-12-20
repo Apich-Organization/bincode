@@ -17,6 +17,12 @@ use std::{
     time::SystemTime,
 };
 
+/// Decode type `D` from the given reader with the given `Config`. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
+///
+/// See the [config] module for more information about config options.
+///
+/// [config]: config/index.html
+///
 /// # Errors
 ///
 /// Returns a `DecodeError` if the reader fails or the data is invalid.
@@ -28,6 +34,12 @@ pub fn decode_from_std_read<D: Decode<()>, C: Config, R: std::io::Read>(
     decode_from_std_read_with_context(src, config, ())
 }
 
+/// Decode type `D` from the given reader with the given `Config` and `Context`. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
+///
+/// See the [config] module for more information about config options.
+///
+/// [config]: config/index.html
+///
 /// # Errors
 ///
 /// Returns a `DecodeError` if the reader fails or the data is invalid.
@@ -96,6 +108,12 @@ where
     }
 }
 
+/// Encode the given value into any type that implements `std::io::Write`, e.g. `std::fs::File`, with the given `Config`.
+///
+/// See the [config] module for more information.
+/// Returns the amount of bytes written.
+///
+/// [config]: config/index.html
 ///
 /// # Errors
 ///
@@ -238,12 +256,12 @@ where
 
 impl Encode for SystemTime {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        let duration = self.duration_since(Self::UNIX_EPOCH).map_err(|e| {
-            EncodeError::InvalidSystemTime {
-                inner: e,
-                time: std::boxed::Box::new(*self),
-            }
-        })?;
+        let duration =
+            self.duration_since(Self::UNIX_EPOCH)
+                .map_err(|e| EncodeError::InvalidSystemTime {
+                    inner: e,
+                    time: std::boxed::Box::new(*self),
+                })?;
         duration.encode(encoder)
     }
 }

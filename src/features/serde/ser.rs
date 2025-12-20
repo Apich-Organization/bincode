@@ -8,10 +8,16 @@ use crate::{
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use serde::ser::{
-    Serialize, Serializer, SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant,
-    SerializeTuple, SerializeTupleStruct, SerializeTupleVariant,
+    Serialize, SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple,
+    SerializeTupleStruct, SerializeTupleVariant, Serializer,
 };
 
+/// Encode the given value into the given slice. Returns the amount of bytes that have been written.
+///
+/// See the [config] module for more information on configurations.
+///
+/// [config]: ../config/index.html
+///
 /// # Errors
 ///
 /// Returns an `EncodeError` if the encoding fails.
@@ -28,6 +34,12 @@ where
     Ok(encoder.into_writer().collect())
 }
 
+/// Encode the given value into a custom [Writer].
+///
+/// See the [config] module for more information on configurations.
+///
+/// [config]: ../config/index.html
+///
 /// # Errors
 ///
 /// Returns an `EncodeError` if the encoding fails.

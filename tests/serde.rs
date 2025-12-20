@@ -1,7 +1,6 @@
 #![cfg(all(feature = "serde", feature = "alloc", feature = "derive"))]
 extern crate bincode_next as bincode;
 
-
 extern crate alloc;
 
 use serde_derive::{Deserialize, Serialize};
