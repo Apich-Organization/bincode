@@ -8,4 +8,4 @@
 
 ## Reporting a Vulnerability
 
-Please report via Github issues.
+Please do not report a vulnerability via Github issues. Any vulnerability shall be reported by emailing to Pana.Yang@hotmail.com or via our official website security reporting section (under construction).

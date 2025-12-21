@@ -22,7 +22,7 @@ readme = "./README.md"
 categories = ["encoding", "network-programming"]
 keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
 
-license = "MIT"
+license = "MIT or Apache-2.0"
 description = "A binary serialization / deserialization strategy for transforming structs into bytes and vice versa!"
 
 edition = "2021"
@@ -36,7 +36,7 @@ derive = ["bincode_derive-next"]
 [dependencies]
 bincode_derive-next = { path = "derive", version = "2.0.3", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
-unty = "0.0.4"
+unty = "0.0.5"
 
 # Used for tests
 [dev-dependencies]
@@ -45,7 +45,7 @@ serde_derive = "1.0"
 serde_json = { version = "1.0", default-features = false }
 tempfile = "3.2"
 criterion = "0.6"
-rand = "0.8"
+rand = "0.9"
 uuid = { version = "1.1", features = ["serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 glam = { version = "0.25", features = ["serde"] }

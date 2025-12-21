@@ -25,4 +25,4 @@ proc-macro = true
 empty-line-after-doc-comments = "allow"
 
 [dependencies]
-virtue = "0.0.18"
+virtue = "0.0.19"
