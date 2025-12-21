@@ -22,7 +22,7 @@ readme = "./README.md"
 categories = ["encoding", "network-programming"]
 keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
 
-license = "MIT"
+license = "MIT or Apache-2.0"
 description = "A binary serialization / deserialization strategy for transforming structs into bytes and vice versa!"
 
 edition = "2021"
