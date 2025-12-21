@@ -3,7 +3,7 @@ members = ["derive", "compatibility"]
 
 [package]
 name = "bincode-next"
-version = "2.0.3" # remember to update html_root_url and bincode_derive
+version = "2.0.4" # remember to update html_root_url and bincode_derive
 authors = [
     "Xinyu Yang <pana.yang@hotmail.com>",
     "Ty Overby <ty@pre-alpha.com>",
@@ -36,7 +36,7 @@ derive = ["bincode_derive-next"]
 [dependencies]
 bincode_derive-next = { path = "derive", version = "2.0.3", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
-unty = "0.0.5"
+unty = { version = "0.0.6", package = "unty-next" }
 
 # Used for tests
 [dev-dependencies]
