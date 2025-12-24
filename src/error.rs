@@ -139,6 +139,22 @@ pub enum DecodeError {
     /// The decoder tried to decode a `bool` and failed. The given value is what is actually read.
     InvalidBooleanValue(u8),
 
+    /// The decoder found an invalid magic byte.
+    InvalidMagicByte {
+        /// The magic byte that was found
+        found: u8,
+        /// The magic byte that was expected
+        expected: u8,
+    },
+
+    /// The decoder found an invalid version.
+    InvalidVersion {
+        /// The version that was found
+        found: u8,
+        /// The version that was expected
+        expected: u8,
+    },
+
     /// The decoder tried to decode an array of length `required`, but the binary data contained an array of length `found`.
     ArrayLengthMismatch {
         /// The length of the array required by the rust type.

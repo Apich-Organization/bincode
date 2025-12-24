@@ -33,7 +33,7 @@ use core::marker::PhantomData;
 /// [with_fixed_int_encoding]: #method.with_fixed_int_encoding
 /// [with_variable_int_encoding]: #method.with_variable_int_encoding
 #[derive(Copy, Clone, Debug)]
-pub struct Configuration<E = LittleEndian, I = Varint, L = NoLimit> {
+pub struct Configuration<E = LittleEndian, I = Leb128, L = NoLimit> {
     _e: PhantomData<E>,
     _i: PhantomData<I>,
     _l: PhantomData<L>,
@@ -153,6 +153,12 @@ impl<E, I, L> Configuration<E, I, L> {
         generate()
     }
 
+    /// Makes bincode encode all integer types with LEB128 encoding.
+    #[must_use]
+    pub const fn with_leb128_int_encoding(self) -> Configuration<E, Leb128, L> {
+        generate()
+    }
+
     /// Fixed-size integer encoding.
     ///
     /// * Fixed size integers are encoded directly
@@ -239,6 +245,14 @@ impl InternalIntEncodingConfig for Varint {
     const INT_ENCODING: IntEncoding = IntEncoding::Variable;
 }
 
+/// Use LEB128 integer encoding.
+#[derive(Copy, Clone, Debug)]
+pub struct Leb128;
+
+impl InternalIntEncodingConfig for Leb128 {
+    const INT_ENCODING: IntEncoding = IntEncoding::Leb128;
+}
+
 /// Sets an unlimited byte limit.
 #[derive(Copy, Clone, Debug)]
 pub struct NoLimit;
@@ -271,6 +285,8 @@ pub enum IntEncoding {
     Fixed,
     /// Variable Integer Encoding, see `Varint`.
     Variable,
+    /// LEB128 Integer Encoding, see `Leb128`.
+    Leb128,
 }
 
 mod internal {

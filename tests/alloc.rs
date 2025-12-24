@@ -45,16 +45,16 @@ bincode::impl_borrow_decode!(Foo);
 #[test]
 fn test_vec() {
     let vec = bincode::encode_to_vec(Foo { a: 5, b: 10 }, bincode::config::standard()).unwrap();
-    assert_eq!(vec, &[5, 10]);
+    assert_eq!(vec, &[0xBC, 1, 5, 10]);
 
     let (foo, len): (Foo, usize) =
         bincode::decode_from_slice(&vec, bincode::config::standard()).unwrap();
     assert_eq!(foo.a, 5);
     assert_eq!(foo.b, 10);
-    assert_eq!(len, 2);
+    assert_eq!(len, 4);
 
     let vec: Vec<u8> = bincode::decode_from_slice(
-        &[4, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4],
+        &[0xBC, 1, 4, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4],
         bincode::config::legacy(),
     )
     .unwrap()
@@ -62,7 +62,7 @@ fn test_vec() {
     assert_eq!(vec, &[1, 2, 3, 4]);
 
     let vec: Vec<Cow<'static, u8>> = bincode::decode_from_slice(
-        &[4, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4],
+        &[0xBC, 1, 4, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4],
         bincode::config::legacy(),
     )
     .unwrap()

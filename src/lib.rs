@@ -133,6 +133,11 @@ mod features;
 pub(crate) mod utils;
 pub(crate) mod varint;
 
+/// The Magic Byte that bincode-next prepends to every serialized payload.
+pub const MAGIC_BYTE: u8 = 0xBC;
+/// The current version of the bincode-next wire format.
+pub const VERSION: u8 = 1;
+
 use de::{read::Reader, Decoder};
 use enc::write::Writer;
 
@@ -169,7 +174,8 @@ pub fn encode_into_slice<E: enc::Encode, C: Config>(
     dst: &mut [u8],
     config: C,
 ) -> Result<usize, error::EncodeError> {
-    let writer = enc::write::SliceWriter::new(dst);
+    let mut writer = enc::write::SliceWriter::new(dst);
+    writer.write(&[MAGIC_BYTE, VERSION])?;
     let mut encoder = enc::EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(encoder.into_writer().bytes_written())
@@ -186,9 +192,10 @@ pub fn encode_into_slice<E: enc::Encode, C: Config>(
 /// [config]: config/index.html
 pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
     val: E,
-    writer: W,
+    mut writer: W,
     config: C,
 ) -> Result<(), error::EncodeError> {
+    writer.write(&[MAGIC_BYTE, VERSION])?;
     let mut encoder = enc::EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(())
@@ -228,7 +235,21 @@ pub fn decode_from_slice_with_context<Context, D: de::Decode<Context>, C: Config
     config: C,
     context: Context,
 ) -> Result<(D, usize), error::DecodeError> {
-    let reader = de::read::SliceReader::new(src);
+    let mut reader = de::read::SliceReader::new(src);
+    let mut header = [0u8; 2];
+    reader.read(&mut header)?;
+    if header[0] != MAGIC_BYTE {
+        return Err(error::DecodeError::InvalidMagicByte {
+            found: header[0],
+            expected: MAGIC_BYTE,
+        });
+    }
+    if header[1] != VERSION {
+        return Err(error::DecodeError::InvalidVersion {
+            found: header[1],
+            expected: VERSION,
+        });
+    }
     let mut decoder = de::DecoderImpl::<_, C, Context>::new(reader, config, context);
     let result = D::decode(&mut decoder)?;
     let bytes_read = src.len() - decoder.reader().slice.len();
@@ -270,7 +291,21 @@ pub fn borrow_decode_from_slice_with_context<
     config: C,
     context: Context,
 ) -> Result<(D, usize), error::DecodeError> {
-    let reader = de::read::SliceReader::new(src);
+    let mut reader = de::read::SliceReader::new(src);
+    let mut header = [0u8; 2];
+    reader.read(&mut header)?;
+    if header[0] != MAGIC_BYTE {
+        return Err(error::DecodeError::InvalidMagicByte {
+            found: header[0],
+            expected: MAGIC_BYTE,
+        });
+    }
+    if header[1] != VERSION {
+        return Err(error::DecodeError::InvalidVersion {
+            found: header[1],
+            expected: VERSION,
+        });
+    }
     let mut decoder = de::DecoderImpl::<_, C, Context>::new(reader, config, context);
     let result = D::borrow_decode(&mut decoder)?;
     let bytes_read = src.len() - decoder.reader().slice.len();
@@ -287,9 +322,23 @@ pub fn borrow_decode_from_slice_with_context<
 ///
 /// [config]: config/index.html
 pub fn decode_from_reader<D: de::Decode<()>, R: Reader, C: Config>(
-    reader: R,
+    mut reader: R,
     config: C,
 ) -> Result<D, error::DecodeError> {
+    let mut header = [0u8; 2];
+    reader.read(&mut header)?;
+    if header[0] != MAGIC_BYTE {
+        return Err(error::DecodeError::InvalidMagicByte {
+            found: header[0],
+            expected: MAGIC_BYTE,
+        });
+    }
+    if header[1] != VERSION {
+        return Err(error::DecodeError::InvalidVersion {
+            found: header[1],
+            expected: VERSION,
+        });
+    }
     let mut decoder = de::DecoderImpl::<_, C, ()>::new(reader, config, ());
     D::decode(&mut decoder)
 }

@@ -40,5 +40,5 @@ fn test() {
         bincode::decode_from_slice(&vec, bincode::config::standard()).unwrap();
 
     assert_eq!(t, decoded);
-    assert_eq!(len, 12);
+    assert_eq!(len, 14);
 }

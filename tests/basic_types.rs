@@ -168,13 +168,13 @@ fn test_refcell_already_borrowed() {
 fn test_slice() {
     let mut buffer = [0u8; 32];
     let input: &[u8] = &[1, 2, 3, 4, 5, 6, 7];
-    bincode::encode_into_slice(input, &mut buffer, bincode::config::standard()).unwrap();
-    assert_eq!(&buffer[..8], &[7, 1, 2, 3, 4, 5, 6, 7]);
+    let n = bincode::encode_into_slice(input, &mut buffer, bincode::config::standard()).unwrap();
+    assert_eq!(&buffer[..n], &[0xBC, 1, 7, 1, 2, 3, 4, 5, 6, 7]);
 
     let (output, len): (&[u8], usize) =
-        bincode::borrow_decode_from_slice(&buffer[..8], bincode::config::standard()).unwrap();
+        bincode::borrow_decode_from_slice(&buffer[..n], bincode::config::standard()).unwrap();
     assert_eq!(input, output);
-    assert_eq!(len, 8);
+    assert_eq!(len, n);
 }
 
 #[test]
@@ -182,7 +182,7 @@ fn test_option_slice() {
     let mut buffer = [0u8; 32];
     let input: Option<&[u8]> = Some(&[1, 2, 3, 4, 5, 6, 7]);
     let n = bincode::encode_into_slice(input, &mut buffer, bincode::config::standard()).unwrap();
-    assert_eq!(&buffer[..n], &[1, 7, 1, 2, 3, 4, 5, 6, 7]);
+    assert_eq!(&buffer[..n], &[0xBC, 1, 1, 7, 1, 2, 3, 4, 5, 6, 7]);
 
     let (output, len): (Option<&[u8]>, usize) =
         bincode::borrow_decode_from_slice(&buffer[..n], bincode::config::standard()).unwrap();
@@ -192,7 +192,7 @@ fn test_option_slice() {
     let mut buffer = [0u8; 32];
     let input: Option<&[u8]> = None;
     let n = bincode::encode_into_slice(input, &mut buffer, bincode::config::standard()).unwrap();
-    assert_eq!(&buffer[..n], &[0]);
+    assert_eq!(&buffer[..n], &[0xBC, 1, 0]);
 
     let (output, len): (Option<&[u8]>, usize) =
         bincode::borrow_decode_from_slice(&buffer[..n], bincode::config::standard()).unwrap();
@@ -204,16 +204,16 @@ fn test_option_slice() {
 fn test_str() {
     let mut buffer = [0u8; 32];
     let input: &str = "Hello world";
-    bincode::encode_into_slice(input, &mut buffer, bincode::config::standard()).unwrap();
+    let n = bincode::encode_into_slice(input, &mut buffer, bincode::config::standard()).unwrap();
     assert_eq!(
-        &buffer[..12],
-        &[11, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100]
+        &buffer[..n],
+        &[0xBC, 1, 11, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100]
     );
 
     let (output, len): (&str, usize) =
-        bincode::borrow_decode_from_slice(&buffer[..12], bincode::config::standard()).unwrap();
+        bincode::borrow_decode_from_slice(&buffer[..n], bincode::config::standard()).unwrap();
     assert_eq!(input, output);
-    assert_eq!(len, 12);
+    assert_eq!(len, n);
 }
 
 #[test]
@@ -223,7 +223,7 @@ fn test_option_str() {
     let n = bincode::encode_into_slice(input, &mut buffer, bincode::config::standard()).unwrap();
     assert_eq!(
         &buffer[..n],
-        &[1, 11, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100]
+        &[0xBC, 1, 1, 11, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100]
     );
 
     let (output, len): (Option<&str>, usize) =
@@ -234,7 +234,7 @@ fn test_option_str() {
     let mut buffer = [0u8; 32];
     let input: Option<&str> = None;
     let n = bincode::encode_into_slice(input, &mut buffer, bincode::config::standard()).unwrap();
-    assert_eq!(&buffer[..n], &[0]);
+    assert_eq!(&buffer[..n], &[0xBC, 1, 0]);
 
     let (output, len): (Option<&str>, usize) =
         bincode::borrow_decode_from_slice(&buffer[..n], bincode::config::standard()).unwrap();
@@ -246,33 +246,33 @@ fn test_option_str() {
 fn test_array() {
     let mut buffer = [0u8; 32];
     let input: [u8; 10] = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-    bincode::encode_into_slice(input, &mut buffer, bincode::config::standard()).unwrap();
-    assert_eq!(&buffer[..10], &[10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
+    let n = bincode::encode_into_slice(input, &mut buffer, bincode::config::standard()).unwrap();
+    assert_eq!(&buffer[..n], &[0xBC, 1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
 
     let (output, len): ([u8; 10], usize) =
-        bincode::decode_from_slice(&buffer[..11], bincode::config::standard()).unwrap();
+        bincode::decode_from_slice(&buffer[..n], bincode::config::standard()).unwrap();
     assert_eq!(input, output);
-    assert_eq!(len, 10);
+    assert_eq!(len, n);
 
     let mut buffer = [0u8; 32];
     let input: [u8; 1] = [1];
     let config = bincode::config::standard()
         .with_fixed_int_encoding()
         .with_little_endian();
-    let len = bincode::encode_into_slice(input, &mut buffer, config).unwrap();
-    assert_eq!(len, 1);
-    assert_eq!(&buffer[..1], &[1]);
+    let n = bincode::encode_into_slice(input, &mut buffer, config).unwrap();
+    assert_eq!(n, 3);
+    assert_eq!(&buffer[..3], &[0xBC, 1, 1]);
 
-    let (output, len): ([u8; 1], usize) = bincode::decode_from_slice(&buffer[..9], config).unwrap();
-    assert_eq!(len, 1);
+    let (output, len): ([u8; 1], usize) = bincode::decode_from_slice(&buffer[..n], config).unwrap();
+    assert_eq!(len, 3);
     assert_eq!(input, output);
 }
 
 #[test]
 fn test_duration_out_of_range() {
-    let mut input = [0u8; 14];
+    let mut input = [0u8; 32];
 
-    bincode::encode_into_slice(
+    let n = bincode::encode_into_slice(
         (u64::MAX, u32::MAX),
         &mut input,
         bincode::config::standard(),
@@ -280,7 +280,7 @@ fn test_duration_out_of_range() {
     .unwrap();
 
     let result: Result<(std::time::Duration, usize), _> =
-        bincode::decode_from_slice(&input, bincode::config::standard());
+        bincode::decode_from_slice(&input[..n], bincode::config::standard());
 
     match result {
         Err(DecodeError::InvalidDuration {
@@ -294,9 +294,9 @@ fn test_duration_out_of_range() {
 
 #[test]
 fn test_duration_wrapping() {
-    let mut input = [0u8; 14];
+    let mut input = [0u8; 32];
 
-    bincode::encode_into_slice(
+    let n = bincode::encode_into_slice(
         (u64::MAX - 4, u32::MAX),
         &mut input,
         bincode::config::standard(),
@@ -304,7 +304,7 @@ fn test_duration_wrapping() {
     .unwrap();
 
     let (result, _): (std::time::Duration, _) =
-        bincode::decode_from_slice(&input, bincode::config::standard()).unwrap();
+        bincode::decode_from_slice(&input[..n], bincode::config::standard()).unwrap();
 
     assert_eq!(result.as_secs(), u64::MAX);
 

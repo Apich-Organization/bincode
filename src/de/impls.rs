@@ -63,6 +63,7 @@ impl<Context> Decode<Context> for u16 {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_u16(decoder.reader(), D::C::ENDIAN)
             }
+            IntEncoding::Leb128 => crate::varint::leb128_decode_u16(decoder.reader()),
             IntEncoding::Fixed => {
                 let mut bytes = [0u8; 2];
                 decoder.reader().read(&mut bytes)?;
@@ -92,6 +93,7 @@ impl<Context> Decode<Context> for u32 {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_u32(decoder.reader(), D::C::ENDIAN)
             }
+            IntEncoding::Leb128 => crate::varint::leb128_decode_u32(decoder.reader()),
             IntEncoding::Fixed => {
                 let mut bytes = [0u8; 4];
                 decoder.reader().read(&mut bytes)?;
@@ -121,6 +123,7 @@ impl<Context> Decode<Context> for u64 {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_u64(decoder.reader(), D::C::ENDIAN)
             }
+            IntEncoding::Leb128 => crate::varint::leb128_decode_u64(decoder.reader()),
             IntEncoding::Fixed => {
                 let mut bytes = [0u8; 8];
                 decoder.reader().read(&mut bytes)?;
@@ -150,6 +153,7 @@ impl<Context> Decode<Context> for u128 {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_u128(decoder.reader(), D::C::ENDIAN)
             }
+            IntEncoding::Leb128 => crate::varint::leb128_decode_u128(decoder.reader()),
             IntEncoding::Fixed => {
                 let mut bytes = [0u8; 16];
                 decoder.reader().read(&mut bytes)?;
@@ -179,6 +183,7 @@ impl<Context> Decode<Context> for usize {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_usize(decoder.reader(), D::C::ENDIAN)
             }
+            IntEncoding::Leb128 => crate::varint::leb128_decode_usize(decoder.reader()),
             IntEncoding::Fixed => {
                 let mut bytes = [0u8; 8];
                 decoder.reader().read(&mut bytes)?;
@@ -232,6 +237,7 @@ impl<Context> Decode<Context> for i16 {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_i16(decoder.reader(), D::C::ENDIAN)
             }
+            IntEncoding::Leb128 => crate::varint::sleb128_decode_i16(decoder.reader()),
             IntEncoding::Fixed => {
                 let mut bytes = [0u8; 2];
                 decoder.reader().read(&mut bytes)?;
@@ -261,6 +267,7 @@ impl<Context> Decode<Context> for i32 {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_i32(decoder.reader(), D::C::ENDIAN)
             }
+            IntEncoding::Leb128 => crate::varint::sleb128_decode_i32(decoder.reader()),
             IntEncoding::Fixed => {
                 let mut bytes = [0u8; 4];
                 decoder.reader().read(&mut bytes)?;
@@ -290,6 +297,7 @@ impl<Context> Decode<Context> for i64 {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_i64(decoder.reader(), D::C::ENDIAN)
             }
+            IntEncoding::Leb128 => crate::varint::sleb128_decode_i64(decoder.reader()),
             IntEncoding::Fixed => {
                 let mut bytes = [0u8; 8];
                 decoder.reader().read(&mut bytes)?;
@@ -319,6 +327,7 @@ impl<Context> Decode<Context> for i128 {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_i128(decoder.reader(), D::C::ENDIAN)
             }
+            IntEncoding::Leb128 => crate::varint::sleb128_decode_i128(decoder.reader()),
             IntEncoding::Fixed => {
                 let mut bytes = [0u8; 16];
                 decoder.reader().read(&mut bytes)?;
@@ -348,6 +357,7 @@ impl<Context> Decode<Context> for isize {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_isize(decoder.reader(), D::C::ENDIAN)
             }
+            IntEncoding::Leb128 => crate::varint::sleb128_decode_isize(decoder.reader()),
             IntEncoding::Fixed => {
                 let mut bytes = [0u8; 8];
                 decoder.reader().read(&mut bytes)?;

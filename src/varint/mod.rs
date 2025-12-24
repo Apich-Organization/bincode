@@ -2,6 +2,7 @@ mod decode_signed;
 mod decode_unsigned;
 mod encode_signed;
 mod encode_unsigned;
+mod leb128;
 
 pub use self::{
     decode_signed::{
@@ -19,6 +20,13 @@ pub use self::{
     encode_unsigned::{
         varint_encode_u128, varint_encode_u16, varint_encode_u32, varint_encode_u64,
         varint_encode_usize,
+    },
+    leb128::{
+        leb128_decode_u128, leb128_decode_u16, leb128_decode_u32, leb128_decode_u64,
+        leb128_decode_usize, leb128_encode_u128, leb128_encode_u16, leb128_encode_u32,
+        leb128_encode_u64, leb128_encode_usize, sleb128_decode_i128, sleb128_decode_i16,
+        sleb128_decode_i32, sleb128_decode_i64, sleb128_decode_isize, sleb128_encode_i128,
+        sleb128_encode_i16, sleb128_encode_i32, sleb128_encode_i64, sleb128_encode_isize,
     },
 };
 

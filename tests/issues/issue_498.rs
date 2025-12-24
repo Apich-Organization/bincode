@@ -8,7 +8,7 @@ use std::ffi::CString;
 
 #[test]
 fn test_issue_498() {
-    let bytes = [1, 0, 0, 0, 0, 0, 0, 0, 0];
+    let bytes = [0xBC, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0];
     let out: Result<(CString, _), _> =
         bincode::decode_from_slice(&bytes, bincode::config::legacy().with_limit::<1024>());
 

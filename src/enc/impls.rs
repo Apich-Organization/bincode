@@ -52,6 +52,7 @@ impl Encode for u16 {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_u16(encoder.writer(), E::C::ENDIAN, *self)
             }
+            IntEncoding::Leb128 => crate::varint::leb128_encode_u16(encoder.writer(), *self),
             IntEncoding::Fixed => match E::C::ENDIAN {
                 Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
                 Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
@@ -72,6 +73,7 @@ impl Encode for u32 {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_u32(encoder.writer(), E::C::ENDIAN, *self)
             }
+            IntEncoding::Leb128 => crate::varint::leb128_encode_u32(encoder.writer(), *self),
             IntEncoding::Fixed => match E::C::ENDIAN {
                 Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
                 Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
@@ -92,6 +94,7 @@ impl Encode for u64 {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_u64(encoder.writer(), E::C::ENDIAN, *self)
             }
+            IntEncoding::Leb128 => crate::varint::leb128_encode_u64(encoder.writer(), *self),
             IntEncoding::Fixed => match E::C::ENDIAN {
                 Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
                 Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
@@ -112,6 +115,7 @@ impl Encode for u128 {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_u128(encoder.writer(), E::C::ENDIAN, *self)
             }
+            IntEncoding::Leb128 => crate::varint::leb128_encode_u128(encoder.writer(), *self),
             IntEncoding::Fixed => match E::C::ENDIAN {
                 Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
                 Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
@@ -132,6 +136,7 @@ impl Encode for usize {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_usize(encoder.writer(), E::C::ENDIAN, *self)
             }
+            IntEncoding::Leb128 => crate::varint::leb128_encode_usize(encoder.writer(), *self),
             IntEncoding::Fixed => match E::C::ENDIAN {
                 Endianness::Big => encoder.writer().write(&(*self as u64).to_be_bytes()),
                 Endianness::Little => encoder.writer().write(&(*self as u64).to_le_bytes()),
@@ -164,6 +169,7 @@ impl Encode for i16 {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_i16(encoder.writer(), E::C::ENDIAN, *self)
             }
+            IntEncoding::Leb128 => crate::varint::sleb128_encode_i16(encoder.writer(), *self),
             IntEncoding::Fixed => match E::C::ENDIAN {
                 Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
                 Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
@@ -184,6 +190,7 @@ impl Encode for i32 {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_i32(encoder.writer(), E::C::ENDIAN, *self)
             }
+            IntEncoding::Leb128 => crate::varint::sleb128_encode_i32(encoder.writer(), *self),
             IntEncoding::Fixed => match E::C::ENDIAN {
                 Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
                 Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
@@ -204,6 +211,7 @@ impl Encode for i64 {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_i64(encoder.writer(), E::C::ENDIAN, *self)
             }
+            IntEncoding::Leb128 => crate::varint::sleb128_encode_i64(encoder.writer(), *self),
             IntEncoding::Fixed => match E::C::ENDIAN {
                 Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
                 Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
@@ -224,6 +232,7 @@ impl Encode for i128 {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_i128(encoder.writer(), E::C::ENDIAN, *self)
             }
+            IntEncoding::Leb128 => crate::varint::sleb128_encode_i128(encoder.writer(), *self),
             IntEncoding::Fixed => match E::C::ENDIAN {
                 Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
                 Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
@@ -244,6 +253,7 @@ impl Encode for isize {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_isize(encoder.writer(), E::C::ENDIAN, *self)
             }
+            IntEncoding::Leb128 => crate::varint::sleb128_encode_isize(encoder.writer(), *self),
             IntEncoding::Fixed => match E::C::ENDIAN {
                 Endianness::Big => encoder.writer().write(&(*self as i64).to_be_bytes()),
                 Endianness::Little => encoder.writer().write(&(*self as i64).to_le_bytes()),

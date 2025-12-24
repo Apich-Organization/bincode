@@ -63,7 +63,8 @@ pub fn encode_to_vec<E: enc::Encode, C: Config>(val: E, config: C) -> Result<Vec
         val.encode(&mut size_writer)?;
         size_writer.into_writer().bytes_written
     };
-    let writer = VecWriter::with_capacity(size);
+    let mut writer = VecWriter::with_capacity(size + 2);
+    writer.write(&[crate::MAGIC_BYTE, crate::VERSION])?;
     let mut encoder = enc::EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(encoder.into_writer().inner)

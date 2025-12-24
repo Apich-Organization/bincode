@@ -54,7 +54,21 @@ pub fn decode_from_std_read_with_context<
     config: C,
     context: Context,
 ) -> Result<D, DecodeError> {
-    let reader = IoReader::new(src);
+    let mut reader = IoReader::new(src);
+    let mut header = [0u8; 2];
+    reader.read(&mut header)?;
+    if header[0] != crate::MAGIC_BYTE {
+        return Err(DecodeError::InvalidMagicByte {
+            found: header[0],
+            expected: crate::MAGIC_BYTE,
+        });
+    }
+    if header[1] != crate::VERSION {
+        return Err(DecodeError::InvalidVersion {
+            found: header[1],
+            expected: crate::VERSION,
+        });
+    }
     let mut decoder = DecoderImpl::<_, C, Context>::new(reader, config, context);
     D::decode(&mut decoder)
 }
@@ -124,7 +138,8 @@ pub fn encode_into_std_write<E: Encode, C: Config, W: std::io::Write>(
     dst: &mut W,
     config: C,
 ) -> Result<usize, EncodeError> {
-    let writer = IoWriter::new(dst);
+    let mut writer = IoWriter::new(dst);
+    writer.write(&[crate::MAGIC_BYTE, crate::VERSION])?;
     let mut encoder = EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(encoder.into_writer().bytes_written())
