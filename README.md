@@ -29,11 +29,10 @@ The Bincode Team
 
 <img align="right" src="./logo.svg" />
 
-[![CI](https://github.com/bincode-org/bincode/workflows/CI/badge.svg)](https://github.com/bincode-org/bincode/actions)
-[![](https://img.shields.io/crates/v/bincode.svg)](https://crates.io/crates/bincode)
+[![Discord Server](https://img.shields.io/discord/1459399539403522074.svg?label=Discord&logo=discord&color=blue)](https://discord.gg/D5e2czMTT9)
+[![](https://img.shields.io/crates/v/bincode-next.svg)](https://crates.io/crates/bincode-next)
 [![](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 <!-- [![](https://img.shields.io/badge/bincode-rustc_1.41.1+-lightgray.svg)](https://blog.rust-lang.org/2020/02/27/Rust-1.41.1.html) -->
-[![Matrix](https://img.shields.io/matrix/bincode:matrix.org?label=Matrix%20Chat)](https://matrix.to/#/#bincode:matrix.org)
 [![Scc Count Badge Code](https://sloc.xyz/github/Apich-Organization/bincode/?category=code)](https://github.com/Apich-Organization/bincode/)
 [![Scc Count Badge Blanks](https://sloc.xyz/github/Apich-Organization/bincode/?category=blanks)](https://github.com/Apich-Organization/bincode/)
 [![Scc Count Badge Lines](https://sloc.xyz/github/Apich-Organization/bincode/?category=lines)](https://github.com/Apich-Organization/bincode/)
