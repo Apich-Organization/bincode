@@ -3,7 +3,7 @@ members = ["derive", "compatibility"]
 
 [package]
 name = "bincode-next"
-version = "2.0.5" # remember to update html_root_url and bincode_derive
+version = "2.1.0" # remember to update html_root_url and bincode_derive
 authors = [
     "Xinyu Yang <pana.yang@hotmail.com>",
     "Ty Overby <ty@pre-alpha.com>",
@@ -25,7 +25,7 @@ keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
 license = "MIT or Apache-2.0"
 description = "A binary serialization / deserialization strategy for transforming structs into bytes and vice versa!"
 
-edition = "2021"
+edition = "2024"
 
 [features]
 default = ["std", "derive"]
@@ -34,9 +34,9 @@ alloc = ["serde?/alloc"]
 derive = ["bincode_derive-next"]
 
 [dependencies]
-bincode_derive-next = { path = "derive", version = "2.0.5", optional = true }
+bincode_derive-next = { path = "derive", version = "2.1.0", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
-unty = { version = "0.0.6", package = "unty-next" }
+unty = { version = "0.1.0", package = "unty-next" }
 
 # Used for tests
 [dev-dependencies]

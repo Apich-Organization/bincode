@@ -53,33 +53,39 @@ where
         initialized: 0,
     };
 
-    while let Some(item_rslt) = iter.next() {
-        let item = match item_rslt {
-            Err(err) => {
-                return Some(Err(err));
-            }
-            Ok(elem) => elem,
-        };
+    loop {
+        let next_item = iter.next();
+        if let Some(item_rslt) = next_item{
+            let item = match item_rslt {
+                Err(err) => {
+                    return Some(Err(err));
+                }
+                Ok(elem) => elem,
+            };
 
-        // SAFETY: `guard.initialized` starts at 0, is increased by one in the
-        // loop and the loop is aborted once it reaches N (which is
-        // `array.len()`).
-        unsafe {
-            guard
+            // SAFETY: `guard.initialized` starts at 0, is increased by one in the
+            // loop and the loop is aborted once it reaches N (which is
+            // `array.len()`).
+            unsafe {
+                guard
                 .array_mut
                 .get_unchecked_mut(guard.initialized)
                 .write(item);
+            }
+            guard.initialized += 1;
+
+            // Check if the whole array was initialized.
+            if guard.initialized == N {
+                mem::forget(guard);
+
+                // SAFETY: the condition above asserts that all elements are
+                // initialized.
+                let out = unsafe { array_assume_init(&array) };
+                return Some(Ok(out));
+            }
         }
-        guard.initialized += 1;
-
-        // Check if the whole array was initialized.
-        if guard.initialized == N {
-            mem::forget(guard);
-
-            // SAFETY: the condition above asserts that all elements are
-            // initialized.
-            let out = unsafe { array_assume_init(&array) };
-            return Some(Ok(out));
+        else {
+            break;
         }
     }
 
