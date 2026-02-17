@@ -8,3 +8,4 @@
 rls*.log
 tarpaulin-report.html
 *.txt
+plan.md
