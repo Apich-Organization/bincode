@@ -2,7 +2,7 @@
 name = "bincode_derive-next"
 version = "2.1.0" # remember to update bincode
 authors = [
-    "Xinyu Yang <pana.yang@hotmail.com>",
+    "Xinyu Yang <xinyu.yang@apich.org>",
     "Zoey Riordan <zoey@dos.cafe>",
     "Victor Koenders <bincode@trangar.com>",
     "The bincode-next & bincode developers",
