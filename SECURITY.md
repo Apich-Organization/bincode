@@ -8,7 +8,7 @@
 
 ## Reporting a Vulnerability
 
-Please do not report a vulnerability via Github issues. Any vulnerability shall be reported by emailing to Pana.Yang@hotmail.com or via our official website security reporting section (under construction).
+Please do not report a vulnerability via Github issues. Any vulnerability shall be reported by emailing to **security@apich.org** or via our official website security reporting section (under construction).
 
 ## Developer Security Standards (Mandatory for Organization Members and Recommended for Contributors)
 
