@@ -74,12 +74,16 @@ impl<T, const ALIGN: usize> RelativePtr<T, ALIGN> {
 
         let offset = unsafe { core::ptr::addr_of!(self.offset).read_unaligned() };
 
+        // Here we use wrapping arithmetic because the offset is relative to the pointer's address
+        // and could potentially wrap around the address space. But in the CPU, the address space
+        // is linear ring, so we can use wrapping arithmetic to avoid overflow.
         let target_addr = if offset >= 0 {
-            self_ptr.checked_add(offset as usize)?
+            self_ptr.wrapping_add(offset as usize)
         } else {
-            self_ptr.checked_sub(offset.unsigned_abs() as usize)?
+            self_ptr.wrapping_sub(offset.unsigned_abs() as usize)
         };
-        let target_end = target_addr.checked_add(T::SIZE)?;
+
+        let target_end = target_addr.wrapping_add(T::SIZE);
 
         if target_addr < buffer_start || target_end > buffer_end {
             return None;
