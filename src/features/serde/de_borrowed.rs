@@ -2,7 +2,7 @@
 use super::DecodeError as SerdeDecodeError;
 use crate::{
     config::Config,
-    de::{read::SliceReader, BorrowDecode, BorrowDecoder, Decode, DecoderImpl},
+    de::{BorrowDecode, BorrowDecoder, Decode, DecoderImpl, read::SliceReader},
     error::DecodeError,
 };
 use core::marker::PhantomData;

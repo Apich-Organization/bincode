@@ -2,7 +2,7 @@
 use super::EncodeError as SerdeEncodeError;
 use crate::{
     config::Config,
-    enc::{write::Writer, Encode, Encoder},
+    enc::{Encode, Encoder, write::Writer},
     error::EncodeError,
 };
 #[cfg(feature = "alloc")]

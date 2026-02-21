@@ -1,6 +1,6 @@
 use super::{
-    read::{BorrowReader, Reader},
     BorrowDecoder, Decoder,
+    read::{BorrowReader, Reader},
 };
 use crate::{config::Config, error::DecodeError, utils::Sealed};
 

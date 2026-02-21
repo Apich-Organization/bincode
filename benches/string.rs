@@ -2,7 +2,7 @@
 
 extern crate bincode_next as bincode;
 use bincode::{Decode, Encode};
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use serde::{Deserialize, Serialize};
 use std::hint::black_box;
 

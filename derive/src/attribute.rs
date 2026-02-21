@@ -1,5 +1,5 @@
 use virtue::prelude::*;
-use virtue::utils::{parse_tagged_attribute, ParsedAttribute};
+use virtue::utils::{ParsedAttribute, parse_tagged_attribute};
 
 pub struct ContainerAttributes {
     pub crate_name: String,
@@ -88,10 +88,10 @@ impl FromAttribute for ContainerAttributes {
                     }
                 }
                 ParsedAttribute::Tag(i) => {
-                    return Err(Error::custom_at("Unknown field attribute", i.span()))
+                    return Err(Error::custom_at("Unknown field attribute", i.span()));
                 }
                 ParsedAttribute::Property(key, _) => {
-                    return Err(Error::custom_at("Unknown field attribute", key.span()))
+                    return Err(Error::custom_at("Unknown field attribute", key.span()));
                 }
                 _ => {}
             }
@@ -118,10 +118,10 @@ impl FromAttribute for FieldAttributes {
                     result.with_serde = true;
                 }
                 ParsedAttribute::Tag(i) => {
-                    return Err(Error::custom_at("Unknown field attribute", i.span()))
+                    return Err(Error::custom_at("Unknown field attribute", i.span()));
                 }
                 ParsedAttribute::Property(key, _) => {
-                    return Err(Error::custom_at("Unknown field attribute", key.span()))
+                    return Err(Error::custom_at("Unknown field attribute", key.span()));
                 }
                 _ => {}
             }

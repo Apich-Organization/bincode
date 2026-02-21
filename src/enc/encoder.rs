@@ -1,4 +1,4 @@
-use super::{write::Writer, Encoder};
+use super::{Encoder, write::Writer};
 use crate::{config::Config, utils::Sealed};
 
 /// An Encoder that writes bytes into a given writer `W`.

@@ -55,7 +55,7 @@ where
 
     loop {
         let next_item = iter.next();
-        if let Some(item_rslt) = next_item{
+        if let Some(item_rslt) = next_item {
             let item = match item_rslt {
                 Err(err) => {
                     return Some(Err(err));
@@ -68,9 +68,9 @@ where
             // `array.len()`).
             unsafe {
                 guard
-                .array_mut
-                .get_unchecked_mut(guard.initialized)
-                .write(item);
+                    .array_mut
+                    .get_unchecked_mut(guard.initialized)
+                    .write(item);
             }
             guard.initialized += 1;
 
@@ -83,8 +83,7 @@ where
                 let out = unsafe { array_assume_init(&array) };
                 return Some(Ok(out));
             }
-        }
-        else {
+        } else {
             break;
         }
     }

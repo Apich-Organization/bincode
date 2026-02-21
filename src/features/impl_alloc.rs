@@ -1,13 +1,13 @@
 #![allow(unsafe_code)]
 use crate::{
-    de::{read::Reader, BorrowDecoder, Decode, Decoder},
+    BorrowDecode, Config,
+    de::{BorrowDecoder, Decode, Decoder, read::Reader},
     enc::{
-        self,
+        self, Encode, Encoder,
         write::{SizeWriter, Writer},
-        Encode, Encoder,
     },
     error::{DecodeError, EncodeError},
-    impl_borrow_decode, BorrowDecode, Config,
+    impl_borrow_decode,
 };
 use alloc::{
     borrow::{Cow, ToOwned},
