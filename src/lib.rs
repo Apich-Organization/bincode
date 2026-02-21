@@ -130,7 +130,8 @@ extern crate std;
 
 mod atomic;
 mod features;
-pub(crate) mod utils;
+#[doc(hidden)]
+pub mod utils;
 pub(crate) mod varint;
 
 use de::{Decoder, read::Reader};

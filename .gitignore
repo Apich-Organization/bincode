@@ -12,3 +12,6 @@ plan.md
 *.kdev4
 /.kdev4
 issue20.md
+issue18.md
+expanded_enum.rs
+expanded_macro.rs

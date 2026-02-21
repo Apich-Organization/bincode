@@ -1,4 +1,5 @@
 mod attribute;
+mod derive_bit_packed;
 mod derive_enum;
 mod derive_struct;
 
@@ -110,5 +111,41 @@ fn derive_borrow_decode_inner(input: TokenStream) -> Result<TokenStream> {
     }
 
     generator.export_to_file("bincode_next", "BorrowDecode");
+    generator.finish()
+}
+
+#[proc_macro_derive(BitPacked, attributes(bincode))]
+pub fn derive_bit_packed(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    derive_bit_packed_inner(input).unwrap_or_else(|e| e.into_token_stream())
+}
+
+/// # Errors
+///
+/// Returns an error if the input cannot be parsed or if the code generation fails.
+fn derive_bit_packed_inner(input: TokenStream) -> Result<TokenStream> {
+    let parse = Parse::new(input)?;
+    let (mut generator, attributes, body) = parse.into_generator();
+    let attributes = attributes
+        .get_attribute::<ContainerAttributes>()?
+        .unwrap_or_default();
+
+    match body {
+        Body::Struct(body) => {
+            derive_bit_packed::DeriveBitPacked {
+                fields: body.fields,
+                attributes,
+            }
+            .generate(&mut generator)?;
+        }
+        Body::Enum(body) => {
+            derive_bit_packed::DeriveBitPackedEnum {
+                variants: body.variants,
+                attributes,
+            }
+            .generate(&mut generator)?;
+        }
+    }
+
+    generator.export_to_file("bincode_next", "BitPacked");
     generator.finish()
 }

@@ -103,6 +103,7 @@ impl FromAttribute for ContainerAttributes {
 #[derive(Default)]
 pub struct FieldAttributes {
     pub with_serde: bool,
+    pub bits: Option<u8>,
 }
 
 impl FromAttribute for FieldAttributes {
@@ -119,6 +120,17 @@ impl FromAttribute for FieldAttributes {
                 }
                 ParsedAttribute::Tag(i) => {
                     return Err(Error::custom_at("Unknown field attribute", i.span()));
+                }
+                ParsedAttribute::Property(key, val) if key.to_string() == "bits" => {
+                    let val_string = val.to_string();
+                    if let Ok(bits) = val_string.parse::<u8>() {
+                        result.bits = Some(bits);
+                    } else {
+                        return Err(Error::custom_at(
+                            "Should be an integer from 1 to 64",
+                            val.span(),
+                        ));
+                    }
                 }
                 ParsedAttribute::Property(key, _) => {
                     return Err(Error::custom_at("Unknown field attribute", key.span()));

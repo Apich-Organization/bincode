@@ -7,6 +7,8 @@ mod impls;
 use self::write::Writer;
 use crate::{config::Config, error::EncodeError, utils::Sealed};
 
+/// Bit-level writer for space-optimized packing.
+pub mod bit_writer;
 pub mod write;
 
 pub use self::encoder::EncoderImpl;
