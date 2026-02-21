@@ -76,7 +76,7 @@ impl<T, const ALIGN: usize> RelativePtr<T, ALIGN> {
 
         // Here we use wrapping arithmetic because the offset is relative to the pointer's address
         // and could potentially wrap around the address space. But in the CPU, the address space
-        // is linear ring, so we can use wrapping arithmetic to avoid overflow.
+        // is a linear ring, so we can use wrapping arithmetic to avoid overflow.
         let target_addr = if offset >= 0 {
             self_ptr.wrapping_add(offset as usize)
         } else {
