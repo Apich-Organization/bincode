@@ -15,6 +15,8 @@ use crate::{
     utils::Sealed,
 };
 
+/// Bit-level reader for space-optimized packing.
+pub mod bit_reader;
 pub mod read;
 
 pub use self::decoder::DecoderImpl;

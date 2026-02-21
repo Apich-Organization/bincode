@@ -53,6 +53,7 @@ glam = { version = "0.32", features = ["serde"] }
 bincode_1 = { version = "1.3", package = "bincode" }
 serde = { version = "1.0", features = ["derive"] }
 bumpalo = { version = "3.16.0", features = ["collections"] }
+proptest = "1.10.0"
 
 [[bench]]
 name = "varint"

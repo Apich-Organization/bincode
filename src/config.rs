@@ -11,7 +11,10 @@
 //!     .with_little_endian()
 //!     // pick one of:
 //!     .with_variable_int_encoding()
-//!     .with_fixed_int_encoding();
+//!     .with_fixed_int_encoding()
+//!     // pick one of:
+//!     .with_bit_packing()
+//!     .with_no_bit_packing();
 //! ```
 //!
 //! See [Configuration] for more information on the configuration options.
@@ -26,17 +29,21 @@ use core::marker::PhantomData;
 ///
 /// - [`with_little_endian`\] and [`with_big_endian`\]
 /// - [`with_fixed_int_encoding`\] and [`with_variable_int_encoding`\]
+/// - [`with_bit_packing`\] and [`with_no_bit_packing`\]
 ///
 ///
 /// [with_little_endian]: #method.with_little_endian
 /// [with_big_endian]: #method.with_big_endian
 /// [with_fixed_int_encoding]: #method.with_fixed_int_encoding
 /// [with_variable_int_encoding]: #method.with_variable_int_encoding
+/// [with_bit_packing]: #method.with_bit_packing
+/// [with_no_bit_packing]: #method.with_no_bit_packing
 #[derive(Copy, Clone, Debug)]
-pub struct Configuration<E = LittleEndian, I = Varint, L = NoLimit> {
+pub struct Configuration<E = LittleEndian, I = Varint, L = NoLimit, B = SkipBitPacking> {
     _e: PhantomData<E>,
     _i: PhantomData<I>,
     _l: PhantomData<L>,
+    _b: PhantomData<B>,
 }
 
 // When adding more features to configuration, follow these steps:
@@ -61,34 +68,35 @@ pub const fn standard() -> Configuration {
 /// - Little endian
 /// - Fixed int length encoding
 #[must_use]
-pub const fn legacy() -> Configuration<LittleEndian, Fixint, NoLimit> {
+pub const fn legacy() -> Configuration<LittleEndian, Fixint, NoLimit, SkipBitPacking> {
     generate()
 }
 
-impl<E, I, L> Default for Configuration<E, I, L> {
+impl<E, I, L, B> Default for Configuration<E, I, L, B> {
     fn default() -> Self {
         generate()
     }
 }
 
-const fn generate<E, I, L>() -> Configuration<E, I, L> {
+const fn generate<E, I, L, B>() -> Configuration<E, I, L, B> {
     Configuration {
         _e: PhantomData,
         _i: PhantomData,
         _l: PhantomData,
+        _b: PhantomData,
     }
 }
 
-impl<E, I, L> Configuration<E, I, L> {
+impl<E, I, L, B> Configuration<E, I, L, B> {
     /// Makes bincode encode all integer types in big endian.
     #[must_use]
-    pub const fn with_big_endian(self) -> Configuration<BigEndian, I, L> {
+    pub const fn with_big_endian(self) -> Configuration<BigEndian, I, L, B> {
         generate()
     }
 
     /// Makes bincode encode all integer types in little endian.
     #[must_use]
-    pub const fn with_little_endian(self) -> Configuration<LittleEndian, I, L> {
+    pub const fn with_little_endian(self) -> Configuration<LittleEndian, I, L, B> {
         generate()
     }
 
@@ -149,7 +157,7 @@ impl<E, I, L> Configuration<E, I, L> {
     /// Note that u256 and the like are unsupported by this format; if and when they are added to the
     /// language, they may be supported via the extension point given by the 255 byte.
     #[must_use]
-    pub const fn with_variable_int_encoding(self) -> Configuration<E, Varint, L> {
+    pub const fn with_variable_int_encoding(self) -> Configuration<E, Varint, L, B> {
         generate()
     }
 
@@ -159,26 +167,43 @@ impl<E, I, L> Configuration<E, I, L> {
     /// * Enum discriminants are encoded as u32
     /// * Lengths and usize are encoded as u64
     #[must_use]
-    pub const fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, L> {
+    pub const fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, L, B> {
         generate()
     }
 
     /// Sets the byte limit to `limit`.
     #[must_use]
-    pub const fn with_limit<const N: usize>(self) -> Configuration<E, I, Limit<N>> {
+    pub const fn with_limit<const N: usize>(self) -> Configuration<E, I, Limit<N>, B> {
         generate()
     }
 
     /// Clear the byte limit.
     #[must_use]
-    pub const fn with_no_limit(self) -> Configuration<E, I, NoLimit> {
+    pub const fn with_no_limit(self) -> Configuration<E, I, NoLimit, B> {
+        generate()
+    }
+
+    /// Enables bit-packing for types that support it.
+    #[must_use]
+    pub const fn with_bit_packing(self) -> Configuration<E, I, L, AllowBitPacking> {
+        generate()
+    }
+
+    /// Disables bit-packing.
+    #[must_use]
+    pub const fn with_no_bit_packing(self) -> Configuration<E, I, L, SkipBitPacking> {
         generate()
     }
 }
 
 /// Indicates a type is valid for controlling the bincode configuration
 pub trait Config:
-    InternalEndianConfig + InternalIntEncodingConfig + InternalLimitConfig + Copy + Clone
+    InternalEndianConfig
+    + InternalIntEncodingConfig
+    + InternalLimitConfig
+    + InternalBitPackingConfig
+    + Copy
+    + Clone
 {
     /// This configuration's Endianness
     fn endianness(&self) -> Endianness;
@@ -188,11 +213,19 @@ pub trait Config:
 
     /// This configuration's byte limit, or `None` if no limit is configured
     fn limit(&self) -> Option<usize>;
+
+    /// Whether bit-packing is enabled for this configuration
+    fn bit_packing_enabled(&self) -> bool;
 }
 
 impl<T> Config for T
 where
-    T: InternalEndianConfig + InternalIntEncodingConfig + InternalLimitConfig + Copy + Clone,
+    T: InternalEndianConfig
+        + InternalIntEncodingConfig
+        + InternalLimitConfig
+        + InternalBitPackingConfig
+        + Copy
+        + Clone,
 {
     fn endianness(&self) -> Endianness {
         <T as InternalEndianConfig>::ENDIAN
@@ -204,6 +237,13 @@ where
 
     fn limit(&self) -> Option<usize> {
         <T as InternalLimitConfig>::LIMIT
+    }
+
+    fn bit_packing_enabled(&self) -> bool {
+        matches!(
+            <T as InternalBitPackingConfig>::BIT_PACKING,
+            BitPacking::Enabled
+        )
     }
 }
 
@@ -253,6 +293,22 @@ impl<const N: usize> InternalLimitConfig for Limit<N> {
     const LIMIT: Option<usize> = Some(N);
 }
 
+/// Use bit-packing for types that support it.
+#[derive(Copy, Clone, Debug)]
+pub struct AllowBitPacking;
+
+impl InternalBitPackingConfig for AllowBitPacking {
+    const BIT_PACKING: BitPacking = BitPacking::Enabled;
+}
+
+/// Skip bit-packing.
+#[derive(Copy, Clone, Debug)]
+pub struct SkipBitPacking;
+
+impl InternalBitPackingConfig for SkipBitPacking {
+    const BIT_PACKING: BitPacking = BitPacking::Disabled;
+}
+
 /// Endianness of a `Configuration`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -273,14 +329,24 @@ pub enum IntEncoding {
     Variable,
 }
 
+/// Bit packing of a `Configuration`.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum BitPacking {
+    /// Enable bit-packing.
+    Enabled,
+    /// Disable bit-packing.
+    Disabled,
+}
+
 mod internal {
-    use super::{Configuration, Endianness, IntEncoding};
+    use super::{BitPacking, Configuration, Endianness, IntEncoding};
 
     pub trait InternalEndianConfig {
         const ENDIAN: Endianness;
     }
 
-    impl<E: InternalEndianConfig, I, L> InternalEndianConfig for Configuration<E, I, L> {
+    impl<E: InternalEndianConfig, I, L, B> InternalEndianConfig for Configuration<E, I, L, B> {
         const ENDIAN: Endianness = E::ENDIAN;
     }
 
@@ -288,7 +354,9 @@ mod internal {
         const INT_ENCODING: IntEncoding;
     }
 
-    impl<E, I: InternalIntEncodingConfig, L> InternalIntEncodingConfig for Configuration<E, I, L> {
+    impl<E, I: InternalIntEncodingConfig, L, B> InternalIntEncodingConfig
+        for Configuration<E, I, L, B>
+    {
         const INT_ENCODING: IntEncoding = I::INT_ENCODING;
     }
 
@@ -296,7 +364,15 @@ mod internal {
         const LIMIT: Option<usize>;
     }
 
-    impl<E, I, L: InternalLimitConfig> InternalLimitConfig for Configuration<E, I, L> {
+    impl<E, I, L: InternalLimitConfig, B> InternalLimitConfig for Configuration<E, I, L, B> {
         const LIMIT: Option<usize> = L::LIMIT;
+    }
+
+    pub trait InternalBitPackingConfig {
+        const BIT_PACKING: BitPacking;
+    }
+
+    impl<E, I, L, B: InternalBitPackingConfig> InternalBitPackingConfig for Configuration<E, I, L, B> {
+        const BIT_PACKING: BitPacking = B::BIT_PACKING;
     }
 }

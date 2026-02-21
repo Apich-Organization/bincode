@@ -93,6 +93,52 @@ fn main() {
 }
 ```
 
+## Bit-Packing
+
+Bincode-next supports bit-level packing for fields. This allows you to specify exactly how many bits a field should take up in the encoded stream, potentially saving significant space for small integers or boolean flags.
+
+To use bit-packing:
+1. Enable it in your configuration using `.with_bit_packing()`.
+2. Use `#[derive(BitPacked)]` on your type.
+3. Mark fields with `#[bincode(bits = N)]`.
+
+```rust
+use bincode_next::{config, BitPacked};
+
+#[derive(BitPacked, PartialEq, Debug)]
+struct Packed {
+    #[bincode(bits = 3)]
+    a: u8,
+    #[bincode(bits = 5)]
+    b: u8,
+}
+
+fn main() {
+    // Bit-packing must be explicitly enabled in the configuration
+    let config = config::standard().with_bit_packing();
+    let val = Packed { a: 7, b: 31 };
+    
+    let encoded = bincode_next::encode_to_vec(&val, config).unwrap();
+    // 'a' takes 3 bits, 'b' takes 5 bits. Total = 8 bits (1 byte)
+    assert_eq!(encoded.len(), 1); 
+    
+    let (decoded, _): (Packed, _) = bincode_next::decode_from_slice(&encoded, config).unwrap();
+    assert_eq!(val, decoded);
+
+    // If bit-packing is disabled (the default), it falls back to standard byte-level encoding
+    let config_no_packing = config::standard(); 
+    let encoded_normal = bincode_next::encode_to_vec(&val, config_no_packing).unwrap();
+    assert_eq!(encoded_normal.len(), 2); 
+}
+```
+
+Bit-packing supports:
+- Structs and Enums.
+- Primitive integer types and `bool`.
+- Automatic fallback to standard encoding when not enabled in `Config`.
+- Compile-time verification that specified bit-widths fit in the underlying type.
+- Runtime range checks to ensure values fit in their specified bit-widths.
+
 ## Specification
 
 Bincode's format is specified in [docs/spec.md](https://github.com/bincode-org/bincode/blob/trunk/docs/spec.md).
