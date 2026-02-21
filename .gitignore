@@ -9,3 +9,6 @@ rls*.log
 tarpaulin-report.html
 *.txt
 plan.md
+*.kdev4
+/.kdev4
+issue20.md

@@ -133,7 +133,7 @@ mod features;
 pub(crate) mod utils;
 pub(crate) mod varint;
 
-use de::{read::Reader, Decoder};
+use de::{Decoder, read::Reader};
 use enc::write::Writer;
 
 #[cfg(any(
@@ -145,6 +145,8 @@ use enc::write::Writer;
 pub use features::*;
 
 pub mod config;
+/// Relative pointer system for zero-copy nested structures
+pub mod relative_ptr;
 #[macro_use]
 pub mod de;
 pub mod enc;

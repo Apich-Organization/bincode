@@ -12,7 +12,7 @@ authors = [
     "The bincode-next & bincode developers",
 ]
 exclude = ["logo.svg", "examples/*", ".gitignore", ".github/"]
-rust-version = "1.85.0"
+rust-version = "1.87.0"
 
 publish = true
 
@@ -63,6 +63,10 @@ harness = false
 
 [[bench]]
 name = "string"
+harness = false
+
+[[bench]]
+name = "relative_ptr_bench"
 harness = false
 
 [profile.bench]

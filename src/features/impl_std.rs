@@ -1,7 +1,7 @@
 use crate::{
     config::Config,
-    de::{read::Reader, BorrowDecode, BorrowDecoder, Decode, Decoder, DecoderImpl},
-    enc::{write::Writer, Encode, Encoder, EncoderImpl},
+    de::{BorrowDecode, BorrowDecoder, Decode, Decoder, DecoderImpl, read::Reader},
+    enc::{Encode, Encoder, EncoderImpl, write::Writer},
     error::{DecodeError, EncodeError},
     impl_borrow_decode,
 };

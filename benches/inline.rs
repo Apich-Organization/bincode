@@ -1,6 +1,6 @@
 extern crate bincode_next as bincode;
 use bincode::config;
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
 
 fn inline_decoder_claim_bytes_read(c: &mut Criterion) {
