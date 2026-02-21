@@ -1,3 +1,4 @@
+#![cfg(feature = "zero-copy")]
 use bincode_next::relative_ptr::{RelativePtr, Validator, ZeroArray, ZeroString};
 
 #[repr(align(8))]

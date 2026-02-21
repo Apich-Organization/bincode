@@ -146,6 +146,7 @@ pub use features::*;
 
 pub mod config;
 /// Relative pointer system for zero-copy nested structures
+#[cfg(feature = "zero-copy")]
 pub mod relative_ptr;
 #[macro_use]
 pub mod de;

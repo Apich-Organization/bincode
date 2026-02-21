@@ -32,6 +32,7 @@ default = ["std", "derive"]
 std = ["alloc", "serde?/std"]
 alloc = ["serde?/alloc"]
 derive = ["bincode_derive-next"]
+zero-copy = []
 
 [dependencies]
 bincode_derive-next = { path = "derive", version = "2.1.0", optional = true }
@@ -68,6 +69,7 @@ harness = false
 [[bench]]
 name = "relative_ptr_bench"
 harness = false
+required-features = ["zero-copy"]
 
 [profile.bench]
 codegen-units = 1
