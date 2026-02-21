@@ -41,7 +41,7 @@ impl<'a, W: Writer> BitWriter<'a, W> {
             let space_in_byte = 8 - self.bit_count;
             let bits_to_write = num_bits.min(space_in_byte);
 
-            let mask = (1 << bits_to_write) - 1;
+            let mask = (1u64 << bits_to_write) - 1;
             let chunk = (val & mask) as u8;
 
             self.current_byte |= chunk << self.bit_count;
@@ -65,7 +65,7 @@ impl<'a, W: Writer> BitWriter<'a, W> {
 
             // Extract the top `bits_to_write` from the `num_bits` we care about in `val`
             let shift_down = num_bits - bits_to_write;
-            let mask = (1 << bits_to_write) - 1;
+            let mask = (1u64 << bits_to_write) - 1;
             let chunk = ((val >> shift_down) & mask) as u8;
 
             let shift_up = 8 - self.bit_count - bits_to_write;

@@ -49,7 +49,7 @@ impl<'a, R: Reader> BitReader<'a, R> {
             }
 
             let bits_to_read = num_bits.min(self.bits_available);
-            let mask = (1 << bits_to_read) - 1;
+            let mask = ((1u16 << bits_to_read) - 1) as u8;
 
             let chunk = self.current_byte & mask;
             result |= (chunk as u64) << bits_read;
@@ -78,7 +78,7 @@ impl<'a, R: Reader> BitReader<'a, R> {
 
             let bits_to_read = num_bits.min(self.bits_available);
             let shift_down = self.bits_available - bits_to_read;
-            let mask = (1 << bits_to_read) - 1;
+            let mask = ((1u16 << bits_to_read) - 1) as u8;
 
             let chunk = (self.current_byte >> shift_down) & mask;
             result = (result << bits_to_read) | (chunk as u64);

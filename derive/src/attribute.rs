@@ -124,6 +124,12 @@ impl FromAttribute for FieldAttributes {
                 ParsedAttribute::Property(key, val) if key.to_string() == "bits" => {
                     let val_string = val.to_string();
                     if let Ok(bits) = val_string.parse::<u8>() {
+                        if bits == 0 || bits > 64 {
+                            return Err(Error::custom_at(
+                                "Should be an integer from 1 to 64",
+                                val.span(),
+                            ));
+                        }
                         result.bits = Some(bits);
                     } else {
                         return Err(Error::custom_at(
