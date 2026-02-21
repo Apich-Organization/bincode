@@ -15,6 +15,7 @@ macro_rules! impl_static_size {
             impl StaticSize for $t {
                 const SIZE: usize = core::mem::size_of::<$t>();
             }
+            unsafe impl ZeroCopy for $t {}
         )*
     };
 }
@@ -26,6 +27,12 @@ impl_static_size!(
 impl<T: StaticSize, const N: usize> StaticSize for [T; N] {
     const SIZE: usize = T::SIZE * N;
 }
+
+/// A marker trait indicating that a type has a fixed, predictable layout (e.g., `#[repr(C)]`)
+/// and contains no padding bytes or invalid bit patterns allowing safe zero-copy casting.
+pub unsafe trait ZeroCopy: StaticSize {}
+
+unsafe impl<T: ZeroCopy, const N: usize> ZeroCopy for [T; N] {}
 
 /// A relative pointer that stores the offset from its own address to the target data.
 /// This allows zero-copy deserialization without runtime allocations.
@@ -41,14 +48,18 @@ impl<T, const ALIGN: usize> RelativePtr<T, ALIGN> {
     /// and correctly aligned. Otherwise, returns `None`.
     pub fn get<'a>(&self, buffer: &'a [u8]) -> Option<&'a T>
     where
-        T: StaticSize,
+        T: ZeroCopy,
     {
-        // Compile-time check: alignment must be a power of two
+        // Compile-time check: alignment must be a power of two, and sufficiently large for T
         const {
             assert!(
                 ALIGN > 0 && (ALIGN & (ALIGN - 1)) == 0,
                 "Alignment must be a power of two"
-            )
+            );
+            assert!(
+                ALIGN >= core::mem::align_of::<T>(),
+                "ALIGN must be at least the alignment of T"
+            );
         };
 
         let self_ptr = self as *const _ as usize;
@@ -61,8 +72,14 @@ impl<T, const ALIGN: usize> RelativePtr<T, ALIGN> {
             return None;
         }
 
-        let target_addr = self_ptr.wrapping_add_signed(self.offset as isize);
-        let target_end = target_addr.wrapping_add(T::SIZE);
+        let offset = unsafe { core::ptr::addr_of!(self.offset).read_unaligned() };
+
+        let target_addr = if offset >= 0 {
+            self_ptr.checked_add(offset as usize)?
+        } else {
+            self_ptr.checked_sub(offset.unsigned_abs() as usize)?
+        };
+        let target_end = target_addr.checked_add(T::SIZE)?;
 
         if target_addr < buffer_start || target_end > buffer_end {
             return None;
@@ -83,18 +100,30 @@ impl<T, const ALIGN: usize> RelativePtr<T, ALIGN> {
     }
 }
 
+impl<T, const ALIGN: usize> StaticSize for RelativePtr<T, ALIGN> {
+    const SIZE: usize = core::mem::size_of::<Self>();
+}
+
 /// A zero-copy array collection equivalent to `[T; N]`.
 #[repr(transparent)]
 pub struct ZeroArray<T, const N: usize, const ALIGN: usize> {
     ptr: RelativePtr<[T; N], ALIGN>,
 }
 
-impl<T: StaticSize, const N: usize, const ALIGN: usize> ZeroArray<T, N, ALIGN> {
+impl<T: ZeroCopy, const N: usize, const ALIGN: usize> ZeroArray<T, N, ALIGN> {
     /// Resolves the array within the given buffer.
     pub fn get<'a>(&self, buffer: &'a [u8]) -> Option<&'a [T; N]> {
         self.ptr.get(buffer)
     }
 }
+
+impl<T, const N: usize, const ALIGN: usize> StaticSize for ZeroArray<T, N, ALIGN> {
+    const SIZE: usize = core::mem::size_of::<Self>();
+}
+
+// Implement ZeroCopy for zero-copy containers since their layouts are guaranteed
+unsafe impl<T: ZeroCopy, const N: usize, const ALIGN: usize> ZeroCopy for ZeroArray<T, N, ALIGN> {}
+unsafe impl<T: ZeroCopy, const ALIGN: usize> ZeroCopy for RelativePtr<T, ALIGN> {}
 
 /// A zero-copy string type with compile-time known max capacity.
 #[repr(transparent)]
@@ -116,13 +145,13 @@ pub trait Validator {
     fn is_valid(&self, buffer: &[u8]) -> bool;
 }
 
-impl<T: StaticSize, const ALIGN: usize> Validator for RelativePtr<T, ALIGN> {
+impl<T: ZeroCopy, const ALIGN: usize> Validator for RelativePtr<T, ALIGN> {
     fn is_valid(&self, buffer: &[u8]) -> bool {
         self.get(buffer).is_some()
     }
 }
 
-impl<T: StaticSize, const N: usize, const ALIGN: usize> Validator for ZeroArray<T, N, ALIGN> {
+impl<T: ZeroCopy, const N: usize, const ALIGN: usize> Validator for ZeroArray<T, N, ALIGN> {
     fn is_valid(&self, buffer: &[u8]) -> bool {
         self.ptr.is_valid(buffer)
     }
@@ -141,10 +170,12 @@ pub struct ZeroSlice<T, const ALIGN: usize> {
     ptr: RelativePtr<T, ALIGN>,
 }
 
-impl<T: StaticSize, const ALIGN: usize> ZeroSlice<T, ALIGN> {
+impl<T: ZeroCopy, const ALIGN: usize> ZeroSlice<T, ALIGN> {
     /// Resolves the slice within the given buffer.
     pub fn get<'a>(&self, buffer: &'a [u8]) -> Option<&'a [T]> {
-        if self.len == 0 {
+        let len = unsafe { core::ptr::addr_of!(self.len).read_unaligned() };
+
+        if len == 0 {
             // For zero-length slices, we can just return an empty slice,
             // bypassing the pointer lookup (which might be invalid or dummy).
             return Some(&[]);
@@ -153,7 +184,7 @@ impl<T: StaticSize, const ALIGN: usize> ZeroSlice<T, ALIGN> {
         // Get the first element's reference to validate base bounds, alignment, and offset
         let first_ref = self.ptr.get(buffer)?;
 
-        let slice_len = self.len as usize;
+        let slice_len = len as usize;
 
         // Calculate the total size required for the full slice.
         let total_size = T::SIZE.checked_mul(slice_len)?;
@@ -178,11 +209,14 @@ impl<T, const ALIGN: usize> StaticSize for ZeroSlice<T, ALIGN> {
     const SIZE: usize = core::mem::size_of::<Self>();
 }
 
-impl<T: StaticSize, const ALIGN: usize> Validator for ZeroSlice<T, ALIGN> {
+impl<T: ZeroCopy, const ALIGN: usize> Validator for ZeroSlice<T, ALIGN> {
     fn is_valid(&self, buffer: &[u8]) -> bool {
         self.get(buffer).is_some()
     }
 }
+
+unsafe impl<T: ZeroCopy, const ALIGN: usize> ZeroCopy for ZeroSlice<T, ALIGN> {}
+unsafe impl ZeroCopy for ZeroStr {}
 
 /// A dynamically sized zero-copy string conceptually equivalent to `&str` or `String`.
 #[repr(transparent)]
