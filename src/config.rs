@@ -212,7 +212,6 @@ impl<E, I, L, B, F> Configuration<E, I, L, B, F> {
     }
 
     /// Enables fingerprinting with a custom seed.
-    #[cfg(feature = "std")]
     #[must_use]
     pub const fn with_fingerprint_and_seed<const SEED: u64>(
         self,

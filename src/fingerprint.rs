@@ -40,8 +40,7 @@ impl_fingerprint! {
     f32 => b"f32",
     f64 => b"f64",
     char => b"char",
-    str => b"str",
-    &str => b"&str"
+    str => b"str"
 }
 
 impl<C: Config, T: Fingerprint<C>, const N: usize> Fingerprint<C> for [T; N] {
@@ -62,7 +61,7 @@ impl<C: Config, T: Fingerprint<C>> Fingerprint<C> for alloc::vec::Vec<T> {
 #[cfg(feature = "alloc")]
 impl<C: Config> Fingerprint<C> for alloc::string::String {
     const SCHEMA_HASH: u64 = rapidhash::v3::rapidhash_v3_seeded(
-        b"String",
+        b"str",
         &rapidhash::v3::RapidSecrets::seed_cpp(C::CONFIG_HASH),
     );
 }
@@ -109,16 +108,16 @@ impl<C: Config, T: ?Sized> Fingerprint<C> for core::marker::PhantomData<T> {
     );
 }
 
-impl<C: Config, T: Fingerprint<C>> Fingerprint<C> for &T {
+impl<C: Config, T: ?Sized + Fingerprint<C>> Fingerprint<C> for &T {
     const SCHEMA_HASH: u64 = T::SCHEMA_HASH;
 }
 
-impl<C: Config, T: Fingerprint<C>> Fingerprint<C> for &mut T {
+impl<C: Config, T: ?Sized + Fingerprint<C>> Fingerprint<C> for &mut T {
     const SCHEMA_HASH: u64 = T::SCHEMA_HASH;
 }
 
 #[cfg(feature = "alloc")]
-impl<C: Config, T: Fingerprint<C>> Fingerprint<C> for alloc::boxed::Box<T> {
+impl<C: Config, T: ?Sized + Fingerprint<C>> Fingerprint<C> for alloc::boxed::Box<T> {
     const SCHEMA_HASH: u64 = T::SCHEMA_HASH;
 }
 
@@ -128,12 +127,12 @@ impl<C: Config, T: Fingerprint<C> + ToOwned + ?Sized> Fingerprint<C> for alloc::
 }
 
 #[cfg(feature = "alloc")]
-impl<C: Config, T: Fingerprint<C>> Fingerprint<C> for alloc::rc::Rc<T> {
+impl<C: Config, T: ?Sized + Fingerprint<C>> Fingerprint<C> for alloc::rc::Rc<T> {
     const SCHEMA_HASH: u64 = T::SCHEMA_HASH;
 }
 
 #[cfg(feature = "alloc")]
-impl<C: Config, T: Fingerprint<C>> Fingerprint<C> for alloc::sync::Arc<T> {
+impl<C: Config, T: ?Sized + Fingerprint<C>> Fingerprint<C> for alloc::sync::Arc<T> {
     const SCHEMA_HASH: u64 = T::SCHEMA_HASH;
 }
 

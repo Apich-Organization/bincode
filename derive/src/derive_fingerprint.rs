@@ -21,8 +21,7 @@ impl DeriveFingerprint {
                 } else {
                     for g in generics.iter_generics() {
                         where_constraints
-                            .push_constraint(g, format!("{}::Fingerprint<__C>", crate_name))
-                            .unwrap();
+                            .push_constraint(g, format!("{}::Fingerprint<__C>", crate_name))?;
                     }
                 }
                 Ok(())
