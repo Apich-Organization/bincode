@@ -13,12 +13,18 @@ pub trait Writer {
     /// # Errors
     ///
     /// Returns `EncodeError::UnexpectedEnd` if the writer does not have enough space.
-    fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError>;
+    fn write(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(), EncodeError>;
 }
 
 impl<T: Writer> Writer for &mut T {
     #[inline]
-    fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
+    fn write(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(), EncodeError> {
         (**self).write(bytes)
     }
 }
@@ -26,7 +32,8 @@ impl<T: Writer> Writer for &mut T {
 /// A helper struct that implements `Writer` for a `&[u8]` slice.
 ///
 /// ```
-/// use bincode_next::enc::write::{Writer, SliceWriter};
+/// use bincode_next::enc::write::SliceWriter;
+/// use bincode_next::enc::write::Writer;
 ///
 /// let destination = &mut [0u8; 100];
 /// let mut writer = SliceWriter::new(destination);
@@ -59,7 +66,10 @@ impl<'storage> SliceWriter<'storage> {
 
 impl Writer for SliceWriter<'_> {
     #[inline(always)]
-    fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
+    fn write(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(), EncodeError> {
         if bytes.len() > self.slice.len() {
             return crate::error::cold_encode_error_unexpected_end();
         }
@@ -79,7 +89,10 @@ pub struct SizeWriter {
 }
 impl Writer for SizeWriter {
     #[inline(always)]
-    fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
+    fn write(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(), EncodeError> {
         self.bytes_written += bytes.len();
 
         Ok(())

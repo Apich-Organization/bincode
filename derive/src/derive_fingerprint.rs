@@ -1,4 +1,5 @@
-use crate::attribute::{ContainerAttributes, FieldAttributes};
+use crate::attribute::ContainerAttributes;
+use crate::attribute::FieldAttributes;
 use virtue::prelude::*;
 
 pub(crate) struct DeriveFingerprint {
@@ -8,7 +9,11 @@ pub(crate) struct DeriveFingerprint {
 }
 
 impl DeriveFingerprint {
-    pub fn generate(self, generator: &mut Generator, type_name: &str) -> Result<()> {
+    pub fn generate(
+        self,
+        generator: &mut Generator,
+        type_name: &str,
+    ) -> Result<()> {
         let crate_name = &self.attributes.crate_name;
         generator
             .impl_for(format!("{}::Fingerprint<__C>", crate_name))

@@ -1,22 +1,36 @@
+use crate::config::Config;
 use crate::config::internal::InternalFingerprintGuard;
-use crate::{
-    config::Config,
-    de::{BorrowDecode, BorrowDecoder, Decode, Decoder, DecoderImpl, read::Reader},
-    enc::{Encode, Encoder, EncoderImpl, write::Writer},
-    error::{DecodeError, EncodeError},
-    impl_borrow_decode,
-};
+use crate::de::BorrowDecode;
+use crate::de::BorrowDecoder;
+use crate::de::Decode;
+use crate::de::Decoder;
+use crate::de::DecoderImpl;
+use crate::de::read::Reader;
+use crate::enc::Encode;
+use crate::enc::Encoder;
+use crate::enc::EncoderImpl;
+use crate::enc::write::Writer;
+use crate::error::DecodeError;
+use crate::error::EncodeError;
+use crate::impl_borrow_decode;
 use core::time::Duration;
-use std::{
-    collections::{HashMap, HashSet},
-    ffi::{CStr, CString},
-    hash::Hash,
-    io::Read,
-    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
-    path::{Path, PathBuf},
-    sync::{Mutex, RwLock},
-    time::SystemTime,
-};
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::ffi::CStr;
+use std::ffi::CString;
+use std::hash::Hash;
+use std::io::Read;
+use std::net::IpAddr;
+use std::net::Ipv4Addr;
+use std::net::Ipv6Addr;
+use std::net::SocketAddr;
+use std::net::SocketAddrV4;
+use std::net::SocketAddrV6;
+use std::path::Path;
+use std::path::PathBuf;
+use std::sync::Mutex;
+use std::sync::RwLock;
+use std::time::SystemTime;
 
 /// Decode type `D` from the given reader with the given `Config`. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
 ///
@@ -79,10 +93,13 @@ where
     R: std::io::Read,
 {
     #[inline(always)]
-    fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
-        self.reader
-            .read_exact(bytes)
-            .map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err())
+    fn read(
+        &mut self,
+        bytes: &mut [u8],
+    ) -> Result<(), DecodeError> {
+        self.reader.read_exact(bytes).map_err(|inner| {
+            crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err()
+        })
     }
 }
 
@@ -90,17 +107,28 @@ impl<R> Reader for std::io::BufReader<R>
 where
     R: std::io::Read,
 {
-    fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
-        self.read_exact(bytes).map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err())
+    fn read(
+        &mut self,
+        bytes: &mut [u8],
+    ) -> Result<(), DecodeError> {
+        self.read_exact(bytes).map_err(|inner| {
+            crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err()
+        })
     }
 
     #[inline]
-    fn peek_read(&mut self, n: usize) -> Option<&[u8]> {
+    fn peek_read(
+        &mut self,
+        n: usize,
+    ) -> Option<&[u8]> {
         self.buffer().get(..n)
     }
 
     #[inline]
-    fn consume(&mut self, n: usize) {
+    fn consume(
+        &mut self,
+        n: usize,
+    ) {
         <Self as std::io::BufRead>::consume(self, n);
     }
 }
@@ -155,23 +183,32 @@ impl<'a, W: std::io::Write> IoWriter<'a, W> {
 
 impl<W: std::io::Write> Writer for IoWriter<'_, W> {
     #[inline]
-    fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
-        self.writer
-            .write_all(bytes)
-            .map_err(|inner| crate::error::cold_encode_error_io::<()>(inner, self.bytes_written).unwrap_err())?;
+    fn write(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(), EncodeError> {
+        self.writer.write_all(bytes).map_err(|inner| {
+            crate::error::cold_encode_error_io::<()>(inner, self.bytes_written).unwrap_err()
+        })?;
         self.bytes_written += bytes.len();
         Ok(())
     }
 }
 
 impl Encode for &CStr {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
         self.to_bytes().encode(encoder)
     }
 }
 
 impl Encode for CString {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
         self.as_bytes().encode(encoder)
     }
 }
@@ -179,7 +216,10 @@ impl Encode for CString {
 impl<Context> Decode<Context> for CString {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = std::vec::Vec::decode(decoder)?;
-        Self::new(vec).map_err(|inner| crate::error::cold_decode_error_c_string_nul_error::<()>(inner.nul_position()).unwrap_err())
+        Self::new(vec).map_err(|inner| {
+            crate::error::cold_decode_error_c_string_nul_error::<()>(inner.nul_position())
+                .unwrap_err()
+        })
     }
 }
 impl_borrow_decode!(CString);
@@ -188,8 +228,14 @@ impl<T> Encode for Mutex<T>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        let t = self.lock().map_err(|_| crate::error::cold_encode_error_lock_failed::<()>(core::any::type_name::<Self>()).unwrap_err())?;
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
+        let t = self.lock().map_err(|_| {
+            crate::error::cold_encode_error_lock_failed::<()>(core::any::type_name::<Self>())
+                .unwrap_err()
+        })?;
         t.encode(encoder)
     }
 }
@@ -208,7 +254,7 @@ where
     T: BorrowDecode<'de, Context>,
 {
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
         Ok(Self::new(t))
@@ -219,8 +265,14 @@ impl<T> Encode for RwLock<T>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        let t = self.read().map_err(|_| crate::error::cold_encode_error_lock_failed::<()>(core::any::type_name::<Self>()).unwrap_err())?;
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
+        let t = self.read().map_err(|_| {
+            crate::error::cold_encode_error_lock_failed::<()>(core::any::type_name::<Self>())
+                .unwrap_err()
+        })?;
         t.encode(encoder)
     }
 }
@@ -239,7 +291,7 @@ where
     T: BorrowDecode<'de, Context>,
 {
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
         Ok(Self::new(t))
@@ -247,10 +299,17 @@ where
 }
 
 impl Encode for SystemTime {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        let duration =
-            self.duration_since(Self::UNIX_EPOCH)
-                .map_err(|e| crate::error::cold_encode_error_invalid_system_time::<()>(e, std::boxed::Box::new(*self)).unwrap_err())?;
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
+        let duration = self.duration_since(Self::UNIX_EPOCH).map_err(|e| {
+            crate::error::cold_encode_error_invalid_system_time::<()>(
+                e,
+                std::boxed::Box::new(*self),
+            )
+            .unwrap_err()
+        })?;
         duration.encode(encoder)
     }
 }
@@ -258,24 +317,29 @@ impl Encode for SystemTime {
 impl<Context> Decode<Context> for SystemTime {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let duration = Duration::decode(decoder)?;
-        Self::UNIX_EPOCH
-            .checked_add(duration)
-            .ok_or_else(|| crate::error::cold_decode_error_invalid_system_time::<()>(duration).unwrap_err())
+        Self::UNIX_EPOCH.checked_add(duration).ok_or_else(|| {
+            crate::error::cold_decode_error_invalid_system_time::<()>(duration).unwrap_err()
+        })
     }
 }
 impl_borrow_decode!(SystemTime);
 
 impl Encode for &'_ Path {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
         self.to_str()
-            .ok_or_else(|| crate::error::cold_encode_error_invalid_path_characters::<()>().unwrap_err())?
+            .ok_or_else(|| {
+                crate::error::cold_encode_error_invalid_path_characters::<()>().unwrap_err()
+            })?
             .encode(encoder)
     }
 }
 
 impl<'de, Context> BorrowDecode<'de, Context> for &'de Path {
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, DecodeError> {
         let str = <&'de str>::borrow_decode(decoder)?;
         Ok(Path::new(str))
@@ -283,7 +347,10 @@ impl<'de, Context> BorrowDecode<'de, Context> for &'de Path {
 }
 
 impl Encode for PathBuf {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
         self.as_path().encode(encoder)
     }
 }
@@ -297,16 +364,19 @@ impl<Context> Decode<Context> for PathBuf {
 impl_borrow_decode!(PathBuf);
 
 impl Encode for IpAddr {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
         match self {
-            Self::V4(v4) => {
+            | Self::V4(v4) => {
                 0u32.encode(encoder)?;
                 v4.encode(encoder)
-            }
-            Self::V6(v6) => {
+            },
+            | Self::V6(v6) => {
                 1u32.encode(encoder)?;
                 v6.encode(encoder)
-            }
+            },
         }
     }
 }
@@ -314,20 +384,25 @@ impl Encode for IpAddr {
 impl<Context> Decode<Context> for IpAddr {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         match u32::decode(decoder)? {
-            0 => Ok(Self::V4(Ipv4Addr::decode(decoder)?)),
-            1 => Ok(Self::V6(Ipv6Addr::decode(decoder)?)),
-            found => crate::error::cold_decode_error_unexpected_variant(
-                core::any::type_name::<Self>(),
-                &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
-                found,
-            ),
+            | 0 => Ok(Self::V4(Ipv4Addr::decode(decoder)?)),
+            | 1 => Ok(Self::V6(Ipv6Addr::decode(decoder)?)),
+            | found => {
+                crate::error::cold_decode_error_unexpected_variant(
+                    core::any::type_name::<Self>(),
+                    &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                    found,
+                )
+            },
         }
     }
 }
 impl_borrow_decode!(IpAddr);
 
 impl Encode for Ipv4Addr {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
         encoder.writer().write(&self.octets())
     }
 }
@@ -342,7 +417,10 @@ impl<Context> Decode<Context> for Ipv4Addr {
 impl_borrow_decode!(Ipv4Addr);
 
 impl Encode for Ipv6Addr {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
         encoder.writer().write(&self.octets())
     }
 }
@@ -357,16 +435,19 @@ impl<Context> Decode<Context> for Ipv6Addr {
 impl_borrow_decode!(Ipv6Addr);
 
 impl Encode for SocketAddr {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
         match self {
-            Self::V4(v4) => {
+            | Self::V4(v4) => {
                 0u32.encode(encoder)?;
                 v4.encode(encoder)
-            }
-            Self::V6(v6) => {
+            },
+            | Self::V6(v6) => {
                 1u32.encode(encoder)?;
                 v6.encode(encoder)
-            }
+            },
         }
     }
 }
@@ -374,20 +455,25 @@ impl Encode for SocketAddr {
 impl<Context> Decode<Context> for SocketAddr {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         match u32::decode(decoder)? {
-            0 => Ok(Self::V4(SocketAddrV4::decode(decoder)?)),
-            1 => Ok(Self::V6(SocketAddrV6::decode(decoder)?)),
-            found => crate::error::cold_decode_error_unexpected_variant(
-                core::any::type_name::<Self>(),
-                &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
-                found,
-            ),
+            | 0 => Ok(Self::V4(SocketAddrV4::decode(decoder)?)),
+            | 1 => Ok(Self::V6(SocketAddrV6::decode(decoder)?)),
+            | found => {
+                crate::error::cold_decode_error_unexpected_variant(
+                    core::any::type_name::<Self>(),
+                    &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                    found,
+                )
+            },
         }
     }
 }
 impl_borrow_decode!(SocketAddr);
 
 impl Encode for SocketAddrV4 {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
         self.ip().encode(encoder)?;
         self.port().encode(encoder)
     }
@@ -403,7 +489,10 @@ impl<Context> Decode<Context> for SocketAddrV4 {
 impl_borrow_decode!(SocketAddrV4);
 
 impl Encode for SocketAddrV6 {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
         self.ip().encode(encoder)?;
         self.port().encode(encoder)
     }
@@ -423,7 +512,10 @@ where
     K: Encode,
     V: Encode,
 {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
         crate::enc::encode_slice_len(encoder, self.len())?;
         for (k, v) in self {
             Encode::encode(k, encoder)?;
@@ -463,7 +555,7 @@ where
     S: std::hash::BuildHasher + Default,
 {
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<(K, V)>(len)?;
@@ -510,7 +602,7 @@ where
     S: std::hash::BuildHasher + Default,
 {
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
@@ -531,7 +623,10 @@ impl<T, S> Encode for HashSet<T, S>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
         crate::enc::encode_slice_len(encoder, self.len())?;
         for item in self {
             item.encode(encoder)?;

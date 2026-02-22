@@ -1,10 +1,17 @@
 #![cfg(all(feature = "alloc", feature = "derive"))]
 
-use bincode::{
-    BorrowDecode, Decode, Encode, config, de::BorrowDecoder, decode_from_slice,
-    decode_from_slice_with_context, encode_to_vec, error::DecodeError,
-};
-use bumpalo::{Bump, collections::Vec, vec};
+use bincode::BorrowDecode;
+use bincode::Decode;
+use bincode::Encode;
+use bincode::config;
+use bincode::de::BorrowDecoder;
+use bincode::decode_from_slice;
+use bincode::decode_from_slice_with_context;
+use bincode::encode_to_vec;
+use bincode::error::DecodeError;
+use bumpalo::Bump;
+use bumpalo::collections::Vec;
+use bumpalo::vec;
 
 extern crate bincode_next as bincode;
 
@@ -22,7 +29,7 @@ impl<'bump, T: Encode> Encode for CodableVec<'bump, T> {
 
 impl<'bump, T: Decode<&'bump Bump>> Decode<&'bump Bump> for CodableVec<'bump, T> {
     fn decode<D: bincode::de::Decoder<Context = &'bump Bump>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, bincode::error::DecodeError> {
         let len = u64::decode(decoder)?;
         let len = usize::try_from(len).map_err(|_| DecodeError::OutsideUsizeRange(len))?;
@@ -40,7 +47,7 @@ impl<'de, 'bump, T: BorrowDecode<'de, &'bump Bump>> BorrowDecode<'de, &'bump Bum
     for CodableVec<'bump, T>
 {
     fn borrow_decode<D: BorrowDecoder<'de, Context = &'bump Bump>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, DecodeError> {
         let len = u64::decode(decoder)?;
         let len = usize::try_from(len).map_err(|_| DecodeError::OutsideUsizeRange(len))?;
@@ -80,7 +87,7 @@ struct SelfReferencing {
 
 impl<Context> Decode<Context> for SelfReferencing {
     fn decode<D: bincode::de::Decoder<Context = Context>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, DecodeError> {
         SelfReferencing::try_new(Bump::new(), |bump| {
             Container::decode(&mut decoder.with_context(bump))

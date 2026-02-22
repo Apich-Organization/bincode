@@ -1,7 +1,9 @@
 #![cfg(feature = "derive")]
 
+use bincode_next::BitPacked;
+use bincode_next::Decode;
+use bincode_next::Encode;
 use bincode_next::config::standard;
-use bincode_next::{BitPacked, Decode, Encode};
 
 #[derive(BitPacked, Debug, PartialEq)]
 enum SimpleEnum {

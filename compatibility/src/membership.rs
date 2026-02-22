@@ -2,7 +2,8 @@
 // Taken from https://github.com/datafuselabs/openraft/blob/209ae677ade5b624fea9f6630e9ff191963f5d74/openraft/src/membership/membership.rs#L21
 // License: Openraft is licensed under the terms of the MIT License or the Apache License 2.0, at your choosing.
 
-use rand::{prelude::ThreadRng, Rng};
+use rand::prelude::ThreadRng;
+use rand::Rng;
 use std::collections::BTreeSet;
 
 type NodeId = u64;

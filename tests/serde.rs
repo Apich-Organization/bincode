@@ -3,7 +3,8 @@ extern crate bincode_next as bincode;
 
 extern crate alloc;
 
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::Deserialize;
+use serde_derive::Serialize;
 
 #[derive(Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 pub struct SerdeRoundtrip {
@@ -144,11 +145,12 @@ fn test_serialize_deserialize_owned_data() {
 
 #[cfg(feature = "derive")]
 mod derive {
-    use bincode::{
-        Decode, Encode,
-        serde::{BorrowCompat, Compat},
-    };
-    use serde_derive::{Deserialize, Serialize};
+    use bincode::Decode;
+    use bincode::Encode;
+    use bincode::serde::BorrowCompat;
+    use bincode::serde::Compat;
+    use serde_derive::Deserialize;
+    use serde_derive::Serialize;
 
     #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
     pub struct SerdeType {
@@ -172,8 +174,10 @@ mod derive {
 
     #[test]
     fn test_serde_derive() {
-        fn test_encode_decode<T>(start: T, expected_len: usize)
-        where
+        fn test_encode_decode<T>(
+            start: T,
+            expected_len: usize,
+        ) where
             T: bincode::Encode + bincode::Decode<()> + PartialEq + core::fmt::Debug,
         {
             let mut slice = [0u8; 100];

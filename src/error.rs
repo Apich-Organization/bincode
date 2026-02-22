@@ -100,7 +100,10 @@ bincode_error! {
 }
 
 impl core::fmt::Display for EncodeError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> core::fmt::Result {
         // TODO: Improve this?
         write!(f, "{self:?}")
     }
@@ -109,20 +112,20 @@ impl core::fmt::Display for EncodeError {
 impl core::error::Error for EncodeError {
     fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
         match self {
-            Self::RefCellAlreadyBorrowed { inner, .. } => Some(inner),
+            | Self::RefCellAlreadyBorrowed { inner, .. } => Some(inner),
             #[cfg(feature = "std")]
-            Self::Io { inner, .. } => Some(inner),
+            | Self::Io { inner, .. } => Some(inner),
             #[cfg(feature = "std")]
-            Self::InvalidSystemTime { inner, .. } => Some(inner),
-            _ => None,
+            | Self::InvalidSystemTime { inner, .. } => Some(inner),
+            | _ => None,
         }
     }
 }
 impl core::error::Error for DecodeError {
     fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
         match self {
-            Self::Utf8 { inner } => Some(inner),
-            _ => None,
+            | Self::Utf8 { inner } => Some(inner),
+            | _ => None,
         }
     }
 }
@@ -265,7 +268,10 @@ bincode_error! {
 }
 
 impl core::fmt::Display for DecodeError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> core::fmt::Result {
         // TODO: Improve this?
         write!(f, "{self:?}")
     }
@@ -281,11 +287,13 @@ impl DecodeError {
     #[inline(never)]
     pub(crate) fn change_integer_type_to_signed(self) -> Self {
         match self {
-            Self::InvalidIntegerType { expected, found } => Self::InvalidIntegerType {
-                expected: expected.into_signed(),
-                found: found.into_signed(),
+            | Self::InvalidIntegerType { expected, found } => {
+                Self::InvalidIntegerType {
+                    expected: expected.into_signed(),
+                    found: found.into_signed(),
+                }
             },
-            other => other,
+            | other => other,
         }
     }
 }
@@ -328,14 +336,14 @@ impl IntegerType {
     /// Returns the old value if `self` is already `Ix`.
     pub(crate) const fn into_signed(self) -> Self {
         match self {
-            Self::U8 => Self::I8,
-            Self::U16 => Self::I16,
-            Self::U32 => Self::I32,
-            Self::U64 => Self::I64,
-            Self::U128 => Self::I128,
-            Self::Usize => Self::Isize,
+            | Self::U8 => Self::I8,
+            | Self::U16 => Self::I16,
+            | Self::U32 => Self::I32,
+            | Self::U64 => Self::I64,
+            | Self::U128 => Self::I128,
+            | Self::Usize => Self::Isize,
 
-            other => other,
+            | other => other,
         }
     }
 }

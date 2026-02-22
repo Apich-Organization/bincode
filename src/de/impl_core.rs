@@ -7,7 +7,10 @@
 //!
 //! Any modifications done are purely to make the code compatible with bincode
 
-use core::mem::{self, MaybeUninit};
+use core::mem::MaybeUninit;
+use core::mem::{
+    self,
+};
 
 struct Guard<'a, T, const N: usize> {
     array_mut: &'a mut [MaybeUninit<T>; N],
@@ -57,10 +60,10 @@ where
         let next_item = iter.next();
         if let Some(item_rslt) = next_item {
             let item = match item_rslt {
-                Err(err) => {
+                | Err(err) => {
                     return Some(Err(err));
-                }
-                Ok(elem) => elem,
+                },
+                | Ok(elem) => elem,
             };
 
             // SAFETY: `guard.initialized` starts at 0, is increased by one in the

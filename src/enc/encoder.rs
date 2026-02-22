@@ -1,5 +1,8 @@
-use super::{Encoder, write::Writer};
-use crate::{config::Config, utils::Sealed, error_path::BincodeErrorPathCovered};
+use super::Encoder;
+use super::write::Writer;
+use crate::config::Config;
+use crate::error_path::BincodeErrorPathCovered;
+use crate::utils::Sealed;
 
 impl<W: Writer, C: Config> BincodeErrorPathCovered<1> for EncoderImpl<W, C> {}
 
@@ -30,7 +33,10 @@ pub struct EncoderImpl<W: Writer, C: Config> {
 
 impl<W: Writer, C: Config> EncoderImpl<W, C> {
     /// Create a new Encoder
-    pub const fn new(writer: W, config: C) -> Self {
+    pub const fn new(
+        writer: W,
+        config: C,
+    ) -> Self {
         Self { writer, config }
     }
 
@@ -42,9 +48,8 @@ impl<W: Writer, C: Config> EncoderImpl<W, C> {
 }
 
 impl<W: Writer, C: Config> Encoder for EncoderImpl<W, C> {
-    type W = W;
-
     type C = C;
+    type W = W;
 
     #[inline]
     fn writer(&mut self) -> &mut Self::W {

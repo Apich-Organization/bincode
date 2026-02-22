@@ -201,7 +201,7 @@ where
     T: serde::de::DeserializeOwned,
 {
     fn borrow_decode<D: crate::de::BorrowDecoder<'de>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, crate::error::DecodeError> {
         let serde_decoder = de_owned::SerdeDecoder { de: decoder };
         T::deserialize(serde_decoder).map(Compat)
@@ -226,7 +226,10 @@ impl<T> core::fmt::Debug for Compat<T>
 where
     T: core::fmt::Debug,
 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> core::fmt::Result {
         f.debug_tuple("Compat").field(&self.0).finish()
     }
 }
@@ -235,7 +238,10 @@ impl<T> core::fmt::Display for Compat<T>
 where
     T: core::fmt::Display,
 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> core::fmt::Result {
         self.0.fmt(f)
     }
 }
@@ -253,7 +259,7 @@ where
     T: serde::de::Deserialize<'de>,
 {
     fn borrow_decode<D: crate::de::BorrowDecoder<'de>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, crate::error::DecodeError> {
         let serde_decoder = de_borrowed::SerdeDecoder {
             de: decoder,
@@ -281,7 +287,10 @@ impl<T> core::fmt::Debug for BorrowCompat<T>
 where
     T: core::fmt::Debug,
 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> core::fmt::Result {
         f.debug_tuple("BorrowCompat").field(&self.0).finish()
     }
 }
@@ -290,7 +299,10 @@ impl<T> core::fmt::Display for BorrowCompat<T>
 where
     T: core::fmt::Display,
 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> core::fmt::Result {
         self.0.fmt(f)
     }
 }

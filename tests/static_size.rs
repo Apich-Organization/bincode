@@ -1,7 +1,11 @@
 #[cfg(feature = "static-size")]
 mod tests {
-    use bincode_next::bounded::{BoundedString, BoundedVec};
-    use bincode_next::{Decode, Encode, StaticSize, decode_from_slice_static};
+    use bincode_next::Decode;
+    use bincode_next::Encode;
+    use bincode_next::StaticSize;
+    use bincode_next::bounded::BoundedString;
+    use bincode_next::bounded::BoundedVec;
+    use bincode_next::decode_from_slice_static;
 
     #[derive(StaticSize, Encode, Decode, PartialEq, Debug)]
     struct TestStruct {

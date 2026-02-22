@@ -21,7 +21,11 @@ impl<'a, R: Reader> BitReader<'a, R> {
 
     /// Creates a new `BitReader` with an existing state.
     #[inline(always)]
-    pub fn from_state(reader: &'a mut R, current_byte: u8, bits_available: u8) -> Self {
+    pub fn from_state(
+        reader: &'a mut R,
+        current_byte: u8,
+        bits_available: u8,
+    ) -> Self {
         Self {
             reader,
             current_byte,
@@ -37,7 +41,10 @@ impl<'a, R: Reader> BitReader<'a, R> {
 
     /// Reads `num_bits` from the stream, using LSB-first bit ordering.
     #[inline]
-    pub fn read_bits_lsb(&mut self, mut num_bits: u8) -> Result<u64, DecodeError> {
+    pub fn read_bits_lsb(
+        &mut self,
+        mut num_bits: u8,
+    ) -> Result<u64, DecodeError> {
         let mut result: u64 = 0;
         let mut bits_read: u8 = 0;
 
@@ -67,7 +74,10 @@ impl<'a, R: Reader> BitReader<'a, R> {
 
     /// Reads `num_bits` from the stream, using MSB-first bit ordering.
     #[inline]
-    pub fn read_bits_msb(&mut self, mut num_bits: u8) -> Result<u64, DecodeError> {
+    pub fn read_bits_msb(
+        &mut self,
+        mut num_bits: u8,
+    ) -> Result<u64, DecodeError> {
         let mut result: u64 = 0;
 
         while num_bits > 0 {

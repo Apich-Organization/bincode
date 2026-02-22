@@ -1,4 +1,7 @@
-use super::{BorrowDecode, BorrowDecoder, Decode, Decoder};
+use super::BorrowDecode;
+use super::BorrowDecoder;
+use super::Decode;
+use super::Decoder;
 use crate::error::DecodeError;
 
 macro_rules! impl_tuple {

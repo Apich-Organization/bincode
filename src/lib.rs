@@ -21,6 +21,8 @@
 //! |atomic| Yes    | No          |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
 //! |derive| Yes    | No          |||Enables the `BorrowDecode`, `Decode` and `Encode` derive macros|
 //! |serde | No     | Yes (MSRV reliant on serde)|`Compat` and `BorrowCompat`, which will work for all types that implement serde's traits|serde-specific encode/decode functions in the [`serde`\] module|Note: There are several [known issues](serde/index.html#known-issues) when using serde and bincode|
+//! |zero-copy| No    | No          |||Enables the `relative_ptr` module and the `ZeroCopy` derive macro|
+//! |static-size| No    | No          |||Enables the `static_size` module, the `bounded` module and the `StaticSize` derive macro|
 //!
 //! # Which functions to use
 //!
@@ -68,7 +70,6 @@
 //!
 //! [`fs::File`\]: `std::fs::File`
 //! [`net::TcpStream`\]: `std::net::TcpStream`
-//!
 
 // =========================================================================
 // RUST LINT CONFIGURATION: bincode-next
@@ -129,14 +130,15 @@ extern crate alloc;
 extern crate std;
 
 mod atomic;
+#[doc(hidden)]
+pub mod error_path;
 mod features;
 #[doc(hidden)]
 pub mod utils;
 pub(crate) mod varint;
-#[doc(hidden)]
-pub mod error_path;
 
-use de::{Decoder, read::Reader};
+use de::Decoder;
+use de::read::Reader;
 use enc::write::Writer;
 
 #[cfg(any(
@@ -172,11 +174,14 @@ pub mod static_size;
 #[cfg(feature = "static-size")]
 pub use static_size::StaticSize;
 
-pub use de::{BorrowDecode, Decode};
+pub use de::BorrowDecode;
+pub use de::Decode;
 pub use enc::Encode;
 pub use fingerprint::Fingerprint;
 #[cfg(feature = "zero-copy")]
-pub use relative_ptr::{ZeroCopy, ZeroCopyType};
+pub use relative_ptr::ZeroCopy;
+#[cfg(feature = "zero-copy")]
+pub use relative_ptr::ZeroCopyType;
 
 use config::Config;
 use config::internal::InternalFingerprintGuard;

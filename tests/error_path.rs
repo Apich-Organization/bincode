@@ -1,4 +1,7 @@
-use bincode_next::{Decode, config, error::DecodeError, de::Decoder};
+use bincode_next::Decode;
+use bincode_next::config;
+use bincode_next::de::Decoder;
+use bincode_next::error::DecodeError;
 use bincode_next::error_path::BincodeErrorPathCovered;
 
 struct CustomDecoder;
@@ -7,9 +10,9 @@ impl bincode_next::utils::Sealed for CustomDecoder {}
 impl BincodeErrorPathCovered<0> for CustomDecoder {}
 
 impl Decoder for CustomDecoder {
-    type R = bincode_next::de::read::SliceReader<'static>;
     type C = config::Configuration<config::LittleEndian, config::Varint, config::NoLimit>;
     type Context = ();
+    type R = bincode_next::de::read::SliceReader<'static>;
 
     fn reader(&mut self) -> &mut Self::R {
         unreachable!()
@@ -23,12 +26,19 @@ impl Decoder for CustomDecoder {
         unreachable!()
     }
 
-    fn claim_bytes_read(&mut self, _n: usize) -> Result<(), DecodeError> {
+    fn claim_bytes_read(
+        &mut self,
+        _n: usize,
+    ) -> Result<(), DecodeError> {
         Self::assert_covered();
         Ok(())
     }
 
-    fn unclaim_bytes_read(&mut self, _n: usize) {}
+    fn unclaim_bytes_read(
+        &mut self,
+        _n: usize,
+    ) {
+    }
 }
 
 #[test]
@@ -38,9 +48,7 @@ fn test_covered_path() {
 }
 
 // This test would fail to compile if we uncomment it and BincodeErrorPathCovered<1> is not implemented for CustomDecoder
-/*
-#[test]
-fn test_uncovered_path() {
-    <CustomDecoder as BincodeErrorPathCovered<1>>::assert_covered();
-}
-*/
+// #[test]
+// fn test_uncovered_path() {
+// <CustomDecoder as BincodeErrorPathCovered<1>>::assert_covered();
+// }

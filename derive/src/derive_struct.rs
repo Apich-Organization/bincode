@@ -1,4 +1,5 @@
-use crate::attribute::{ContainerAttributes, FieldAttributes};
+use crate::attribute::ContainerAttributes;
+use crate::attribute::FieldAttributes;
 use virtue::prelude::*;
 
 pub(crate) struct DeriveStruct {
@@ -7,7 +8,10 @@ pub(crate) struct DeriveStruct {
 }
 
 impl DeriveStruct {
-    pub fn generate_encode(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate_encode(
+        self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = &self.attributes.crate_name;
         generator
             .impl_for(format!("{}::Encode", crate_name))
@@ -62,7 +66,10 @@ impl DeriveStruct {
         Ok(())
     }
 
-    pub fn generate_decode(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate_decode(
+        self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         // Remember to keep this mostly in sync with generate_borrow_decode
         let crate_name = &self.attributes.crate_name;
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
@@ -136,7 +143,10 @@ impl DeriveStruct {
         Ok(())
     }
 
-    pub fn generate_borrow_decode(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate_borrow_decode(
+        self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         // Remember to keep this mostly in sync with generate_decode
         let crate_name = self.attributes.crate_name;
 

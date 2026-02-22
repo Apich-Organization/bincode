@@ -1,6 +1,11 @@
 #![allow(clippy::cast_sign_loss)]
-use super::{varint_encode_u16, varint_encode_u32, varint_encode_u64, varint_encode_u128};
-use crate::{config::Endianness, enc::write::Writer, error::EncodeError};
+use super::varint_encode_u16;
+use super::varint_encode_u32;
+use super::varint_encode_u64;
+use super::varint_encode_u128;
+use crate::config::Endianness;
+use crate::enc::write::Writer;
+use crate::error::EncodeError;
 
 #[cfg(test)]
 use crate::enc::write::SliceWriter;

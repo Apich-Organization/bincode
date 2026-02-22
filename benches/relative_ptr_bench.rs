@@ -1,5 +1,9 @@
-use bincode_next::relative_ptr::{ZeroArray, ZeroString};
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use bincode_next::relative_ptr::ZeroArray;
+use bincode_next::relative_ptr::ZeroString;
+use criterion::Criterion;
+use criterion::black_box;
+use criterion::criterion_group;
+use criterion::criterion_main;
 
 fn bench_zero_array_decode(c: &mut Criterion) {
     let mut buffer = [0u8; 12];

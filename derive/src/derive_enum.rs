@@ -1,4 +1,5 @@
-use crate::attribute::{ContainerAttributes, FieldAttributes};
+use crate::attribute::ContainerAttributes;
+use crate::attribute::FieldAttributes;
 use virtue::prelude::*;
 
 const TUPLE_FIELD_PREFIX: &str = "field_";
@@ -16,7 +17,10 @@ impl DeriveEnum {
         }
     }
 
-    pub fn generate_encode(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate_encode(
+        self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = self.attributes.crate_name.as_str();
         generator
             .impl_for(format!("{}::Encode", crate_name))
@@ -138,12 +142,19 @@ impl DeriveEnum {
 
     /// If we're encoding an empty enum, we need to add an empty case in the form of:
     /// `_ => core::unreachable!(),`
-    fn encode_empty_enum_case(&self, builder: &mut StreamBuilder) -> Result {
+    fn encode_empty_enum_case(
+        &self,
+        builder: &mut StreamBuilder,
+    ) -> Result {
         builder.push_parsed("_ => core::unreachable!()").map(|_| ())
     }
 
     /// Build the catch-all case for an int-to-enum decode implementation
-    fn invalid_variant_case(&self, enum_name: &str, result: &mut StreamBuilder) -> Result {
+    fn invalid_variant_case(
+        &self,
+        enum_name: &str,
+        result: &mut StreamBuilder,
+    ) -> Result {
         let crate_name = self.attributes.crate_name.as_str();
 
         result.ident_str("variant");
@@ -190,7 +201,10 @@ impl DeriveEnum {
         Ok(())
     }
 
-    pub fn generate_decode(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate_decode(
+        self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = self.attributes.crate_name.as_str();
 
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
@@ -300,7 +314,10 @@ impl DeriveEnum {
         Ok(())
     }
 
-    pub fn generate_borrow_decode(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate_borrow_decode(
+        self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = &self.attributes.crate_name;
 
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {

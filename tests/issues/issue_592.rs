@@ -3,7 +3,8 @@
 
 extern crate bincode_next as bincode;
 
-use bincode::{Decode, Encode};
+use bincode::Decode;
+use bincode::Encode;
 
 #[derive(Encode, Decode)]
 pub enum TypeOfFile {

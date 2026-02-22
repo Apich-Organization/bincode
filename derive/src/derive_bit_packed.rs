@@ -1,4 +1,5 @@
-use crate::attribute::{ContainerAttributes, FieldAttributes};
+use crate::attribute::ContainerAttributes;
+use crate::attribute::FieldAttributes;
 use virtue::prelude::*;
 
 pub(crate) struct DeriveBitPacked {
@@ -7,14 +8,20 @@ pub(crate) struct DeriveBitPacked {
 }
 
 impl DeriveBitPacked {
-    pub fn generate(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate(
+        self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         self.generate_encode(generator)?;
         self.generate_decode(generator)?;
         self.generate_borrow_decode(generator)?;
         Ok(())
     }
 
-    fn generate_encode(&self, generator: &mut Generator) -> Result<()> {
+    fn generate_encode(
+        &self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = &self.attributes.crate_name;
         generator
             .impl_for(format!("{}::Encode", crate_name))
@@ -98,7 +105,10 @@ impl DeriveBitPacked {
         Ok(())
     }
 
-    fn generate_decode(&self, generator: &mut Generator) -> Result<()> {
+    fn generate_decode(
+        &self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = &self.attributes.crate_name;
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
             decode_context.as_str()
@@ -200,7 +210,10 @@ impl DeriveBitPacked {
         Ok(())
     }
 
-    fn generate_borrow_decode(&self, generator: &mut Generator) -> Result<()> {
+    fn generate_borrow_decode(
+        &self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = &self.attributes.crate_name;
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
             decode_context.as_str()
@@ -322,14 +335,20 @@ enum EncItem {
 }
 
 impl DeriveBitPackedEnum {
-    pub fn generate(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate(
+        self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         self.generate_encode(generator)?;
         self.generate_decode(generator)?;
         self.generate_borrow_decode(generator)?;
         Ok(())
     }
 
-    fn generate_encode(&self, generator: &mut Generator) -> Result<()> {
+    fn generate_encode(
+        &self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = self.attributes.crate_name.as_str();
         let variant_bits = if self.variants.len() <= 1 {
             0
@@ -484,7 +503,11 @@ impl DeriveBitPackedEnum {
         Ok(())
     }
 
-    fn invalid_variant_case(&self, enum_name: &str, result: &mut StreamBuilder) -> Result<()> {
+    fn invalid_variant_case(
+        &self,
+        enum_name: &str,
+        result: &mut StreamBuilder,
+    ) -> Result<()> {
         let crate_name = self.attributes.crate_name.as_str();
         result.ident_str("variant");
         result.puncts("=>");
@@ -528,7 +551,10 @@ impl DeriveBitPackedEnum {
         Ok(())
     }
 
-    fn generate_decode(&self, generator: &mut Generator) -> Result<()> {
+    fn generate_decode(
+        &self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = self.attributes.crate_name.as_str();
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
             decode_context.as_str()
@@ -729,7 +755,10 @@ impl DeriveBitPackedEnum {
         Ok(())
     }
 
-    fn generate_borrow_decode(&self, generator: &mut Generator) -> Result<()> {
+    fn generate_borrow_decode(
+        &self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = self.attributes.crate_name.as_str();
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
             decode_context.as_str()

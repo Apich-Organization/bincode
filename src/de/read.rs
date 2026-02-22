@@ -20,19 +20,29 @@ pub trait Reader {
     /// # Errors
     ///
     /// Returns `DecodeError::UnexpectedEnd` if the reader does not have enough bytes.
-    fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError>;
+    fn read(
+        &mut self,
+        bytes: &mut [u8],
+    ) -> Result<(), DecodeError>;
 
     /// If this reader wraps a buffer of any kind, this function lets callers access contents of
     /// the buffer without passing data through a buffer first.
     #[inline]
-    fn peek_read(&mut self, _: usize) -> Option<&[u8]> {
+    fn peek_read(
+        &mut self,
+        _: usize,
+    ) -> Option<&[u8]> {
         None
     }
 
     /// If an implementation of `peek_read` is provided, an implementation of this function
     /// must be provided so that subsequent reads or peek-reads do not return the same bytes
     #[inline]
-    fn consume(&mut self, _: usize) {}
+    fn consume(
+        &mut self,
+        _: usize,
+    ) {
+    }
 }
 
 impl<T> Reader for &mut T
@@ -40,17 +50,26 @@ where
     T: Reader,
 {
     #[inline]
-    fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
+    fn read(
+        &mut self,
+        bytes: &mut [u8],
+    ) -> Result<(), DecodeError> {
         (**self).read(bytes)
     }
 
     #[inline]
-    fn peek_read(&mut self, n: usize) -> Option<&[u8]> {
+    fn peek_read(
+        &mut self,
+        n: usize,
+    ) -> Option<&[u8]> {
         (**self).peek_read(n)
     }
 
     #[inline]
-    fn consume(&mut self, n: usize) {
+    fn consume(
+        &mut self,
+        n: usize,
+    ) {
         (*self).consume(n);
     }
 }
@@ -64,7 +83,10 @@ pub trait BorrowReader<'storage>: Reader {
     /// # Errors
     ///
     /// Returns `DecodeError::UnexpectedEnd` if the reader does not have enough bytes.
-    fn take_bytes(&mut self, length: usize) -> Result<&'storage [u8], DecodeError>;
+    fn take_bytes(
+        &mut self,
+        length: usize,
+    ) -> Result<&'storage [u8], DecodeError>;
 }
 
 /// A reader type for `&[u8]` slices. Implements both [`Reader`\] and [`BorrowReader`\], and thus can be used for borrowed data.
@@ -82,7 +104,10 @@ impl<'storage> SliceReader<'storage> {
 
 impl<'storage> Reader for SliceReader<'storage> {
     #[inline(always)]
-    fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
+    fn read(
+        &mut self,
+        bytes: &mut [u8],
+    ) -> Result<(), DecodeError> {
         if bytes.len() > self.slice.len() {
             return crate::error::cold_decode_error_unexpected_end(bytes.len() - self.slice.len());
         }
@@ -94,19 +119,28 @@ impl<'storage> Reader for SliceReader<'storage> {
     }
 
     #[inline]
-    fn peek_read(&mut self, n: usize) -> Option<&'storage [u8]> {
+    fn peek_read(
+        &mut self,
+        n: usize,
+    ) -> Option<&'storage [u8]> {
         self.slice.get(..n)
     }
 
     #[inline]
-    fn consume(&mut self, n: usize) {
+    fn consume(
+        &mut self,
+        n: usize,
+    ) {
         self.slice = self.slice.get(n..).unwrap_or_default();
     }
 }
 
 impl<'storage> BorrowReader<'storage> for SliceReader<'storage> {
     #[inline(always)]
-    fn take_bytes(&mut self, length: usize) -> Result<&'storage [u8], DecodeError> {
+    fn take_bytes(
+        &mut self,
+        length: usize,
+    ) -> Result<&'storage [u8], DecodeError> {
         if length > self.slice.len() {
             return crate::error::cold_decode_error_unexpected_end(length - self.slice.len());
         }

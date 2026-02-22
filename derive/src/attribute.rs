@@ -1,5 +1,6 @@
 use virtue::prelude::*;
-use virtue::utils::{ParsedAttribute, parse_tagged_attribute};
+use virtue::utils::ParsedAttribute;
+use virtue::utils::parse_tagged_attribute;
 
 pub struct ContainerAttributes {
     pub crate_name: String,
@@ -31,21 +32,21 @@ impl Default for ContainerAttributes {
 impl FromAttribute for ContainerAttributes {
     fn parse(group: &Group) -> Result<Option<Self>> {
         let attributes = match parse_tagged_attribute(group, "bincode")? {
-            Some(body) => body,
-            None => return Ok(None),
+            | Some(body) => body,
+            | None => return Ok(None),
         };
         let mut result = Self::default();
         for attribute in attributes {
             match attribute {
-                ParsedAttribute::Property(key, val) if key.to_string() == "crate" => {
+                | ParsedAttribute::Property(key, val) if key.to_string() == "crate" => {
                     let val_string = val.to_string();
                     if val_string.starts_with('"') && val_string.ends_with('"') {
                         result.crate_name = val_string[1..val_string.len() - 1].to_string();
                     } else {
                         return Err(Error::custom_at("Should be a literal str", val.span()));
                     }
-                }
-                ParsedAttribute::Property(key, val) if key.to_string() == "bounds" => {
+                },
+                | ParsedAttribute::Property(key, val) if key.to_string() == "bounds" => {
                     let val_string = val.to_string();
                     if val_string.starts_with('"') && val_string.ends_with('"') {
                         result.bounds =
@@ -53,8 +54,8 @@ impl FromAttribute for ContainerAttributes {
                     } else {
                         return Err(Error::custom_at("Should be a literal str", val.span()));
                     }
-                }
-                ParsedAttribute::Property(key, val) if key.to_string() == "decode_bounds" => {
+                },
+                | ParsedAttribute::Property(key, val) if key.to_string() == "decode_bounds" => {
                     let val_string = val.to_string();
                     if val_string.starts_with('"') && val_string.ends_with('"') {
                         result.decode_bounds =
@@ -62,8 +63,8 @@ impl FromAttribute for ContainerAttributes {
                     } else {
                         return Err(Error::custom_at("Should be a literal str", val.span()));
                     }
-                }
-                ParsedAttribute::Property(key, val) if key.to_string() == "decode_context" => {
+                },
+                | ParsedAttribute::Property(key, val) if key.to_string() == "decode_context" => {
                     let val_string = val.to_string();
                     if val_string.starts_with('"') && val_string.ends_with('"') {
                         result.decode_context =
@@ -71,8 +72,8 @@ impl FromAttribute for ContainerAttributes {
                     } else {
                         return Err(Error::custom_at("Should be a literal str", val.span()));
                     }
-                }
-                ParsedAttribute::Property(key, val) if key.to_string() == "encode_bounds" => {
+                },
+                | ParsedAttribute::Property(key, val) if key.to_string() == "encode_bounds" => {
                     let val_string = val.to_string();
                     if val_string.starts_with('"') && val_string.ends_with('"') {
                         result.encode_bounds =
@@ -80,8 +81,8 @@ impl FromAttribute for ContainerAttributes {
                     } else {
                         return Err(Error::custom_at("Should be a literal str", val.span()));
                     }
-                }
-                ParsedAttribute::Property(key, val)
+                },
+                | ParsedAttribute::Property(key, val)
                     if key.to_string() == "borrow_decode_bounds" =>
                 {
                     let val_string = val.to_string();
@@ -91,8 +92,8 @@ impl FromAttribute for ContainerAttributes {
                     } else {
                         return Err(Error::custom_at("Should be a literal str", val.span()));
                     }
-                }
-                ParsedAttribute::Property(key, val) if key.to_string() == "align" => {
+                },
+                | ParsedAttribute::Property(key, val) if key.to_string() == "align" => {
                     let val_string = val.to_string();
                     if val_string.starts_with('"') && val_string.ends_with('"') {
                         let inner = &val_string[1..val_string.len() - 1];
@@ -104,14 +105,14 @@ impl FromAttribute for ContainerAttributes {
                     } else {
                         return Err(Error::custom_at("Should be a literal str", val.span()));
                     }
-                }
-                ParsedAttribute::Tag(i) => {
+                },
+                | ParsedAttribute::Tag(i) => {
                     return Err(Error::custom_at("Unknown field attribute", i.span()));
-                }
-                ParsedAttribute::Property(key, _) => {
+                },
+                | ParsedAttribute::Property(key, _) => {
                     return Err(Error::custom_at("Unknown field attribute", key.span()));
-                }
-                _ => {}
+                },
+                | _ => {},
             }
         }
         Ok(Some(result))
@@ -135,10 +136,10 @@ impl FromAttribute for FieldAttributes {
             found = true;
             for attribute in attributes {
                 match attribute {
-                    ParsedAttribute::Tag(i) if i.to_string() == "with_serde" => {
+                    | ParsedAttribute::Tag(i) if i.to_string() == "with_serde" => {
                         result.with_serde = true;
-                    }
-                    ParsedAttribute::Property(key, val) if key.to_string() == "bits" => {
+                    },
+                    | ParsedAttribute::Property(key, val) if key.to_string() == "bits" => {
                         let val_string = val.to_string();
                         if let Ok(bits) = val_string.parse::<u8>() {
                             if bits == 0 || bits > 64 {
@@ -154,14 +155,14 @@ impl FromAttribute for FieldAttributes {
                                 val.span(),
                             ));
                         }
-                    }
-                    ParsedAttribute::Tag(i) => {
+                    },
+                    | ParsedAttribute::Tag(i) => {
                         return Err(Error::custom_at("Unknown field attribute", i.span()));
-                    }
-                    ParsedAttribute::Property(key, _) => {
+                    },
+                    | ParsedAttribute::Property(key, _) => {
                         return Err(Error::custom_at("Unknown field attribute", key.span()));
-                    }
-                    _ => {}
+                    },
+                    | _ => {},
                 }
             }
         }
@@ -170,10 +171,10 @@ impl FromAttribute for FieldAttributes {
             found = true;
             for attribute in attributes {
                 match attribute {
-                    ParsedAttribute::Tag(i) if i.to_string() == "skip" => {
+                    | ParsedAttribute::Tag(i) if i.to_string() == "skip" => {
                         result.static_size_skip = true;
-                    }
-                    ParsedAttribute::Property(key, val) if key.to_string() == "custom" => {
+                    },
+                    | ParsedAttribute::Property(key, val) if key.to_string() == "custom" => {
                         let val_string = val.to_string();
                         if val_string.starts_with('"') && val_string.ends_with('"') {
                             result.static_size_custom =
@@ -181,21 +182,25 @@ impl FromAttribute for FieldAttributes {
                         } else {
                             return Err(Error::custom_at("Should be a literal str", val.span()));
                         }
-                    }
-                    ParsedAttribute::Tag(i) => {
+                    },
+                    | ParsedAttribute::Tag(i) => {
                         return Err(Error::custom_at("Unknown static_size attribute", i.span()));
-                    }
-                    ParsedAttribute::Property(key, _) => {
+                    },
+                    | ParsedAttribute::Property(key, _) => {
                         return Err(Error::custom_at(
                             "Unknown static_size attribute",
                             key.span(),
                         ));
-                    }
-                    _ => {}
+                    },
+                    | _ => {},
                 }
             }
         }
 
-        if found { Ok(Some(result)) } else { Ok(None) }
+        if found {
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
     }
 }

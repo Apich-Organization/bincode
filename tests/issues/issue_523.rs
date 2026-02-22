@@ -4,7 +4,8 @@
 extern crate bincode_next as bincode;
 extern crate std;
 
-use bincode::{Decode, Encode};
+use bincode::Decode;
+use bincode::Encode;
 use std::borrow::Cow;
 
 #[derive(Clone, Encode, Decode)]

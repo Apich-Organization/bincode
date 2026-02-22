@@ -1,7 +1,8 @@
 // Credits to Sway in the Rust Programming Language
 
 use rand::Rng;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 #[test]
 pub fn test() {

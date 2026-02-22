@@ -35,7 +35,7 @@ where
     T: ::bincode::Decode<Context>,
 {
     fn decode<D: ::bincode::de::Decoder<Context = Context>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> core::result::Result<Self, ::bincode::error::DecodeError> {
         Ok(Self {
             a: ::bincode::Decode::decode(decoder)?,
@@ -49,7 +49,7 @@ where
     T: ::bincode::BorrowDecode<'__de, Context> + '__de,
 {
     fn borrow_decode<D: ::bincode::de::BorrowDecoder<'__de, Context = Context>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> core::result::Result<Self, ::bincode::error::DecodeError> {
         Ok(Self {
             a: ::bincode::BorrowDecode::borrow_decode(decoder)?,
@@ -280,27 +280,30 @@ fn test_c_style_enum() {
     assert_eq!(ser(CStyleEnum::D), 3);
     assert_eq!(ser(CStyleEnum::E), 4);
 
-    fn assert_de_successfully(num: u8, expected: CStyleEnum) {
+    fn assert_de_successfully(
+        num: u8,
+        expected: CStyleEnum,
+    ) {
         match bincode::decode_from_slice::<CStyleEnum, _>(&[num], bincode::config::standard()) {
-            Ok((result, len)) => {
+            | Ok((result, len)) => {
                 assert_eq!(len, 1);
                 assert_eq!(result, expected)
-            }
-            Err(e) => panic!("Could not deserialize CStyleEnum idx {num}: {e:?}"),
+            },
+            | Err(e) => panic!("Could not deserialize CStyleEnum idx {num}: {e:?}"),
         }
     }
 
     fn assert_de_fails(num: u8) {
         match bincode::decode_from_slice::<CStyleEnum, _>(&[num], bincode::config::standard()) {
-            Ok(_) => {
+            | Ok(_) => {
                 panic!("Expected to not be able to decode CStyleEnum index {num}, but it succeeded")
-            }
-            Err(DecodeError::UnexpectedVariant {
+            },
+            | Err(DecodeError::UnexpectedVariant {
                 type_name: "CStyleEnum",
                 allowed: &bincode::error::AllowedEnumVariants::Allowed(&[0, 1, 2, 3, 4]),
                 found,
-            }) if found == num as u32 => {}
-            Err(e) => panic!("Expected DecodeError::UnexpectedVariant, got {e:?}"),
+            }) if found == num as u32 => {},
+            | Err(e) => panic!("Expected DecodeError::UnexpectedVariant, got {e:?}"),
         }
     }
 
@@ -357,11 +360,11 @@ pub enum BorrowedEmptyEnum {}
 #[test]
 fn test_empty_enum_decode() {
     match bincode::decode_from_slice::<EmptyEnum, _>(&[], bincode::config::standard()) {
-        Ok(_) => panic!("We successfully decoded an empty slice, this should never happen"),
-        Err(DecodeError::EmptyEnum {
+        | Ok(_) => panic!("We successfully decoded an empty slice, this should never happen"),
+        | Err(DecodeError::EmptyEnum {
             type_name: "derive::EmptyEnum",
-        }) => {}
-        Err(e) => panic!("Expected DecodeError::EmptyEnum, got {e:?}"),
+        }) => {},
+        | Err(e) => panic!("Expected DecodeError::EmptyEnum, got {e:?}"),
     }
 }
 
@@ -431,7 +434,8 @@ mod zoxide {
     extern crate alloc;
 
     use alloc::borrow::Cow;
-    use bincode::{Decode, Encode};
+    use bincode::Decode;
+    use bincode::Encode;
 
     pub type Rank = f64;
     pub type Epoch = u64;

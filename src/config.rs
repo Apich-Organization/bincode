@@ -133,12 +133,12 @@ impl<E, I, L, B, F> Configuration<E, I, L, B, F> {
     /// # type Unsigned = u32;
     /// fn zigzag(v: Signed) -> Unsigned {
     ///     match v {
-    ///         0 => 0,
+    ///         | 0 => 0,
     ///         // To avoid the edge case of Signed::min_value()
     ///         // !n is equal to `-n - 1`, so this is:
     ///         // !n * 2 + 1 = 2(-n - 1) + 1 = -2n - 2 + 1 = -2n - 1
-    ///         v if v < 0 => !(v as Unsigned) * 2 - 1,
-    ///         v if v > 0 => (v as Unsigned) * 2,
+    ///         | v if v < 0 => !(v as Unsigned) * 2 - 1,
+    ///         | v if v > 0 => (v as Unsigned) * 2,
     /// #       _ => unreachable!()
     ///     }
     /// }
@@ -214,7 +214,7 @@ impl<E, I, L, B, F> Configuration<E, I, L, B, F> {
     /// Enables fingerprinting with a custom seed.
     #[must_use]
     pub const fn with_fingerprint_and_seed<const SEED: u64>(
-        self,
+        self
     ) -> Configuration<E, I, L, B, FingerprintEnabled<SEED>> {
         generate()
     }
@@ -222,7 +222,7 @@ impl<E, I, L, B, F> Configuration<E, I, L, B, F> {
     /// Enables legacy fingerprinting with an expected hash.
     #[must_use]
     pub const fn with_legacy_fingerprint<const EXPECTED: u64>(
-        self,
+        self
     ) -> Configuration<E, I, L, B, FingerprintLegacy<EXPECTED>> {
         generate()
     }
@@ -428,7 +428,11 @@ pub enum FingerprintMode {
 
 #[doc(hidden)]
 pub mod internal {
-    use super::{BitPacking, Configuration, Endianness, FingerprintMode, IntEncoding};
+    use super::BitPacking;
+    use super::Configuration;
+    use super::Endianness;
+    use super::FingerprintMode;
+    use super::IntEncoding;
 
     pub trait InternalEndianConfig {
         const ENDIAN: Endianness;
@@ -503,6 +507,7 @@ pub mod internal {
         ) -> core::result::Result<(), crate::error::DecodeError> {
             core::result::Result::Ok(())
         }
+
         #[inline(always)]
         fn encode_check<W: crate::enc::write::Writer>(
             _config: &C,
@@ -528,6 +533,7 @@ pub mod internal {
             }
             core::result::Result::Ok(())
         }
+
         #[inline]
         fn encode_check<W: crate::enc::write::Writer>(
             _config: &C,
@@ -553,6 +559,7 @@ pub mod internal {
             }
             core::result::Result::Ok(())
         }
+
         #[inline]
         fn encode_check<W: crate::enc::write::Writer>(
             _config: &C,
@@ -579,8 +586,8 @@ pub mod internal {
                 E::ENDIAN as u8,
                 I::INT_ENCODING as u8,
                 match L::LIMIT {
-                    None => 0,
-                    Some(_) => 1,
+                    | None => 0,
+                    | Some(_) => 1,
                 },
                 B::BIT_PACKING as u8,
             ],

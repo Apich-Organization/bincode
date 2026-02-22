@@ -5,15 +5,13 @@ mod impl_core;
 mod impl_tuples;
 mod impls;
 
-use self::{
-    decoder::WithContext,
-    read::{BorrowReader, Reader},
-};
-use crate::{
-    config::{Config, InternalLimitConfig},
-    error::DecodeError,
-    utils::Sealed,
-};
+use self::decoder::WithContext;
+use self::read::BorrowReader;
+use self::read::Reader;
+use crate::config::Config;
+use crate::config::InternalLimitConfig;
+use crate::error::DecodeError;
+use crate::utils::Sealed;
 
 /// Bit-level reader for space-optimized packing.
 pub mod bit_reader;
@@ -53,7 +51,7 @@ pub use self::decoder::DecoderImpl;
 /// # }
 /// impl<Context> bincode_next::Decode<Context> for Entity {
 ///     fn decode<D: bincode_next::de::Decoder<Context = Context>>(
-///         decoder: &mut D,
+///         decoder: &mut D
 ///     ) -> core::result::Result<Self, bincode_next::error::DecodeError> {
 ///         Ok(Self {
 ///             x: bincode_next::Decode::decode(decoder)?,
@@ -63,7 +61,7 @@ pub use self::decoder::DecoderImpl;
 /// }
 /// impl<'de, Context> bincode_next::BorrowDecode<'de, Context> for Entity {
 ///     fn borrow_decode<D: bincode_next::de::BorrowDecoder<'de, Context = Context>>(
-///         decoder: &mut D,
+///         decoder: &mut D
 ///     ) -> core::result::Result<Self, bincode_next::error::DecodeError> {
 ///         Ok(Self {
 ///             x: bincode_next::BorrowDecode::borrow_decode(decoder)?,
@@ -83,7 +81,7 @@ pub use self::decoder::DecoderImpl;
 /// #         decoder: &mut D,
 /// #     ) -> core::result::Result<Self, bincode_next::error::DecodeError> {
 /// let x: u8 = bincode_next::Decode::<Context>::decode(decoder)?;
-/// let x = <u8 as bincode_next::Decode::<Context>>::decode(decoder)?;
+/// let x = <u8 as bincode_next::Decode<Context>>::decode(decoder)?;
 /// #         Ok(Foo)
 /// #     }
 /// # }
@@ -123,7 +121,7 @@ pub trait BorrowDecode<'de, Context>: Sized {
     ///
     /// Returns any error encountered during decoding.
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, DecodeError>;
 }
 
@@ -170,7 +168,10 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     fn context(&mut self) -> &mut Self::Context;
 
     /// Wraps decoder with a context
-    fn with_context<C>(&mut self, context: C) -> WithContext<'_, Self, C> {
+    fn with_context<C>(
+        &mut self,
+        context: C,
+    ) -> WithContext<'_, Self, C> {
         WithContext {
             decoder: self,
             context,
@@ -189,7 +190,10 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     /// # Errors
     ///
     /// Returns `DecodeError::LimitExceeded` if the limit is exceeded.
-    fn claim_bytes_read(&mut self, n: usize) -> Result<(), DecodeError>;
+    fn claim_bytes_read(
+        &mut self,
+        n: usize,
+    ) -> Result<(), DecodeError>;
 
     /// Claim that we're going to read a container which contains `len` entries of `T`.
     /// This will correctly handle overflowing if `len * size_of::<T>() > usize::max_value`
@@ -197,7 +201,10 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     /// # Errors
     ///
     /// Returns `DecodeError::LimitExceeded` if the limit is exceeded or if `len * size_of::<T>()` overflows.
-    fn claim_container_read<T>(&mut self, len: usize) -> Result<(), DecodeError> {
+    fn claim_container_read<T>(
+        &mut self,
+        len: usize,
+    ) -> Result<(), DecodeError> {
         Self::assert_covered();
         if <Self::C as InternalLimitConfig>::LIMIT.is_some() {
             if let Some(val) = len.checked_mul(core::mem::size_of::<T>()) {
@@ -229,7 +236,7 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     /// #     fn with_capacity(cap: usize) -> Self {
     /// #         Self(Vec::with_capacity(cap))
     /// #     }
-    /// #     
+    /// #
     /// #     fn push(&mut self, t: T) {
     /// #         self.0.push(t);
     /// #     }
@@ -237,7 +244,9 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     /// impl<Context, T: Decode<Context>> Decode<Context> for Container<T> {
     ///     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
     ///         let len = u64::decode(decoder)?;
-    ///         let len: usize = len.try_into().map_err(|_| DecodeError::OutsideUsizeRange(len))?;
+    ///         let len: usize = len
+    ///             .try_into()
+    ///             .map_err(|_| DecodeError::OutsideUsizeRange(len))?;
     ///         // Make sure we don't allocate too much memory
     ///         decoder.claim_bytes_read(len * core::mem::size_of::<T>());
     ///
@@ -250,12 +259,16 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     ///         Ok(result)
     ///     }
     /// }
-    /// impl<'de, Context, T: bincode_next::BorrowDecode<'de, Context>> bincode_next::BorrowDecode<'de, Context> for Container<T> {
+    /// impl<'de, Context, T: bincode_next::BorrowDecode<'de, Context>>
+    ///     bincode_next::BorrowDecode<'de, Context> for Container<T>
+    /// {
     ///     fn borrow_decode<D: bincode_next::de::BorrowDecoder<'de, Context = Context>>(
-    ///         decoder: &mut D,
+    ///         decoder: &mut D
     ///     ) -> core::result::Result<Self, bincode_next::error::DecodeError> {
     ///         let len = u64::borrow_decode(decoder)?;
-    ///         let len: usize = len.try_into().map_err(|_| DecodeError::OutsideUsizeRange(len))?;
+    ///         let len: usize = len
+    ///             .try_into()
+    ///             .map_err(|_| DecodeError::OutsideUsizeRange(len))?;
     ///         // Make sure we don't allocate too much memory
     ///         decoder.claim_bytes_read(len * core::mem::size_of::<T>());
     ///
@@ -269,7 +282,10 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     ///     }
     /// }
     /// ```
-    fn unclaim_bytes_read(&mut self, n: usize);
+    fn unclaim_bytes_read(
+        &mut self,
+        n: usize,
+    );
 }
 
 /// Any source that can decode basic types. This type is most notably implemented for [Decoder].
@@ -283,20 +299,18 @@ pub trait BorrowDecoder<'de>: Decoder {
     fn borrow_reader(&mut self) -> &mut Self::BR;
 }
 
-impl<T> crate::error_path::BincodeErrorPathCovered<0> for &mut T
-where
-    T: crate::error_path::BincodeErrorPathCovered<0>,
-{}
+impl<T> crate::error_path::BincodeErrorPathCovered<0> for &mut T where
+    T: crate::error_path::BincodeErrorPathCovered<0>
+{
+}
 
 impl<T> Decoder for &mut T
 where
     T: Decoder,
 {
-    type R = T::R;
-
     type C = T::C;
-
     type Context = T::Context;
+    type R = T::R;
 
     fn reader(&mut self) -> &mut Self::R {
         T::reader(self)
@@ -307,12 +321,18 @@ where
     }
 
     #[inline]
-    fn claim_bytes_read(&mut self, n: usize) -> Result<(), DecodeError> {
+    fn claim_bytes_read(
+        &mut self,
+        n: usize,
+    ) -> Result<(), DecodeError> {
         T::claim_bytes_read(self, n)
     }
 
     #[inline]
-    fn unclaim_bytes_read(&mut self, n: usize) {
+    fn unclaim_bytes_read(
+        &mut self,
+        n: usize,
+    ) {
         T::unclaim_bytes_read(self, n);
     }
 
@@ -341,13 +361,15 @@ pub(crate) fn decode_option_variant<D: Decoder>(
     D::assert_covered();
     let is_some = u8::decode(decoder)?;
     match is_some {
-        0 => Ok(None),
-        1 => Ok(Some(())),
-        x => crate::error::cold_decode_error_unexpected_variant(
-            type_name,
-            &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
-            u32::from(x),
-        ),
+        | 0 => Ok(None),
+        | 1 => Ok(Some(())),
+        | x => {
+            crate::error::cold_decode_error_unexpected_variant(
+                type_name,
+                &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
+                u32::from(x),
+            )
+        },
     }
 }
 

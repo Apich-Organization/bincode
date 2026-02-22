@@ -5,7 +5,8 @@ extern crate bincode_next as bincode;
 
 extern crate std;
 
-use chrono::{DateTime, Utc};
+use chrono::DateTime;
+use chrono::Utc;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 use std::prelude::rust_2021::*;
@@ -73,7 +74,10 @@ impl MemCache {
         Ok(())
     }
 
-    fn get_data<T>(&self, key: &Uuid) -> Result<T, bincode::error::DecodeError>
+    fn get_data<T>(
+        &self,
+        key: &Uuid,
+    ) -> Result<T, bincode::error::DecodeError>
     where
         T: Send + Sync + DeserializeOwned,
     {
@@ -91,7 +95,10 @@ struct CacheItem {
 }
 
 impl CacheItem {
-    fn new(payload: Vec<u8>, _expire_seconds: i64) -> Self {
+    fn new(
+        payload: Vec<u8>,
+        _expire_seconds: i64,
+    ) -> Self {
         Self { payload }
     }
 }

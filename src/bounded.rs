@@ -3,10 +3,15 @@
 //! These types enforce capacity limits both at construction time and during
 //! decoding, preventing Denial-of-Service attacks via unbounded allocations.
 
+use crate::de::BorrowDecode;
+use crate::de::BorrowDecoder;
+use crate::de::Decode;
+use crate::de::Decoder;
 use crate::de::read::Reader;
-use crate::de::{BorrowDecode, BorrowDecoder, Decode, Decoder};
-use crate::enc::{Encode, Encoder};
-use crate::error::{DecodeError, EncodeError};
+use crate::enc::Encode;
+use crate::enc::Encoder;
+use crate::error::DecodeError;
+use crate::error::EncodeError;
 use crate::static_size::StaticSize;
 use crate::static_size::helpers::VARINT_MAX_64;
 use alloc::string::String;
@@ -28,7 +33,10 @@ where
 
 impl<T: Encode, const CAP: usize> Encode for BoundedVec<T, CAP> {
     #[inline]
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
         if self.0.len() > CAP {
             return crate::error::cold_encode_error_other("BoundedVec exceeds capacity");
         }
@@ -59,7 +67,7 @@ impl<'de, Context, T: BorrowDecode<'de, Context>, const CAP: usize> BorrowDecode
     for BoundedVec<T, CAP>
 {
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, DecodeError> {
         // Decode length first and validate BEFORE allocating
         let len = crate::de::decode_slice_len(decoder)?;
@@ -90,7 +98,10 @@ impl<const CAP: usize> StaticSize for BoundedString<CAP> {
 
 impl<const CAP: usize> Encode for BoundedString<CAP> {
     #[inline]
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError> {
         if self.0.len() > CAP {
             return crate::error::cold_encode_error_other("BoundedString exceeds capacity");
         }
@@ -110,14 +121,15 @@ impl<Context, const CAP: usize> Decode<Context> for BoundedString<CAP> {
         decoder.claim_container_read::<u8>(len)?;
         let mut bytes = alloc::vec![0u8; len];
         decoder.reader().read(&mut bytes)?;
-        let s = String::from_utf8(bytes).map_err(|e| crate::error::cold_decode_error_utf8::<()>(e.utf8_error()).unwrap_err())?;
+        let s = String::from_utf8(bytes)
+            .map_err(|e| crate::error::cold_decode_error_utf8::<()>(e.utf8_error()).unwrap_err())?;
         Ok(BoundedString(s))
     }
 }
 
 impl<'de, Context, const CAP: usize> BorrowDecode<'de, Context> for BoundedString<CAP> {
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, DecodeError> {
         // Decode byte length first and validate BEFORE allocating
         let len = crate::de::decode_slice_len(decoder)?;
@@ -128,7 +140,8 @@ impl<'de, Context, const CAP: usize> BorrowDecode<'de, Context> for BoundedStrin
         decoder.claim_container_read::<u8>(len)?;
         let mut bytes = alloc::vec![0u8; len];
         decoder.reader().read(&mut bytes)?;
-        let s = String::from_utf8(bytes).map_err(|e| crate::error::cold_decode_error_utf8::<()>(e.utf8_error()).unwrap_err())?;
+        let s = String::from_utf8(bytes)
+            .map_err(|e| crate::error::cold_decode_error_utf8::<()>(e.utf8_error()).unwrap_err())?;
         Ok(BoundedString(s))
     }
 }
@@ -139,7 +152,10 @@ pub struct BoundsExceeded;
 
 impl core::fmt::Display for BoundsExceeded {
     #[inline]
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> core::fmt::Result {
         write!(f, "value exceeds bounded capacity")
     }
 }
@@ -180,7 +196,10 @@ impl<T, const CAP: usize> BoundedVec<T, CAP> {
 
     /// Try to push an element, returning an error if the capacity would be exceeded.
     #[inline]
-    pub fn try_push(&mut self, value: T) -> Result<(), BoundsExceeded> {
+    pub fn try_push(
+        &mut self,
+        value: T,
+    ) -> Result<(), BoundsExceeded> {
         if self.0.len() >= CAP {
             Err(BoundsExceeded)
         } else {
@@ -229,6 +248,7 @@ impl<const CAP: usize> Default for BoundedString<CAP> {
 
 impl<T, const CAP: usize> core::ops::Deref for BoundedVec<T, CAP> {
     type Target = Vec<T>;
+
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -237,6 +257,7 @@ impl<T, const CAP: usize> core::ops::Deref for BoundedVec<T, CAP> {
 
 impl<const CAP: usize> core::ops::Deref for BoundedString<CAP> {
     type Target = String;
+
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
         &self.0

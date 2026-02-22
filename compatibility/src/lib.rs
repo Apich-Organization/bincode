@@ -8,8 +8,11 @@ mod misc;
 mod rand;
 mod sway;
 
-pub fn test_same_with_config<T, C, O>(t: &T, bincode_1_options: O, bincode_2_config: C)
-where
+pub fn test_same_with_config<T, C, O>(
+    t: &T,
+    bincode_1_options: O,
+    bincode_2_config: C,
+) where
     T: bincode_2::Encode
         + bincode_2::Decode<()>
         + serde::Serialize

@@ -7,7 +7,12 @@ mod derive_struct;
 mod derive_zerocopy;
 
 use attribute::ContainerAttributes;
-use virtue::prelude::{AttributeAccess, Body, Error, Parse, Result, TokenStream};
+use virtue::prelude::AttributeAccess;
+use virtue::prelude::Body;
+use virtue::prelude::Error;
+use virtue::prelude::Parse;
+use virtue::prelude::Result;
+use virtue::prelude::TokenStream;
 
 #[proc_macro_derive(Encode, attributes(bincode))]
 pub fn derive_encode(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -25,20 +30,20 @@ fn derive_encode_inner(input: TokenStream) -> Result<TokenStream> {
         .unwrap_or_default();
 
     match body {
-        Body::Struct(body) => {
+        | Body::Struct(body) => {
             derive_struct::DeriveStruct {
                 fields: body.fields,
                 attributes,
             }
             .generate_encode(&mut generator)?;
-        }
-        Body::Enum(body) => {
+        },
+        | Body::Enum(body) => {
             derive_enum::DeriveEnum {
                 variants: body.variants,
                 attributes,
             }
             .generate_encode(&mut generator)?;
-        }
+        },
     }
 
     generator.export_to_file("bincode_next", "Encode");
@@ -61,20 +66,20 @@ fn derive_decode_inner(input: TokenStream) -> Result<TokenStream> {
         .unwrap_or_default();
 
     match body {
-        Body::Struct(body) => {
+        | Body::Struct(body) => {
             derive_struct::DeriveStruct {
                 fields: body.fields,
                 attributes,
             }
             .generate_decode(&mut generator)?;
-        }
-        Body::Enum(body) => {
+        },
+        | Body::Enum(body) => {
             derive_enum::DeriveEnum {
                 variants: body.variants,
                 attributes,
             }
             .generate_decode(&mut generator)?;
-        }
+        },
     }
 
     generator.export_to_file("bincode_next", "Decode");
@@ -97,20 +102,20 @@ fn derive_borrow_decode_inner(input: TokenStream) -> Result<TokenStream> {
         .unwrap_or_default();
 
     match body {
-        Body::Struct(body) => {
+        | Body::Struct(body) => {
             derive_struct::DeriveStruct {
                 fields: body.fields,
                 attributes,
             }
             .generate_borrow_decode(&mut generator)?;
-        }
-        Body::Enum(body) => {
+        },
+        | Body::Enum(body) => {
             derive_enum::DeriveEnum {
                 variants: body.variants,
                 attributes,
             }
             .generate_borrow_decode(&mut generator)?;
-        }
+        },
     }
 
     generator.export_to_file("bincode_next", "BorrowDecode");
@@ -133,20 +138,20 @@ fn derive_bit_packed_inner(input: TokenStream) -> Result<TokenStream> {
         .unwrap_or_default();
 
     match body {
-        Body::Struct(body) => {
+        | Body::Struct(body) => {
             derive_bit_packed::DeriveBitPacked {
                 fields: body.fields,
                 attributes,
             }
             .generate(&mut generator)?;
-        }
-        Body::Enum(body) => {
+        },
+        | Body::Enum(body) => {
             derive_bit_packed::DeriveBitPackedEnum {
                 variants: body.variants,
                 attributes,
             }
             .generate(&mut generator)?;
-        }
+        },
     }
 
     generator.export_to_file("bincode_next", "BitPacked");
@@ -164,9 +169,9 @@ fn derive_zerocopy_inner(input: TokenStream) -> Result<TokenStream> {
     let parse = Parse::new(input)?;
 
     let visibility = match &parse {
-        Parse::Struct { visibility, .. } => visibility.clone(),
-        Parse::Enum { visibility, .. } => visibility.clone(),
-        _ => unreachable!(),
+        | Parse::Struct { visibility, .. } => visibility.clone(),
+        | Parse::Enum { visibility, .. } => visibility.clone(),
+        | _ => unreachable!(),
     };
     let (mut generator, attributes, body) = parse.into_generator();
     let attributes = attributes
@@ -174,15 +179,15 @@ fn derive_zerocopy_inner(input: TokenStream) -> Result<TokenStream> {
         .unwrap_or_default();
 
     match body {
-        Body::Struct(body) => {
+        | Body::Struct(body) => {
             derive_zerocopy::DeriveZeroCopy {
                 fields: body.fields,
                 attributes,
                 visibility,
             }
             .generate(&mut generator)?;
-        }
-        _ => return Err(Error::custom("ZeroCopy only supports structs for now")),
+        },
+        | _ => return Err(Error::custom("ZeroCopy only supports structs for now")),
     }
 
     generator.export_to_file("bincode_next", "ZeroCopy");
@@ -204,22 +209,22 @@ fn derive_static_size_inner(input: TokenStream) -> Result<TokenStream> {
         .unwrap_or_default();
 
     match body {
-        Body::Struct(body) => {
+        | Body::Struct(body) => {
             derive_static_size::DeriveStaticSize {
                 fields: body.fields,
                 variants: None,
                 attributes,
             }
             .generate(&mut generator)?;
-        }
-        Body::Enum(body) => {
+        },
+        | Body::Enum(body) => {
             derive_static_size::DeriveStaticSize {
                 fields: None,
                 variants: Some(body.variants),
                 attributes,
             }
             .generate(&mut generator)?;
-        }
+        },
     }
 
     generator.finish()
@@ -233,8 +238,8 @@ pub fn derive_fingerprint(input: proc_macro::TokenStream) -> proc_macro::TokenSt
 fn derive_fingerprint_inner(input: TokenStream) -> Result<TokenStream> {
     let parse = Parse::new(input)?;
     let type_name = match &parse {
-        Parse::Struct { name, .. } | Parse::Enum { name, .. } => name.to_string(),
-        _ => unreachable!(),
+        | Parse::Struct { name, .. } | Parse::Enum { name, .. } => name.to_string(),
+        | _ => unreachable!(),
     };
     let (mut generator, attributes, body) = parse.into_generator();
     let attributes = attributes
@@ -242,22 +247,22 @@ fn derive_fingerprint_inner(input: TokenStream) -> Result<TokenStream> {
         .unwrap_or_default();
 
     match body {
-        Body::Struct(body) => {
+        | Body::Struct(body) => {
             derive_fingerprint::DeriveFingerprint {
                 fields: body.fields,
                 variants: None,
                 attributes,
             }
             .generate(&mut generator, &type_name)?;
-        }
-        Body::Enum(body) => {
+        },
+        | Body::Enum(body) => {
             derive_fingerprint::DeriveFingerprint {
                 fields: None,
                 variants: Some(body.variants),
                 attributes,
             }
             .generate(&mut generator, &type_name)?;
-        }
+        },
     }
 
     generator.finish()

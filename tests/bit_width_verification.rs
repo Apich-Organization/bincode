@@ -1,4 +1,6 @@
-use bincode_next::{BitPacked, Decode, Encode};
+use bincode_next::BitPacked;
+use bincode_next::Decode;
+use bincode_next::Encode;
 
 #[derive(BitPacked, Debug, PartialEq, Clone, Copy)]
 struct Valid {
@@ -12,20 +14,18 @@ fn test_valid_bit_width() {
 }
 
 // The following code will fail to compile if uncommented
-/*
-#[test]
-fn test_invalid_bit_width() {
-    let val = Invalid { val: 100 };
-    let mut buf = [0u8; 10];
-    let _ = bincode_next::encode_into_slice(val, &mut buf, bincode_next::config::standard());
-}
-
-#[derive(BitPacked)]
-struct Invalid  {
-    #[bincode(bits = 9)]
-    val: u8,
-}
-*/
+// #[test]
+// fn test_invalid_bit_width() {
+// let val = Invalid { val: 100 };
+// let mut buf = [0u8; 10];
+// let _ = bincode_next::encode_into_slice(val, &mut buf, bincode_next::config::standard());
+// }
+//
+// #[derive(BitPacked)]
+// struct Invalid  {
+// #[bincode(bits = 9)]
+// val: u8,
+// }
 
 #[derive(BitPacked, Debug, PartialEq, Clone, Copy)]
 enum ValidEnum {

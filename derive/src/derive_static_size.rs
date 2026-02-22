@@ -1,4 +1,5 @@
-use crate::attribute::{ContainerAttributes, FieldAttributes};
+use crate::attribute::ContainerAttributes;
+use crate::attribute::FieldAttributes;
 use virtue::prelude::*;
 
 pub(crate) struct DeriveStaticSize {
@@ -8,10 +9,13 @@ pub(crate) struct DeriveStaticSize {
 }
 
 /// Build a sum expression string for all fields in a `Fields`.
-fn fields_sum_expr(fields: &Fields, crate_name: &str) -> Result<String> {
+fn fields_sum_expr(
+    fields: &Fields,
+    crate_name: &str,
+) -> Result<String> {
     let mut parts: Vec<String> = Vec::new();
     match fields {
-        Fields::Struct(s) => {
+        | Fields::Struct(s) => {
             for (_ident, field) in s {
                 let attrs = field
                     .attributes
@@ -30,8 +34,8 @@ fn fields_sum_expr(fields: &Fields, crate_name: &str) -> Result<String> {
                     ));
                 }
             }
-        }
-        Fields::Tuple(t) => {
+        },
+        | Fields::Tuple(t) => {
             for field in t {
                 let attrs = field
                     .attributes
@@ -50,7 +54,7 @@ fn fields_sum_expr(fields: &Fields, crate_name: &str) -> Result<String> {
                     ));
                 }
             }
-        }
+        },
     }
     if parts.is_empty() {
         Ok("0".to_string())
@@ -69,9 +73,9 @@ fn fields_sum_expr(fields: &Fields, crate_name: &str) -> Result<String> {
 /// For 3+ values the nesting folds left, e.g. `max(max(a, b), c)`.
 fn const_max_expr(exprs: &[String]) -> String {
     match exprs.len() {
-        0 => "0".to_string(),
-        1 => exprs[0].clone(),
-        _ => {
+        | 0 => "0".to_string(),
+        | 1 => exprs[0].clone(),
+        | _ => {
             let mut result = exprs[0].clone();
             for expr in &exprs[1..] {
                 result = format!(
@@ -80,7 +84,7 @@ fn const_max_expr(exprs: &[String]) -> String {
                 );
             }
             result
-        }
+        },
     }
 }
 
@@ -115,7 +119,10 @@ pub(crate) fn compute_static_size_expr(
 }
 
 impl DeriveStaticSize {
-    pub fn generate(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate(
+        self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = &self.attributes.crate_name;
 
         let expr =
