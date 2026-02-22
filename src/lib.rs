@@ -314,9 +314,36 @@ where
     Ok(val)
 }
 
+/// Attempt to decode a given type `D` from the given slice with a compile-time bound check and a
+/// decoding context.
+///
+/// This function ensures that the target type `D` cannot exceed the provided buffer capacity `CAP`
+/// at compile-time.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the slice contains invalid data.
+#[cfg(feature = "static-size")]
+pub fn decode_from_slice_static_with_context<Context, D, const CAP: usize, C>(
+    src: &[u8; CAP],
+    config: C,
+    context: Context,
+) -> Result<D, error::DecodeError>
+where
+    D: de::Decode<Context> + static_size::StaticSize,
+    C: Config,
+{
+    const {
+        assert!(D::MAX_SIZE <= CAP, "Buffer too small for target type");
+    }
+    let (val, _) = decode_from_slice_with_context(src, config, context)?;
+    Ok(val)
+}
+
 /// Attempt to decode a given type `D` from the given slice with a compile-time bound check.
 ///
-/// This function ensures that the target type `D` cannot exceed the provided buffer capacity `CAP` at compile-time.
+/// This function ensures that the target type `D` cannot exceed the provided buffer capacity `CAP`
+/// at compile-time.
 ///
 /// # Errors
 ///
@@ -334,6 +361,32 @@ where
         assert!(D::MAX_SIZE <= CAP, "Buffer too small for target type");
     }
     let (val, _) = borrow_decode_from_slice(src, config)?;
+    Ok(val)
+}
+
+/// Attempt to borrow-decode a given type `D` from the given slice with a compile-time bound check
+/// and a decoding context.
+///
+/// This function ensures that the target type `D` cannot exceed the provided buffer capacity `CAP`
+/// at compile-time.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the slice contains invalid data.
+#[cfg(feature = "static-size")]
+pub fn borrow_decode_from_slice_static_with_context<'a, Context, D, const CAP: usize, C>(
+    src: &'a [u8; CAP],
+    config: C,
+    context: Context,
+) -> Result<D, error::DecodeError>
+where
+    D: de::BorrowDecode<'a, Context> + static_size::StaticSize,
+    C: Config,
+{
+    const {
+        assert!(D::MAX_SIZE <= CAP, "Buffer too small for target type");
+    }
+    let (val, _) = borrow_decode_from_slice_with_context(src, config, context)?;
     Ok(val)
 }
 

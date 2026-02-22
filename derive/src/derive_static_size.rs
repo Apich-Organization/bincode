@@ -60,21 +60,18 @@ fn fields_sum_expr(fields: &Fields, crate_name: &str) -> Result<String> {
 }
 
 /// Build a const-compatible "max of N values" expression.
-/// Uses nested `if a > b { a } else { b }` which is const-evaluable.
+///
+/// Generates a nested `if/else` chain using intermediate `const` bindings
+/// for stable Rust const evaluation compatibility:
+/// ```text
+/// { const __A: usize = e1; const __B: usize = e2; if __A > __B { __A } else { __B } }
+/// ```
+/// For 3+ values the nesting folds left, e.g. `max(max(a, b), c)`.
 fn const_max_expr(exprs: &[String]) -> String {
     match exprs.len() {
         0 => "0".to_string(),
         1 => exprs[0].clone(),
         _ => {
-            // Nest: max(a, max(b, max(c, d)))
-            // Using: { let __a = EXPR; let __b = REST; if __a > __b { __a } else { __b } }
-            // But in const context we can just use nested ternaries via blocks.
-            // Actually, the cleanest approach: use the fact that on nightly const max is available,
-            // but for stable we'll build a chain.
-            // Let's just chain: a big nested expression isn't great. Let's do sequential.
-            //
-            // For two: { const A: usize = e1; const B: usize = e2; if A > B { A } else { B } }
-            // For more, we fold.
             let mut result = exprs[0].clone();
             for expr in &exprs[1..] {
                 result = format!(
