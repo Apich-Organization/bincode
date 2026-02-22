@@ -2,9 +2,10 @@ mod attribute;
 mod derive_bit_packed;
 mod derive_enum;
 mod derive_struct;
+mod derive_zerocopy;
 
 use attribute::ContainerAttributes;
-use virtue::prelude::{AttributeAccess, Body, Parse, Result, TokenStream};
+use virtue::prelude::{AttributeAccess, Body, Error, Parse, Result, TokenStream};
 
 #[proc_macro_derive(Encode, attributes(bincode))]
 pub fn derive_encode(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -147,5 +148,39 @@ fn derive_bit_packed_inner(input: TokenStream) -> Result<TokenStream> {
     }
 
     generator.export_to_file("bincode_next", "BitPacked");
+    generator.finish()
+}
+
+#[proc_macro_derive(ZeroCopy, attributes(bincode))]
+pub fn derive_zerocopy(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    derive_zerocopy_inner(input).unwrap_or_else(|e| e.into_token_stream())
+}
+
+fn derive_zerocopy_inner(input: TokenStream) -> Result<TokenStream> {
+    let parse = Parse::new(input)?;
+
+    let visibility = match &parse {
+        Parse::Struct { visibility, .. } => visibility.clone(),
+        Parse::Enum { visibility, .. } => visibility.clone(),
+        _ => unreachable!(),
+    };
+    let (mut generator, attributes, body) = parse.into_generator();
+    let attributes = attributes
+        .get_attribute::<ContainerAttributes>()?
+        .unwrap_or_default();
+
+    match body {
+        Body::Struct(body) => {
+            derive_zerocopy::DeriveZeroCopy {
+                fields: body.fields,
+                attributes,
+                visibility,
+            }
+            .generate(&mut generator)?;
+        }
+        _ => return Err(Error::custom("ZeroCopy only supports structs for now")),
+    }
+
+    generator.export_to_file("bincode_next", "ZeroCopy");
     generator.finish()
 }

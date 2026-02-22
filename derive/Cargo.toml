@@ -25,4 +25,4 @@ proc-macro = true
 empty-line-after-doc-comments = "allow"
 
 [dependencies]
-virtue = { version = "0.1.0", package = "virtue-next" }
+virtue = { path = "/home/pana/dev/virtue", version = "0.1", package = "virtue-next" }

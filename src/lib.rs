@@ -156,6 +156,8 @@ pub mod error;
 
 pub use de::{BorrowDecode, Decode};
 pub use enc::Encode;
+#[cfg(feature = "zero-copy")]
+pub use relative_ptr::{ZeroCopy, ZeroCopyType};
 
 use config::Config;
 

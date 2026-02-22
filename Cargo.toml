@@ -3,7 +3,8 @@ members = ["derive", "compatibility"]
 
 [package]
 name = "bincode-next"
-version = "2.1.0" # remember to update html_root_url and bincode_derive
+version = "2.1.0"
+# Remember to update html_root_url and bincode_derive
 authors = [
     "Xinyu Yang <xinyu.yang@apich.org>",
     "Ty Overby <ty@pre-alpha.com>",
@@ -33,6 +34,7 @@ std = ["alloc", "serde?/std"]
 alloc = ["serde?/alloc"]
 derive = ["bincode_derive-next"]
 zero-copy = []
+# Remember to run 'MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --all-features --no-fail-fast'
 
 [dependencies]
 bincode_derive-next = { path = "derive", version = "2.1.0", optional = true }

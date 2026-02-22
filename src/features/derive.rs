@@ -1,2 +1,2 @@
 #[cfg_attr(docsrs, doc(cfg(feature = "derive-next")))]
-pub use bincode_derive_next::{BitPacked, BorrowDecode, Decode, Encode};
+pub use bincode_derive_next::{BitPacked, BorrowDecode, Decode, Encode, ZeroCopy};
