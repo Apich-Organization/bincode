@@ -23,3 +23,4 @@ test_infer2.rs
 test_infer3.rs
 test_infer4
 test_infer4.rs
+fix_docs.py

@@ -48,37 +48,57 @@ unsafe impl<T: ZeroCopy, const N: usize> ZeroCopy for [T; N] {
 
 /// Trait for handling endianness in zero-copy types.
 pub trait Endian {
+    /// Converts a u16 from native endianness to the relative pointer's endianness.
     fn from_native_u16(v: u16) -> u16;
+    /// Converts a u16 from the relative pointer's endianness to native endianness.
     fn to_native_u16(v: u16) -> u16;
+    /// Converts a u32 from native endianness to the relative pointer's endianness.
     fn from_native_u32(v: u32) -> u32;
+    /// Converts a u32 from the relative pointer's endianness to native endianness.
     fn to_native_u32(v: u32) -> u32;
+    /// Converts a u64 from native endianness to the relative pointer's endianness.
     fn from_native_u64(v: u64) -> u64;
+    /// Converts a u64 from the relative pointer's endianness to native endianness.
     fn to_native_u64(v: u64) -> u64;
+    /// Converts a u128 from native endianness to the relative pointer's endianness.
     fn from_native_u128(v: u128) -> u128;
+    /// Converts a u128 from the relative pointer's endianness to native endianness.
     fn to_native_u128(v: u128) -> u128;
 
+    /// Converts a i16 from native endianness to the relative pointer's endianness.
     fn from_native_i16(v: i16) -> i16;
+    /// Converts a i16 from the relative pointer's endianness to native endianness.
     fn to_native_i16(v: i16) -> i16;
+    /// Converts a i32 from native endianness to the relative pointer's endianness.
     fn from_native_i32(v: i32) -> i32;
+    /// Converts a i32 from the relative pointer's endianness to native endianness.
     fn to_native_i32(v: i32) -> i32;
+    /// Converts a i64 from native endianness to the relative pointer's endianness.
     fn from_native_i64(v: i64) -> i64;
+    /// Converts a i64 from the relative pointer's endianness to native endianness.
     fn to_native_i64(v: i64) -> i64;
+    /// Converts a i128 from native endianness to the relative pointer's endianness.
     fn from_native_i128(v: i128) -> i128;
+    /// Converts a i128 from the relative pointer's endianness to native endianness.
     fn to_native_i128(v: i128) -> i128;
 
     #[inline(always)]
+    /// Converts a f32 from native endianness to the relative pointer's endianness.
     fn from_native_f32(v: f32) -> f32 {
         f32::from_bits(Self::from_native_u32(v.to_bits()))
     }
     #[inline(always)]
+    /// Converts a f32 from the relative pointer's endianness to native endianness.
     fn to_native_f32(v: f32) -> f32 {
         f32::from_bits(Self::to_native_u32(v.to_bits()))
     }
     #[inline(always)]
+    /// Converts a f64 from native endianness to the relative pointer's endianness.
     fn from_native_f64(v: f64) -> f64 {
         f64::from_bits(Self::from_native_u64(v.to_bits()))
     }
     #[inline(always)]
+    /// Converts a f64 from the relative pointer's endianness to native endianness.
     fn to_native_f64(v: f64) -> f64 {
         f64::from_bits(Self::to_native_u64(v.to_bits()))
     }
@@ -497,12 +517,14 @@ pub struct ZeroStr<E: Endian = NativeEndian> {
 }
 
 impl<E: Endian> ZeroStr<E> {
+    /// Creates a new instance.
     pub fn new(len: u32, offset: i32) -> Self {
         Self {
             slice: ZeroSlice::new(len, offset),
         }
     }
 
+    /// Returns a reference to the underlying data if valid.
     pub fn get<'a>(&self, buffer: &'a [u8]) -> Option<&'a str> {
         let bytes = self.slice.get(buffer)?;
         core::str::from_utf8(bytes).ok()
@@ -519,28 +541,33 @@ unsafe impl<E: Endian> ZeroCopy for ZeroStr<E> {
 
 /// A trait for validating zero-copy types.
 pub trait Validator {
+    /// Checks if the relative pointer is valid within the given buffer.
     fn is_valid(&self, buffer: &[u8]) -> bool;
 }
 
 impl<T: ZeroCopy, const ALIGN: usize, E: Endian> Validator for RelativePtr<T, ALIGN, E> {
+    /// Checks if the relative pointer is valid within the given buffer.
     fn is_valid(&self, buffer: &[u8]) -> bool {
         self.get(buffer).is_some()
     }
 }
 
 impl<const CAP: usize, E: Endian> Validator for ZeroString<CAP, E> {
+    /// Checks if the relative pointer is valid within the given buffer.
     fn is_valid(&self, _buffer: &[u8]) -> bool {
         self.get().is_some()
     }
 }
 
 impl<T: ZeroCopy, const ALIGN: usize, E: Endian> Validator for ZeroSlice<T, ALIGN, E> {
+    /// Checks if the relative pointer is valid within the given buffer.
     fn is_valid(&self, buffer: &[u8]) -> bool {
         self.get(buffer).is_some()
     }
 }
 
 impl<E: Endian> Validator for ZeroStr<E> {
+    /// Checks if the relative pointer is valid within the given buffer.
     fn is_valid(&self, buffer: &[u8]) -> bool {
         self.get(buffer).is_some()
     }
@@ -550,6 +577,7 @@ macro_rules! impl_validator_primitive {
     ($($t:ty),*) => {
         $(
             impl Validator for $t {
+                /// Checks if the relative pointer is valid within the given buffer.
                 fn is_valid(&self, _buffer: &[u8]) -> bool {
                     true
                 }
@@ -565,12 +593,14 @@ impl_validator_primitive!(
 impl<T: ZeroCopy, const N: usize, const ALIGN: usize, E: Endian> Validator
     for ZeroArray<T, N, ALIGN, E>
 {
+    /// Checks if the relative pointer is valid within the given buffer.
     fn is_valid(&self, buffer: &[u8]) -> bool {
         self.get(buffer).is_some()
     }
 }
 
 impl<T: ZeroCopy + Validator, const N: usize> Validator for [T; N] {
+    /// Checks if the relative pointer is valid within the given buffer.
     fn is_valid(&self, buffer: &[u8]) -> bool {
         for item in self {
             if !item.is_valid(buffer) {
@@ -583,6 +613,7 @@ impl<T: ZeroCopy + Validator, const N: usize> Validator for [T; N] {
 
 /// A trait for deep validation of zero-copy structures, recursively checking all pointers.
 pub trait DeepValidator: Validator {
+    /// Performs a deep validation check on the relative pointer.
     fn is_valid_deep(&self, buffer: &[u8]) -> bool;
 }
 
@@ -590,6 +621,7 @@ macro_rules! impl_deep_validator_primitive {
     ($($t:ty),*) => {
         $(
             impl DeepValidator for $t {
+                /// Performs a deep validation check on the relative pointer.
                 fn is_valid_deep(&self, _buffer: &[u8]) -> bool {
                     true
                 }
@@ -603,6 +635,7 @@ impl_deep_validator_primitive!(
 );
 
 impl<T: ZeroCopy + DeepValidator, const N: usize> DeepValidator for [T; N] {
+    /// Performs a deep validation check on the relative pointer.
     fn is_valid_deep(&self, buffer: &[u8]) -> bool {
         for item in self {
             if !item.is_valid_deep(buffer) {
@@ -616,6 +649,7 @@ impl<T: ZeroCopy + DeepValidator, const N: usize> DeepValidator for [T; N] {
 impl<T: ZeroCopy + DeepValidator, const ALIGN: usize, E: Endian> DeepValidator
     for RelativePtr<T, ALIGN, E>
 {
+    /// Performs a deep validation check on the relative pointer.
     fn is_valid_deep(&self, buffer: &[u8]) -> bool {
         if let Some(target) = self.get(buffer) {
             target.is_valid_deep(buffer)
@@ -626,6 +660,7 @@ impl<T: ZeroCopy + DeepValidator, const ALIGN: usize, E: Endian> DeepValidator
 }
 
 impl<const CAP: usize, E: Endian> DeepValidator for ZeroString<CAP, E> {
+    /// Performs a deep validation check on the relative pointer.
     fn is_valid_deep(&self, _buffer: &[u8]) -> bool {
         self.get().is_some()
     }
@@ -634,6 +669,7 @@ impl<const CAP: usize, E: Endian> DeepValidator for ZeroString<CAP, E> {
 impl<T: ZeroCopy + DeepValidator, const ALIGN: usize, E: Endian> DeepValidator
     for ZeroSlice<T, ALIGN, E>
 {
+    /// Performs a deep validation check on the relative pointer.
     fn is_valid_deep(&self, buffer: &[u8]) -> bool {
         if let Some(slice) = self.get(buffer) {
             for item in slice {
@@ -649,6 +685,7 @@ impl<T: ZeroCopy + DeepValidator, const ALIGN: usize, E: Endian> DeepValidator
 }
 
 impl<E: Endian> DeepValidator for ZeroStr<E> {
+    /// Performs a deep validation check on the relative pointer.
     fn is_valid_deep(&self, buffer: &[u8]) -> bool {
         self.get(buffer).is_some()
     }
@@ -657,6 +694,7 @@ impl<E: Endian> DeepValidator for ZeroStr<E> {
 impl<T: ZeroCopy + DeepValidator, const N: usize, const ALIGN: usize, E: Endian> DeepValidator
     for ZeroArray<T, N, ALIGN, E>
 {
+    /// Performs a deep validation check on the relative pointer.
     fn is_valid_deep(&self, buffer: &[u8]) -> bool {
         if let Some(arr) = self.get(buffer) {
             for item in arr {
@@ -817,7 +855,9 @@ impl AlignedBuffer {
 
 #[cfg(feature = "alloc")]
 impl core::ops::Deref for AlignedBuffer {
+    /// The target type that this builds into.
     type Target = [u8];
+
     fn deref(&self) -> &[u8] {
         if self.len == 0 {
             return &[];
@@ -868,6 +908,7 @@ pub struct ZeroBuilder {
 
 #[cfg(feature = "alloc")]
 impl ZeroBuilder {
+    /// Creates a new instance.
     pub fn new() -> Self {
         Self {
             data: Vec::new(),
@@ -875,6 +916,7 @@ impl ZeroBuilder {
         }
     }
 
+    /// Aligns the builder to the specified boundary.
     pub fn align(&mut self, align: usize) -> usize {
         if align > self.max_align {
             self.max_align = align;
@@ -888,39 +930,46 @@ impl ZeroBuilder {
         self.data.len()
     }
 
+    /// Reserves space for a value of type T.
     pub fn reserve<T: ZeroCopy>(&mut self) -> usize {
         let offset = self.align(T::ALIGN);
         self.data.resize(offset + T::SIZE, 0);
         offset
     }
 
+    /// Reserves a specific number of bytes with alignment.
     pub fn reserve_bytes(&mut self, size: usize, align: usize) -> usize {
         let offset = self.align(align);
         self.data.resize(offset + size, 0);
         offset
     }
 
+    /// Writes a value to the specified offset.
     pub fn write<T: ZeroCopy>(&mut self, offset: usize, val: T) {
         let size = T::SIZE;
         let bytes = unsafe { core::slice::from_raw_parts(&val as *const T as *const u8, size) };
         self.data[offset..offset + size].copy_from_slice(bytes);
     }
 
+    /// Pushes a value onto the builder and returns its offset.
     pub fn push<T: ZeroCopy>(&mut self, val: T) -> usize {
         let offset = self.reserve::<T>();
         self.write(offset, val);
         offset
     }
 
+    /// Pushes raw bytes onto the builder.
     pub fn push_bytes(&mut self, bytes: &[u8], align: usize) -> usize {
         let offset = self.align(align);
         self.data.extend_from_slice(bytes);
         offset
     }
 
+    /// Finalizes the builder and returns the AlignedBuffer.
     pub fn finish(self) -> AlignedBuffer {
         AlignedBuffer::from_vec(self.data, self.max_align)
     }
+    /// Returns the current length of the buffer.
     pub fn len(&self) -> usize {
         self.data.len()
     }
@@ -928,17 +977,21 @@ impl ZeroBuilder {
 
 /// A trait for zero-copy types that defines their preferred builder type.
 pub trait ZeroCopyType<E: Endian = NativeEndian>: ZeroCopy {
+    /// The builder type associated with this trait.
     type Builder;
 }
 
 /// A trait for types that can be built into a zero-copy structure.
 pub trait ZeroCopyBuilder<E: Endian = NativeEndian, const ALIGN: usize = 0> {
+    /// The target type that this builds into.
     type Target: ZeroCopy;
 
     #[cfg(feature = "alloc")]
+    /// Build the zero-copy type into the builder.
     fn build_to_target(self, builder: &mut ZeroBuilder, offset: usize) -> Self::Target;
 
     #[cfg(feature = "alloc")]
+    /// Build the zero-copy type into the builder and return its offset.
     fn build(self, builder: &mut ZeroBuilder) -> usize
     where
         Self: Sized,
@@ -969,7 +1022,9 @@ where
     B: ZeroCopyBuilder<E, 0, Target = T>,
     T: ZeroCopy,
 {
+    /// The target type that this builds into.
     type Target = RelativePtr<T, ALIGN, E>;
+    /// Builds the object into the target location.
     fn build_to_target(self, builder: &mut ZeroBuilder, offset: usize) -> Self::Target {
         let target_offset = self.0.build(builder);
         RelativePtr::new(checked_relative_offset(target_offset, offset))
@@ -987,7 +1042,9 @@ where
     B: ZeroCopyBuilder<E, 0, Target = T>,
     T: ZeroCopy,
 {
+    /// The target type that this builds into.
     type Target = ZeroArray<T, N, ALIGN, E>;
+    /// Builds the object into the target location.
     fn build_to_target(self, builder: &mut ZeroBuilder, offset: usize) -> Self::Target {
         let effective_align = if ALIGN == 0 { T::ALIGN } else { ALIGN };
         let data_offset = builder.reserve_bytes(N * T::SIZE, effective_align);
@@ -1012,7 +1069,9 @@ where
     B: ZeroCopyBuilder<E, 0, Target = T>,
     T: ZeroCopy,
 {
+    /// The target type that this builds into.
     type Target = ZeroSlice<T, ALIGN, E>;
+    /// Builds the object into the target location.
     fn build_to_target(self, builder: &mut ZeroBuilder, offset: usize) -> Self::Target {
         let len = self.0.len() as u32;
         let effective_align = if ALIGN == 0 { T::ALIGN } else { ALIGN };
@@ -1032,9 +1091,11 @@ macro_rules! impl_zerocopy_primitive {
     ($($t:ty, $from_native:ident),*) => {
         $(
             impl<E: Endian> ZeroCopyType<E> for $t {
+                /// The builder type associated with this trait.
                 type Builder = $t;
             }
             impl<E: Endian> ZeroCopyBuilder<E, 0> for $t {
+                /// The target type that this builds into.
                 type Target = $t;
                 #[cfg(feature = "alloc")]
                 fn build_to_target(self, _builder: &mut ZeroBuilder, _offset: usize) -> Self::Target {
@@ -1069,9 +1130,11 @@ impl_zerocopy_primitive!(
 );
 
 impl<E: Endian> ZeroCopyType<E> for u8 {
+    /// The builder type associated with this trait.
     type Builder = u8;
 }
 impl<E: Endian> ZeroCopyBuilder<E, 0> for u8 {
+    /// The target type that this builds into.
     type Target = u8;
     #[cfg(feature = "alloc")]
     fn build_to_target(self, _builder: &mut ZeroBuilder, _offset: usize) -> Self::Target {
@@ -1079,9 +1142,11 @@ impl<E: Endian> ZeroCopyBuilder<E, 0> for u8 {
     }
 }
 impl<E: Endian> ZeroCopyType<E> for i8 {
+    /// The builder type associated with this trait.
     type Builder = i8;
 }
 impl<E: Endian> ZeroCopyBuilder<E, 0> for i8 {
+    /// The target type that this builds into.
     type Target = i8;
     #[cfg(feature = "alloc")]
     fn build_to_target(self, _builder: &mut ZeroBuilder, _offset: usize) -> Self::Target {
@@ -1089,9 +1154,11 @@ impl<E: Endian> ZeroCopyBuilder<E, 0> for i8 {
     }
 }
 impl<E: Endian> ZeroCopyType<E> for bool {
+    /// The builder type associated with this trait.
     type Builder = bool;
 }
 impl<E: Endian> ZeroCopyBuilder<E, 0> for bool {
+    /// The target type that this builds into.
     type Target = bool;
     #[cfg(feature = "alloc")]
     fn build_to_target(self, _builder: &mut ZeroBuilder, _offset: usize) -> Self::Target {
@@ -1099,9 +1166,11 @@ impl<E: Endian> ZeroCopyBuilder<E, 0> for bool {
     }
 }
 impl<E: Endian> ZeroCopyType<E> for char {
+    /// The builder type associated with this trait.
     type Builder = char;
 }
 impl<E: Endian> ZeroCopyBuilder<E, 0> for char {
+    /// The target type that this builds into.
     type Target = char;
     #[cfg(feature = "alloc")]
     fn build_to_target(self, _builder: &mut ZeroBuilder, _offset: usize) -> Self::Target {
@@ -1111,11 +1180,14 @@ impl<E: Endian> ZeroCopyBuilder<E, 0> for char {
 
 #[cfg(feature = "alloc")]
 impl<E: Endian> ZeroCopyType<E> for ZeroStr<E> {
+    /// The builder type associated with this trait.
     type Builder = String;
 }
 #[cfg(feature = "alloc")]
 impl<E: Endian> ZeroCopyBuilder<E, 0> for String {
+    /// The target type that this builds into.
     type Target = ZeroStr<E>;
+    /// Builds the object into the target location.
     fn build_to_target(self, builder: &mut ZeroBuilder, offset: usize) -> Self::Target {
         let alignment = 1;
         let data_offset = builder.push_bytes(self.as_bytes(), alignment);
@@ -1135,11 +1207,14 @@ pub struct FixedString<const CAP: usize>(pub String);
 
 #[cfg(feature = "alloc")]
 impl<E: Endian, const CAP: usize> ZeroCopyType<E> for ZeroString<CAP, E> {
+    /// The builder type associated with this trait.
     type Builder = FixedString<CAP>;
 }
 #[cfg(feature = "alloc")]
 impl<E: Endian, const CAP: usize> ZeroCopyBuilder<E, 0> for FixedString<CAP> {
+    /// The target type that this builds into.
     type Target = ZeroString<CAP, E>;
+    /// Builds the object into the target location.
     fn build_to_target(self, _builder: &mut ZeroBuilder, _offset: usize) -> Self::Target {
         let bytes = self.0.as_bytes();
         let len = bytes.len().min(CAP);
@@ -1158,6 +1233,7 @@ impl<E: Endian, T, const ALIGN: usize> ZeroCopyType<E> for ZeroSlice<T, ALIGN, E
 where
     T: ZeroCopy + ZeroCopyType<E>,
 {
+    /// The builder type associated with this trait.
     type Builder = SliceBuilder<T::Builder, ALIGN>;
 }
 #[cfg(feature = "alloc")]
@@ -1166,7 +1242,9 @@ where
     B: ZeroCopyBuilder<E, 0, Target = T>,
     T: ZeroCopy,
 {
+    /// The target type that this builds into.
     type Target = ZeroSlice<T, ALIGN, E>;
+    /// Builds the object into the target location.
     fn build_to_target(self, builder: &mut ZeroBuilder, offset: usize) -> Self::Target {
         let len = self.len() as u32;
         let effective_align = if ALIGN == 0 { T::ALIGN } else { ALIGN };
@@ -1186,6 +1264,7 @@ impl<E: Endian, T, const ALIGN: usize> ZeroCopyType<E> for RelativePtr<T, ALIGN,
 where
     T: ZeroCopy + ZeroCopyType<E>,
 {
+    /// The builder type associated with this trait.
     type Builder = RelativeBuilder<T::Builder, ALIGN>;
 }
 
@@ -1194,6 +1273,7 @@ impl<E: Endian, T, const N: usize, const ALIGN: usize> ZeroCopyType<E> for ZeroA
 where
     T: ZeroCopy + ZeroCopyType<E>,
 {
+    /// The builder type associated with this trait.
     type Builder = ArrayBuilder<T::Builder, N, ALIGN>;
 }
 
@@ -1201,6 +1281,7 @@ impl<E: Endian, T, const N: usize> ZeroCopyType<E> for [T; N]
 where
     T: ZeroCopy + ZeroCopyType<E>,
 {
+    /// The builder type associated with this trait.
     type Builder = [<T as ZeroCopyType<E>>::Builder; N];
 }
 impl<E: Endian, T, B, const N: usize, const ALIGN: usize> ZeroCopyBuilder<E, ALIGN> for [B; N]
@@ -1208,6 +1289,7 @@ where
     B: ZeroCopyBuilder<E, 0, Target = T>,
     T: ZeroCopy,
 {
+    /// The target type that this builds into.
     type Target = [T; N];
     #[cfg(feature = "alloc")]
     fn build_to_target(self, builder: &mut ZeroBuilder, offset: usize) -> Self::Target {
