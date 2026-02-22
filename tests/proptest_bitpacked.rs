@@ -52,7 +52,8 @@ prop_compose! {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(1000))]
+    // #![proptest_config(ProptestConfig::with_cases(1000))]
+    #![proptest_config(ProptestConfig {cases: if std::env::var("MIRIFLAGS").is_ok() { 2 } else { 1000 },.. ProptestConfig::default()})]
     #[test]
     fn round_trip_mixed_fields(item in arb_mixed_fields()) {
         let config = bincode_next::config::standard();

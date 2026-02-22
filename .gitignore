@@ -15,3 +15,12 @@ issue20.md
 issue18.md
 expanded_enum.rs
 expanded_macro.rs
+revert_align.py
+test_infer
+test_infer.rs
+test_infer2
+test_infer2.rs
+test_infer3.rs
+test_infer4
+test_infer4.rs
+fix_docs.py

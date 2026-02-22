@@ -8,6 +8,8 @@ pub struct ContainerAttributes {
     pub decode_context: Option<(String, Literal)>,
     pub borrow_decode_bounds: Option<(String, Literal)>,
     pub encode_bounds: Option<(String, Literal)>,
+    pub endian: Option<(String, Literal)>,
+    pub align: Option<(usize, Literal)>,
 }
 
 impl Default for ContainerAttributes {
@@ -19,6 +21,8 @@ impl Default for ContainerAttributes {
             decode_context: None,
             encode_bounds: None,
             borrow_decode_bounds: None,
+            endian: None,
+            align: None,
         }
     }
 }
@@ -83,6 +87,19 @@ impl FromAttribute for ContainerAttributes {
                     if val_string.starts_with('"') && val_string.ends_with('"') {
                         result.borrow_decode_bounds =
                             Some((val_string[1..val_string.len() - 1].to_string(), val));
+                    } else {
+                        return Err(Error::custom_at("Should be a literal str", val.span()));
+                    }
+                }
+                ParsedAttribute::Property(key, val) if key.to_string() == "align" => {
+                    let val_string = val.to_string();
+                    if val_string.starts_with('"') && val_string.ends_with('"') {
+                        let inner = &val_string[1..val_string.len() - 1];
+                        if let Ok(align) = inner.parse::<usize>() {
+                            result.align = Some((align, val));
+                        } else {
+                            return Err(Error::custom_at("Should be a valid usize", val.span()));
+                        }
                     } else {
                         return Err(Error::custom_at("Should be a literal str", val.span()));
                     }

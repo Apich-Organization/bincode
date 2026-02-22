@@ -1,5 +1,5 @@
 #![cfg(feature = "zero-copy")]
-use bincode_next::relative_ptr::{RelativePtr, Validator, ZeroArray, ZeroString};
+use bincode_next::relative_ptr::{NativeEndian, RelativePtr, Validator, ZeroArray, ZeroString};
 
 #[repr(align(8))]
 struct AlignedBuffer<const N: usize>(pub [u8; N]);
@@ -128,20 +128,19 @@ fn test_zero_array() {
 }
 
 #[test]
+#[cfg(feature = "alloc")]
 fn test_zero_string() {
-    let mut buffer = AlignedBuffer([0; 16]);
-    let buffer = &mut buffer.0;
+    use bincode_next::relative_ptr::{FixedString, ZeroBuilder, ZeroCopyBuilder};
+    let mut builder = ZeroBuilder::new();
+    let text = "hello".to_string();
+    let z_builder: FixedString<5> = FixedString(text);
+    <FixedString<5> as ZeroCopyBuilder<NativeEndian, 0>>::build(z_builder, &mut builder);
+    let buffer = builder.finish();
 
-    let text = b"hello";
-    buffer[8..13].copy_from_slice(text);
-
-    let offset: i32 = 8;
-    buffer[0..4].copy_from_slice(&offset.to_ne_bytes());
-
-    let z_str = unsafe { &*(buffer.as_ptr() as *const ZeroString<5>) };
+    let z_str = unsafe { &*(buffer.as_ptr() as *const ZeroString<5, NativeEndian>) };
 
     assert!(z_str.is_valid(&buffer[..]));
-    let resolved = z_str.get(&buffer[..]).unwrap();
+    let resolved = z_str.get().unwrap();
     assert_eq!(resolved, "hello");
 }
 
