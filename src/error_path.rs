@@ -11,7 +11,7 @@ pub trait BincodeErrorPathCovered<const PATH: u8> {
 
     #[inline(always)]
     fn assert_covered() {
-        let _ = Self::ASSERT;
+        let () = Self::ASSERT;
     }
 }
 

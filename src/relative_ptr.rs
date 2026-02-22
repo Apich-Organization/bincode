@@ -84,21 +84,25 @@ pub trait Endian {
 
     #[inline(always)]
     /// Converts a f32 from native endianness to the relative pointer's endianness.
+    #[must_use]
     fn from_native_f32(v: f32) -> f32 {
         f32::from_bits(Self::from_native_u32(v.to_bits()))
     }
     #[inline(always)]
     /// Converts a f32 from the relative pointer's endianness to native endianness.
+    #[must_use]
     fn to_native_f32(v: f32) -> f32 {
         f32::from_bits(Self::to_native_u32(v.to_bits()))
     }
     #[inline(always)]
     /// Converts a f64 from native endianness to the relative pointer's endianness.
+    #[must_use]
     fn from_native_f64(v: f64) -> f64 {
         f64::from_bits(Self::from_native_u64(v.to_bits()))
     }
     #[inline(always)]
     /// Converts a f64 from the relative pointer's endianness to native endianness.
+    #[must_use]
     fn to_native_f64(v: f64) -> f64 {
         f64::from_bits(Self::to_native_u64(v.to_bits()))
     }
@@ -366,6 +370,7 @@ pub struct RelativePtr<T, const ALIGN: usize, E: Endian = NativeEndian> {
 
 impl<T, const ALIGN: usize, E: Endian> RelativePtr<T, ALIGN, E> {
     /// Creates a new `RelativePtr` with the given native offset.
+    #[must_use]
     pub fn new(offset: i32) -> Self {
         Self {
             offset: E::from_native_i32(offset),
@@ -376,6 +381,7 @@ impl<T, const ALIGN: usize, E: Endian> RelativePtr<T, ALIGN, E> {
     /// Resolves the pointer within the given buffer.
     /// Returns `Some(&T)` if the computed pointer is within the bounds of `buffer`
     /// and correctly aligned. Otherwise, returns `None`.
+    #[must_use]
     pub fn get<'a>(
         &self,
         buffer: &'a [u8],
@@ -391,7 +397,7 @@ impl<T, const ALIGN: usize, E: Endian> RelativePtr<T, ALIGN, E> {
                 ALIGN
             };
             assert!(
-                effective_align > 0 && (effective_align & (effective_align - 1)) == 0,
+                effective_align > 0 && effective_align.is_power_of_two(),
                 "Alignment must be a power of two"
             );
             assert!(
@@ -400,7 +406,7 @@ impl<T, const ALIGN: usize, E: Endian> RelativePtr<T, ALIGN, E> {
             );
         };
 
-        let self_ptr = self as *const _ as usize;
+        let self_ptr = core::ptr::from_ref(self) as usize;
         let buffer_start = buffer.as_ptr() as usize;
         let buffer_end = buffer_start + buffer.len();
 
@@ -443,7 +449,7 @@ impl<T, const ALIGN: usize, E: Endian> RelativePtr<T, ALIGN, E> {
 
         // Safe because we bounds checked against the buffer, alignment checked,
         // and we derive the lifetime from the buffer.
-        Some(unsafe { &*(target_ptr as *const T) })
+        Some(unsafe { &*target_ptr.cast::<T>() })
     }
 }
 
@@ -463,6 +469,7 @@ pub struct ZeroArray<T, const N: usize, const ALIGN: usize, E: Endian = NativeEn
 
 impl<T: ZeroCopy, const N: usize, const ALIGN: usize, E: Endian> ZeroArray<T, N, ALIGN, E> {
     /// Resolves the array within the given buffer.
+    #[must_use]
     pub fn get<'a>(
         &self,
         buffer: &'a [u8],
@@ -492,7 +499,8 @@ pub struct ZeroString<const CAP: usize, E: Endian = NativeEndian> {
 
 impl<const CAP: usize, E: Endian> ZeroString<CAP, E> {
     /// Resolves the string. Inline strings don't necessarily need the buffer.
-    pub fn get<'a>(&'a self) -> Option<&'a str> {
+    #[must_use]
+    pub fn get(&self) -> Option<&str> {
         let len =
             E::to_native_u32(unsafe { core::ptr::addr_of!(self.len).read_unaligned() }) as usize;
         let len = len.min(CAP);
@@ -517,6 +525,7 @@ pub struct ZeroSlice<T, const ALIGN: usize, E: Endian = NativeEndian> {
 
 impl<T: ZeroCopy, const ALIGN: usize, E: Endian> ZeroSlice<T, ALIGN, E> {
     /// Creates a new `ZeroSlice` with the given native length and relative offset.
+    #[must_use]
     pub fn new(
         len: u32,
         offset: i32,
@@ -528,6 +537,7 @@ impl<T: ZeroCopy, const ALIGN: usize, E: Endian> ZeroSlice<T, ALIGN, E> {
     }
 
     /// Resolves the slice within the given buffer.
+    #[must_use]
     pub fn get<'a>(
         &self,
         buffer: &'a [u8],
@@ -548,7 +558,7 @@ impl<T: ZeroCopy, const ALIGN: usize, E: Endian> ZeroSlice<T, ALIGN, E> {
         // Calculate the total size required for the full slice.
         let total_size = T::SIZE.checked_mul(slice_len)?;
 
-        let first_addr = first_ref as *const T as usize;
+        let first_addr = core::ptr::from_ref::<T>(first_ref) as usize;
         let buffer_start = buffer.as_ptr() as usize;
         let target_offset = first_addr - buffer_start;
 
@@ -558,7 +568,7 @@ impl<T: ZeroCopy, const ALIGN: usize, E: Endian> ZeroSlice<T, ALIGN, E> {
         }
 
         // Derive target_ptr from buffer.as_ptr() to maintain provenance over the whole slice
-        let target_ptr = unsafe { buffer.as_ptr().add(target_offset) as *const T };
+        let target_ptr = unsafe { buffer.as_ptr().add(target_offset).cast::<T>() };
 
         Some(unsafe { core::slice::from_raw_parts(target_ptr, slice_len) })
     }
@@ -580,6 +590,7 @@ pub struct ZeroStr<E: Endian = NativeEndian> {
 
 impl<E: Endian> ZeroStr<E> {
     /// Creates a new instance.
+    #[must_use]
     pub fn new(
         len: u32,
         offset: i32,
@@ -590,6 +601,7 @@ impl<E: Endian> ZeroStr<E> {
     }
 
     /// Returns a reference to the underlying data if valid.
+    #[must_use]
     pub fn get<'a>(
         &self,
         buffer: &'a [u8],
@@ -948,6 +960,7 @@ impl<E: Endian> Encode for ZeroStr<E> {
 }
 
 /// An aligned byte buffer that correctly deallocates with the alignment it was allocated with.
+///
 /// This is necessary because `Vec<u8>` always deallocates with alignment 1, which is UB
 /// if the memory was allocated with a higher alignment.
 #[cfg(feature = "alloc")]
@@ -1042,7 +1055,8 @@ pub struct ZeroBuilder {
 #[cfg(feature = "alloc")]
 impl ZeroBuilder {
     /// Creates a new instance.
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self {
             data: Vec::new(),
             max_align: 1,
@@ -1091,7 +1105,7 @@ impl ZeroBuilder {
         val: T,
     ) {
         let size = T::SIZE;
-        let bytes = unsafe { core::slice::from_raw_parts(&val as *const T as *const u8, size) };
+        let bytes = unsafe { core::slice::from_raw_parts((&raw const val).cast::<u8>(), size) };
         self.data[offset..offset + size].copy_from_slice(bytes);
     }
 
@@ -1116,13 +1130,15 @@ impl ZeroBuilder {
         offset
     }
 
-    /// Finalizes the builder and returns the AlignedBuffer.
+    /// Finalizes the builder and returns the `AlignedBuffer`.
+    #[must_use]
     pub fn finish(self) -> AlignedBuffer {
         AlignedBuffer::from_vec(self.data, self.max_align)
     }
 
     /// Returns the current length of the buffer.
-    pub fn len(&self) -> usize {
+    #[must_use]
+    pub const fn len(&self) -> usize {
         self.data.len()
     }
 }
@@ -1313,11 +1329,11 @@ impl_zerocopy_primitive!(
 
 impl<E: Endian> ZeroCopyType<E> for u8 {
     /// The builder type associated with this trait.
-    type Builder = u8;
+    type Builder = Self;
 }
 impl<E: Endian> ZeroCopyBuilder<E, 0> for u8 {
     /// The target type that this builds into.
-    type Target = u8;
+    type Target = Self;
 
     #[cfg(feature = "alloc")]
     fn build_to_target(
@@ -1330,11 +1346,11 @@ impl<E: Endian> ZeroCopyBuilder<E, 0> for u8 {
 }
 impl<E: Endian> ZeroCopyType<E> for i8 {
     /// The builder type associated with this trait.
-    type Builder = i8;
+    type Builder = Self;
 }
 impl<E: Endian> ZeroCopyBuilder<E, 0> for i8 {
     /// The target type that this builds into.
-    type Target = i8;
+    type Target = Self;
 
     #[cfg(feature = "alloc")]
     fn build_to_target(
@@ -1347,11 +1363,11 @@ impl<E: Endian> ZeroCopyBuilder<E, 0> for i8 {
 }
 impl<E: Endian> ZeroCopyType<E> for bool {
     /// The builder type associated with this trait.
-    type Builder = bool;
+    type Builder = Self;
 }
 impl<E: Endian> ZeroCopyBuilder<E, 0> for bool {
     /// The target type that this builds into.
-    type Target = bool;
+    type Target = Self;
 
     #[cfg(feature = "alloc")]
     fn build_to_target(
@@ -1364,11 +1380,11 @@ impl<E: Endian> ZeroCopyBuilder<E, 0> for bool {
 }
 impl<E: Endian> ZeroCopyType<E> for char {
     /// The builder type associated with this trait.
-    type Builder = char;
+    type Builder = Self;
 }
 impl<E: Endian> ZeroCopyBuilder<E, 0> for char {
     /// The target type that this builds into.
-    type Target = char;
+    type Target = Self;
 
     #[cfg(feature = "alloc")]
     fn build_to_target(
@@ -1376,7 +1392,7 @@ impl<E: Endian> ZeroCopyBuilder<E, 0> for char {
         _builder: &mut ZeroBuilder,
         _offset: usize,
     ) -> Self::Target {
-        char::from_u32(E::from_native_u32(self as u32)).unwrap()
+        Self::from_u32(E::from_native_u32(self as u32)).unwrap()
     }
 }
 

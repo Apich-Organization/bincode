@@ -42,7 +42,7 @@ impl StaticSize for i128 {
     const MAX_SIZE: usize = 17;
 }
 impl StaticSize for usize {
-    const MAX_SIZE: usize = 9;
+    const MAX_SIZE: Self = 9;
 }
 impl StaticSize for isize {
     const MAX_SIZE: usize = 9;

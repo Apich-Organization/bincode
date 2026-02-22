@@ -11,7 +11,7 @@ pub struct BitReader<'a, R: Reader> {
 impl<'a, R: Reader> BitReader<'a, R> {
     /// Creates a new `BitReader`.
     #[inline(always)]
-    pub fn new(reader: &'a mut R) -> Self {
+    pub const fn new(reader: &'a mut R) -> Self {
         Self {
             reader,
             current_byte: 0,
@@ -21,7 +21,7 @@ impl<'a, R: Reader> BitReader<'a, R> {
 
     /// Creates a new `BitReader` with an existing state.
     #[inline(always)]
-    pub fn from_state(
+    pub const fn from_state(
         reader: &'a mut R,
         current_byte: u8,
         bits_available: u8,
@@ -33,9 +33,10 @@ impl<'a, R: Reader> BitReader<'a, R> {
         }
     }
 
-    /// Returns the current state of the bit reader (current_byte, bits_available).
+    /// Returns the current state of the bit reader (`current_byte`, `bits_available`).
     #[inline(always)]
-    pub fn get_state(&self) -> (u8, u8) {
+    #[must_use]
+    pub const fn get_state(&self) -> (u8, u8) {
         (self.current_byte, self.bits_available)
     }
 
@@ -60,7 +61,7 @@ impl<'a, R: Reader> BitReader<'a, R> {
             let mask = ((1u16 << bits_to_read) - 1) as u8;
 
             let chunk = self.current_byte & mask;
-            result |= (chunk as u64) << bits_read;
+            result |= u64::from(chunk) << bits_read;
 
             self.current_byte >>= bits_to_read;
             self.bits_available -= bits_to_read;
@@ -93,7 +94,7 @@ impl<'a, R: Reader> BitReader<'a, R> {
             let mask = ((1u16 << bits_to_read) - 1) as u8;
 
             let chunk = (self.current_byte >> shift_down) & mask;
-            result = (result << bits_to_read) | (chunk as u64);
+            result = (result << bits_to_read) | u64::from(chunk);
 
             self.bits_available -= bits_to_read;
             num_bits -= bits_to_read;
@@ -104,13 +105,13 @@ impl<'a, R: Reader> BitReader<'a, R> {
 
     /// Discards any remaining unread bits in the current byte, effectively returning to byte alignment.
     #[inline(always)]
-    pub fn align_to_byte(&mut self) {
+    pub const fn align_to_byte(&mut self) {
         self.bits_available = 0;
         self.current_byte = 0;
     }
 }
 
-/// A helper trait to unpack `u64` into various types for the BitPacked macro.
+/// A helper trait to unpack `u64` into various types for the `BitPacked` macro.
 pub trait Unpackable {
     /// Convert the unpacked `u64` to `Self`.
     fn unpack(val: u64) -> Self;

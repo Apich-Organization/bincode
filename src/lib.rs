@@ -98,7 +98,6 @@
     clippy::implicit_clone,
     clippy::all,
     clippy::pedantic,
-    warnings,
     missing_docs,
     clippy::nursery,
     clippy::single_call_fn,
@@ -107,9 +106,13 @@
 // LEVEL 2: STYLE WARNINGS (Warn)
 // -------------------------------------------------------------------------
 #![warn(
+    warnings,
     unsafe_code,
     clippy::dbg_macro,
     clippy::todo,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap,
     clippy::unnecessary_safety_comment
 )]
 // -------------------------------------------------------------------------

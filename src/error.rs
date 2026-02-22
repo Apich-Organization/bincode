@@ -29,7 +29,7 @@ macro_rules! bincode_error {
                 #[cold]
                 #[track_caller]
                 #[inline(never)]
-                pub fn [<cold_ $name:snake _ $variant:snake>]<T>(
+                pub const fn [<cold_ $name:snake _ $variant:snake>]<T>(
                     $($($field : $ftype),*)?
                     $($($tname : $ttype),*)?
                 ) -> core::result::Result<T, $name> {

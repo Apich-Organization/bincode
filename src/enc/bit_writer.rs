@@ -11,7 +11,7 @@ pub struct BitWriter<'a, W: Writer> {
 impl<'a, W: Writer> BitWriter<'a, W> {
     /// Creates a new `BitWriter`.
     #[inline(always)]
-    pub fn new(writer: &'a mut W) -> Self {
+    pub const fn new(writer: &'a mut W) -> Self {
         Self {
             writer,
             current_byte: 0,
@@ -21,7 +21,7 @@ impl<'a, W: Writer> BitWriter<'a, W> {
 
     /// Creates a new `BitWriter` with an existing state.
     #[inline(always)]
-    pub fn from_state(
+    pub const fn from_state(
         writer: &'a mut W,
         current_byte: u8,
         bit_count: u8,
@@ -33,9 +33,10 @@ impl<'a, W: Writer> BitWriter<'a, W> {
         }
     }
 
-    /// Returns the current state of the bit writer (current_byte, bit_count).
+    /// Returns the current state of the bit writer (`current_byte`, `bit_count`).
     #[inline(always)]
-    pub fn get_state(&self) -> (u8, u8) {
+    #[must_use]
+    pub const fn get_state(&self) -> (u8, u8) {
         (self.current_byte, self.bit_count)
     }
 
