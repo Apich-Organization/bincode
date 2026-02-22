@@ -13,6 +13,7 @@ plan.md
 /.kdev4
 issue20.md
 issue18.md
+issue17.md
 expanded_enum.rs
 expanded_macro.rs
 revert_align.py

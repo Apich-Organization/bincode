@@ -1,6 +1,7 @@
 mod attribute;
 mod derive_bit_packed;
 mod derive_enum;
+mod derive_static_size;
 mod derive_struct;
 mod derive_zerocopy;
 
@@ -151,11 +152,13 @@ fn derive_bit_packed_inner(input: TokenStream) -> Result<TokenStream> {
     generator.finish()
 }
 
+#[cfg(feature = "zero-copy")]
 #[proc_macro_derive(ZeroCopy, attributes(bincode))]
 pub fn derive_zerocopy(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     derive_zerocopy_inner(input).unwrap_or_else(|e| e.into_token_stream())
 }
 
+#[cfg(feature = "zero-copy")]
 fn derive_zerocopy_inner(input: TokenStream) -> Result<TokenStream> {
     let parse = Parse::new(input)?;
 
@@ -182,5 +185,41 @@ fn derive_zerocopy_inner(input: TokenStream) -> Result<TokenStream> {
     }
 
     generator.export_to_file("bincode_next", "ZeroCopy");
+    generator.finish()
+}
+
+#[cfg(feature = "static-size")]
+#[proc_macro_derive(StaticSize, attributes(bincode, static_size))]
+pub fn derive_static_size(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    derive_static_size_inner(input).unwrap_or_else(|e| e.into_token_stream())
+}
+
+#[cfg(feature = "static-size")]
+fn derive_static_size_inner(input: TokenStream) -> Result<TokenStream> {
+    let parse = Parse::new(input)?;
+    let (mut generator, attributes, body) = parse.into_generator();
+    let attributes = attributes
+        .get_attribute::<ContainerAttributes>()?
+        .unwrap_or_default();
+
+    match body {
+        Body::Struct(body) => {
+            derive_static_size::DeriveStaticSize {
+                fields: body.fields,
+                variants: None,
+                attributes,
+            }
+            .generate(&mut generator)?;
+        }
+        Body::Enum(body) => {
+            derive_static_size::DeriveStaticSize {
+                fields: None,
+                variants: Some(body.variants),
+                attributes,
+            }
+            .generate(&mut generator)?;
+        }
+    }
+
     generator.finish()
 }

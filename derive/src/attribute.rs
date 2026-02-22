@@ -121,46 +121,80 @@ impl FromAttribute for ContainerAttributes {
 pub struct FieldAttributes {
     pub with_serde: bool,
     pub bits: Option<u8>,
+    pub static_size_skip: bool,
+    pub static_size_custom: Option<String>,
 }
 
 impl FromAttribute for FieldAttributes {
     fn parse(group: &Group) -> Result<Option<Self>> {
-        let attributes = match parse_tagged_attribute(group, "bincode")? {
-            Some(body) => body,
-            None => return Ok(None),
-        };
         let mut result = Self::default();
-        for attribute in attributes {
-            match attribute {
-                ParsedAttribute::Tag(i) if i.to_string() == "with_serde" => {
-                    result.with_serde = true;
-                }
-                ParsedAttribute::Tag(i) => {
-                    return Err(Error::custom_at("Unknown field attribute", i.span()));
-                }
-                ParsedAttribute::Property(key, val) if key.to_string() == "bits" => {
-                    let val_string = val.to_string();
-                    if let Ok(bits) = val_string.parse::<u8>() {
-                        if bits == 0 || bits > 64 {
+        let mut found = false;
+
+        if let Some(attributes) = parse_tagged_attribute(group, "bincode")? {
+            found = true;
+            for attribute in attributes {
+                match attribute {
+                    ParsedAttribute::Tag(i) if i.to_string() == "with_serde" => {
+                        result.with_serde = true;
+                    }
+                    ParsedAttribute::Property(key, val) if key.to_string() == "bits" => {
+                        let val_string = val.to_string();
+                        if let Ok(bits) = val_string.parse::<u8>() {
+                            if bits == 0 || bits > 64 {
+                                return Err(Error::custom_at(
+                                    "Should be an integer from 1 to 64",
+                                    val.span(),
+                                ));
+                            }
+                            result.bits = Some(bits);
+                        } else {
                             return Err(Error::custom_at(
                                 "Should be an integer from 1 to 64",
                                 val.span(),
                             ));
                         }
-                        result.bits = Some(bits);
-                    } else {
-                        return Err(Error::custom_at(
-                            "Should be an integer from 1 to 64",
-                            val.span(),
-                        ));
                     }
+                    ParsedAttribute::Tag(i) => {
+                        return Err(Error::custom_at("Unknown field attribute", i.span()));
+                    }
+                    ParsedAttribute::Property(key, _) => {
+                        return Err(Error::custom_at("Unknown field attribute", key.span()));
+                    }
+                    _ => {}
                 }
-                ParsedAttribute::Property(key, _) => {
-                    return Err(Error::custom_at("Unknown field attribute", key.span()));
-                }
-                _ => {}
             }
         }
-        Ok(Some(result))
+
+        if let Some(attributes) = parse_tagged_attribute(group, "static_size")? {
+            found = true;
+            for attribute in attributes {
+                match attribute {
+                    ParsedAttribute::Tag(i) if i.to_string() == "skip" => {
+                        result.static_size_skip = true;
+                    }
+                    ParsedAttribute::Property(key, val) if key.to_string() == "custom" => {
+                        let val_string = val.to_string();
+                        if val_string.starts_with('"') && val_string.ends_with('"') {
+                            result.static_size_custom =
+                                Some(val_string[1..val_string.len() - 1].to_string());
+                        } else {
+                            return Err(Error::custom_at("Should be a literal str", val.span()));
+                        }
+                    }
+                    ParsedAttribute::Tag(i) => {
+                        return Err(Error::custom_at("Unknown static_size attribute", i.span()));
+                    }
+                    ParsedAttribute::Property(key, _) => {
+                        return Err(Error::custom_at(
+                            "Unknown static_size attribute",
+                            key.span(),
+                        ));
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        if found { Ok(Some(result)) } else { Ok(None) }
     }
 }
