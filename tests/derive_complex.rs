@@ -1,8 +1,6 @@
 #![cfg(feature = "zero-copy")]
-use bincode_next::relative_ptr::{
-    RelativePtr, ZeroArray, ZeroBuilder, ZeroCopyBuilder, ZeroSlice, ZeroStr, ZeroString,
-};
-use bincode_next::{ZeroCopy, ZeroCopyType};
+use bincode_next::ZeroCopy;
+use bincode_next::relative_ptr::{RelativePtr, ZeroArray, ZeroSlice, ZeroStr, ZeroString};
 
 #[derive(ZeroCopy)]
 struct Nested {
@@ -22,8 +20,7 @@ struct Complex {
 #[test]
 fn test_complex_derive() {
     use bincode_next::relative_ptr::{
-        ArrayBuilder, FixedString, NativeEndian, RelativeBuilder, SliceBuilder, ZeroBuilder,
-        ZeroCopyBuilder,
+        ArrayBuilder, FixedString, RelativeBuilder, SliceBuilder, ZeroBuilder, ZeroCopyBuilder,
     };
 
     let mut builder = ZeroBuilder::new();

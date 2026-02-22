@@ -1,5 +1,4 @@
 #![allow(unsafe_code)]
-#![allow(missing_docs)]
 
 use core::marker::PhantomData;
 
@@ -847,6 +846,19 @@ impl Drop for AlignedBuffer {
     }
 }
 
+/// Computes a relative offset and checks that it fits in an `i32`.
+/// Panics if the distance between `from` and `to` exceeds the i32 range (~2GB).
+#[cfg(feature = "alloc")]
+fn checked_relative_offset(to: usize, from: usize) -> i32 {
+    let diff = to as isize - from as isize;
+    i32::try_from(diff).unwrap_or_else(|_| {
+        panic!(
+            "Relative offset overflow: distance {} between positions {} and {} exceeds i32 range",
+            diff, from, to
+        )
+    })
+}
+
 /// A builder for zero-copy structures.
 #[cfg(feature = "alloc")]
 pub struct ZeroBuilder {
@@ -960,7 +972,7 @@ where
     type Target = RelativePtr<T, ALIGN, E>;
     fn build_to_target(self, builder: &mut ZeroBuilder, offset: usize) -> Self::Target {
         let target_offset = self.0.build(builder);
-        RelativePtr::new((target_offset as isize - offset as isize) as i32)
+        RelativePtr::new(checked_relative_offset(target_offset, offset))
     }
 }
 
@@ -985,7 +997,7 @@ where
             builder.write(item_offset, target);
         }
         ZeroArray {
-            ptr: RelativePtr::new((data_offset as isize - offset as isize) as i32),
+            ptr: RelativePtr::new(checked_relative_offset(data_offset, offset)),
         }
     }
 }
@@ -1012,10 +1024,7 @@ where
         }
         // RelativePtr is at offset + size_of::<u32>() (after the `len` field)
         let ptr_field_offset = offset + core::mem::size_of::<u32>();
-        ZeroSlice::new(
-            len,
-            (data_offset as isize - ptr_field_offset as isize) as i32,
-        )
+        ZeroSlice::new(len, checked_relative_offset(data_offset, ptr_field_offset))
     }
 }
 
@@ -1115,7 +1124,7 @@ impl<E: Endian> ZeroCopyBuilder<E, 0> for String {
         let ptr_field_offset = offset + core::mem::size_of::<u32>();
         ZeroStr::new(
             self.len() as u32,
-            (data_offset as isize - ptr_field_offset as isize) as i32,
+            checked_relative_offset(data_offset, ptr_field_offset),
         )
     }
 }
@@ -1169,10 +1178,7 @@ where
         }
         // RelativePtr is at offset + size_of::<u32>() (after the `len` field)
         let ptr_field_offset = offset + core::mem::size_of::<u32>();
-        ZeroSlice::new(
-            len,
-            (data_offset as isize - ptr_field_offset as isize) as i32,
-        )
+        ZeroSlice::new(len, checked_relative_offset(data_offset, ptr_field_offset))
     }
 }
 #[cfg(feature = "alloc")]
