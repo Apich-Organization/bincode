@@ -190,6 +190,8 @@ where
     }
 }
 
+#[cold]
+#[inline(never)]
 fn invalid_varint_discriminant<T>(
     expected: IntegerType,
     found: IntegerType,

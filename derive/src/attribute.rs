@@ -8,6 +8,7 @@ pub struct ContainerAttributes {
     pub decode_context: Option<(String, Literal)>,
     pub borrow_decode_bounds: Option<(String, Literal)>,
     pub encode_bounds: Option<(String, Literal)>,
+    #[allow(dead_code)]
     pub endian: Option<(String, Literal)>,
     pub align: Option<(usize, Literal)>,
 }

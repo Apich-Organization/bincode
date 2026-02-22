@@ -13,7 +13,7 @@ authors = [
     "The bincode-next & bincode developers",
 ]
 exclude = ["logo.svg", "examples/*", ".gitignore", ".github/"]
-rust-version = "1.87.0"
+rust-version = "1.89.0"
 
 publish = true
 

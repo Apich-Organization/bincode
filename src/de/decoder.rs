@@ -72,6 +72,7 @@ impl<R: Reader, C: Config, Context> Decoder for DecoderImpl<R, C, Context> {
 
     #[inline]
     fn claim_bytes_read(&mut self, n: usize) -> Result<(), DecodeError> {
+        Self::assert_covered();
         // C::LIMIT is a const so this check should get compiled away
         if let Some(limit) = C::LIMIT {
             // Make sure we don't accidentally overflow `bytes_read`
@@ -130,6 +131,7 @@ impl<Context, D: Decoder + ?Sized> Decoder for WithContext<'_, D, Context> {
     }
 
     fn claim_bytes_read(&mut self, n: usize) -> Result<(), DecodeError> {
+        Self::assert_covered();
         self.decoder.claim_bytes_read(n)
     }
 

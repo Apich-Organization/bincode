@@ -277,6 +277,8 @@ impl DecodeError {
     /// reporting in `src/varint/decode_signed.rs` since this calls
     /// `src/varint/decode_unsigned.rs` and needs to correct the `expected` and
     /// `found` types.
+    #[cold]
+    #[inline(never)]
     pub(crate) fn change_integer_type_to_signed(self) -> Self {
         match self {
             Self::InvalidIntegerType { expected, found } => Self::InvalidIntegerType {
