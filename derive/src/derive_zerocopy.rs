@@ -82,7 +82,7 @@ impl DeriveZeroCopy {
                     }
                 },
                 | Fields::Tuple(t) => {
-                    for (_i, field) in t.iter().enumerate() {
+                    for field in t.iter() {
                         fields_info.push((None, field.type_string()));
                     }
                 },
