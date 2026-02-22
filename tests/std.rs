@@ -4,13 +4,20 @@
 mod utils;
 
 use bincode::error::DecodeError;
-use std::{
-    ffi::CString,
-    io::{Cursor, Seek, SeekFrom},
-    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
-    path::{Path, PathBuf},
-    sync::{Mutex, RwLock},
-};
+use std::ffi::CString;
+use std::io::Cursor;
+use std::io::Seek;
+use std::io::SeekFrom;
+use std::net::IpAddr;
+use std::net::Ipv4Addr;
+use std::net::Ipv6Addr;
+use std::net::SocketAddr;
+use std::net::SocketAddrV4;
+use std::net::SocketAddrV6;
+use std::path::Path;
+use std::path::PathBuf;
+use std::sync::Mutex;
+use std::sync::RwLock;
 use utils::the_same;
 
 extern crate bincode_next as bincode;
@@ -35,7 +42,7 @@ impl bincode::Encode for Foo {
 
 impl<Context> bincode::Decode<Context> for Foo {
     fn decode<D: bincode::de::Decoder>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, bincode::error::DecodeError> {
         Ok(Self {
             a: bincode::Decode::decode(decoder)?,
@@ -154,14 +161,14 @@ fn test_system_time_out_of_range() {
         bincode::decode_from_slice(&input, bincode::config::standard());
 
     match result {
-        Ok(_) => panic!("Expected the decode to fail, but it succeeded"),
-        Err(DecodeError::InvalidSystemTime { duration }) => {
+        | Ok(_) => panic!("Expected the decode to fail, but it succeeded"),
+        | Err(DecodeError::InvalidSystemTime { duration }) => {
             assert_eq!(
                 duration,
                 std::time::Duration::new(10447520527445462160, 144)
             )
-        }
-        Err(e) => panic!("Expected DecodeError::InvalidSystemTime, got {e:?}"),
+        },
+        | Err(e) => panic!("Expected DecodeError::InvalidSystemTime, got {e:?}"),
     }
 }
 
@@ -172,7 +179,10 @@ pub struct ExampleCustomHasher {
 }
 
 impl std::hash::Hasher for ExampleCustomHasher {
-    fn write(&mut self, value: &[u8]) {
+    fn write(
+        &mut self,
+        value: &[u8],
+    ) {
         for (index, &item) in value.iter().enumerate() {
             self.hash ^= u64::from(item) << ((index % 8) * 8);
         }

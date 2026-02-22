@@ -1,221 +1,254 @@
 use core::convert::TryInto;
 
-use super::{SINGLE_BYTE_MAX, U16_BYTE, U32_BYTE, U64_BYTE, U128_BYTE};
-use crate::{
-    config::Endianness,
-    de::read::Reader,
-    error::{DecodeError, IntegerType},
-};
+use super::SINGLE_BYTE_MAX;
+use super::U16_BYTE;
+use super::U32_BYTE;
+use super::U64_BYTE;
+use super::U128_BYTE;
+use crate::config::Endianness;
+use crate::de::read::Reader;
+use crate::error::DecodeError;
+use crate::error::IntegerType;
 
 #[inline(never)]
 #[cold]
-fn deserialize_varint_cold_u16<R>(read: &mut R, endian: Endianness) -> Result<u16, DecodeError>
+fn deserialize_varint_cold_u16<R>(
+    read: &mut R,
+    endian: Endianness,
+) -> Result<u16, DecodeError>
 where
     R: Reader,
 {
     let mut bytes = [0u8; 1];
     read.read(&mut bytes)?;
     match bytes[0] {
-        byte @ 0..=SINGLE_BYTE_MAX => Ok(u16::from(byte)),
-        U16_BYTE => {
+        | byte @ 0..=SINGLE_BYTE_MAX => Ok(u16::from(byte)),
+        | U16_BYTE => {
             let mut bytes = [0u8; 2];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endianness::Big => u16::from_be_bytes(bytes),
-                Endianness::Little => u16::from_le_bytes(bytes),
+                | Endianness::Big => u16::from_be_bytes(bytes),
+                | Endianness::Little => u16::from_le_bytes(bytes),
             })
-        }
-        U32_BYTE => invalid_varint_discriminant(IntegerType::U16, IntegerType::U32),
-        U64_BYTE => invalid_varint_discriminant(IntegerType::U16, IntegerType::U64),
-        U128_BYTE => invalid_varint_discriminant(IntegerType::U16, IntegerType::U128),
-        _ => invalid_varint_discriminant(IntegerType::U16, IntegerType::Reserved),
+        },
+        | U32_BYTE => invalid_varint_discriminant(IntegerType::U16, IntegerType::U32),
+        | U64_BYTE => invalid_varint_discriminant(IntegerType::U16, IntegerType::U64),
+        | U128_BYTE => invalid_varint_discriminant(IntegerType::U16, IntegerType::U128),
+        | _ => invalid_varint_discriminant(IntegerType::U16, IntegerType::Reserved),
     }
 }
 
 #[inline(never)]
 #[cold]
-fn deserialize_varint_cold_u32<R>(read: &mut R, endian: Endianness) -> Result<u32, DecodeError>
+fn deserialize_varint_cold_u32<R>(
+    read: &mut R,
+    endian: Endianness,
+) -> Result<u32, DecodeError>
 where
     R: Reader,
 {
     let mut bytes = [0u8; 1];
     read.read(&mut bytes)?;
     match bytes[0] {
-        byte @ 0..=SINGLE_BYTE_MAX => Ok(u32::from(byte)),
-        U16_BYTE => {
+        | byte @ 0..=SINGLE_BYTE_MAX => Ok(u32::from(byte)),
+        | U16_BYTE => {
             let mut bytes = [0u8; 2];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endianness::Big => u32::from(u16::from_be_bytes(bytes)),
-                Endianness::Little => u32::from(u16::from_le_bytes(bytes)),
+                | Endianness::Big => u32::from(u16::from_be_bytes(bytes)),
+                | Endianness::Little => u32::from(u16::from_le_bytes(bytes)),
             })
-        }
-        U32_BYTE => {
+        },
+        | U32_BYTE => {
             let mut bytes = [0u8; 4];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endianness::Big => u32::from_be_bytes(bytes),
-                Endianness::Little => u32::from_le_bytes(bytes),
+                | Endianness::Big => u32::from_be_bytes(bytes),
+                | Endianness::Little => u32::from_le_bytes(bytes),
             })
-        }
-        U64_BYTE => invalid_varint_discriminant(IntegerType::U32, IntegerType::U64),
-        U128_BYTE => invalid_varint_discriminant(IntegerType::U32, IntegerType::U128),
-        _ => invalid_varint_discriminant(IntegerType::U32, IntegerType::Reserved),
+        },
+        | U64_BYTE => invalid_varint_discriminant(IntegerType::U32, IntegerType::U64),
+        | U128_BYTE => invalid_varint_discriminant(IntegerType::U32, IntegerType::U128),
+        | _ => invalid_varint_discriminant(IntegerType::U32, IntegerType::Reserved),
     }
 }
 
 #[inline(never)]
 #[cold]
-fn deserialize_varint_cold_u64<R>(read: &mut R, endian: Endianness) -> Result<u64, DecodeError>
+fn deserialize_varint_cold_u64<R>(
+    read: &mut R,
+    endian: Endianness,
+) -> Result<u64, DecodeError>
 where
     R: Reader,
 {
     let mut bytes = [0u8; 1];
     read.read(&mut bytes)?;
     match bytes[0] {
-        byte @ 0..=SINGLE_BYTE_MAX => Ok(u64::from(byte)),
-        U16_BYTE => {
+        | byte @ 0..=SINGLE_BYTE_MAX => Ok(u64::from(byte)),
+        | U16_BYTE => {
             let mut bytes = [0u8; 2];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endianness::Big => u64::from(u16::from_be_bytes(bytes)),
-                Endianness::Little => u64::from(u16::from_le_bytes(bytes)),
+                | Endianness::Big => u64::from(u16::from_be_bytes(bytes)),
+                | Endianness::Little => u64::from(u16::from_le_bytes(bytes)),
             })
-        }
-        U32_BYTE => {
+        },
+        | U32_BYTE => {
             let mut bytes = [0u8; 4];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endianness::Big => u64::from(u32::from_be_bytes(bytes)),
-                Endianness::Little => u64::from(u32::from_le_bytes(bytes)),
+                | Endianness::Big => u64::from(u32::from_be_bytes(bytes)),
+                | Endianness::Little => u64::from(u32::from_le_bytes(bytes)),
             })
-        }
-        U64_BYTE => {
+        },
+        | U64_BYTE => {
             let mut bytes = [0u8; 8];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endianness::Big => u64::from_be_bytes(bytes),
-                Endianness::Little => u64::from_le_bytes(bytes),
+                | Endianness::Big => u64::from_be_bytes(bytes),
+                | Endianness::Little => u64::from_le_bytes(bytes),
             })
-        }
-        U128_BYTE => invalid_varint_discriminant(IntegerType::U64, IntegerType::U128),
-        _ => invalid_varint_discriminant(IntegerType::U64, IntegerType::Reserved),
+        },
+        | U128_BYTE => invalid_varint_discriminant(IntegerType::U64, IntegerType::U128),
+        | _ => invalid_varint_discriminant(IntegerType::U64, IntegerType::Reserved),
     }
 }
 
 #[inline(never)]
 #[cold]
-fn deserialize_varint_cold_usize<R>(read: &mut R, endian: Endianness) -> Result<usize, DecodeError>
+fn deserialize_varint_cold_usize<R>(
+    read: &mut R,
+    endian: Endianness,
+) -> Result<usize, DecodeError>
 where
     R: Reader,
 {
     let mut bytes = [0u8; 1];
     read.read(&mut bytes)?;
     match bytes[0] {
-        byte @ 0..=SINGLE_BYTE_MAX => Ok(byte as usize),
-        U16_BYTE => {
+        | byte @ 0..=SINGLE_BYTE_MAX => Ok(byte as usize),
+        | U16_BYTE => {
             let mut bytes = [0u8; 2];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endianness::Big => u16::from_be_bytes(bytes) as usize,
-                Endianness::Little => u16::from_le_bytes(bytes) as usize,
+                | Endianness::Big => u16::from_be_bytes(bytes) as usize,
+                | Endianness::Little => u16::from_le_bytes(bytes) as usize,
             })
-        }
-        U32_BYTE => {
+        },
+        | U32_BYTE => {
             let mut bytes = [0u8; 4];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endianness::Big => u32::from_be_bytes(bytes) as usize,
-                Endianness::Little => u32::from_le_bytes(bytes) as usize,
+                | Endianness::Big => u32::from_be_bytes(bytes) as usize,
+                | Endianness::Little => u32::from_le_bytes(bytes) as usize,
             })
-        }
-        U64_BYTE => {
+        },
+        | U64_BYTE => {
             let mut bytes = [0u8; 8];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endianness::Big => usize::try_from(u64::from_be_bytes(bytes))
-                    .map_err(|_| DecodeError::OutsideUsizeRange(u64::from_be_bytes(bytes)))?,
-                Endianness::Little => usize::try_from(u64::from_le_bytes(bytes))
-                    .map_err(|_| DecodeError::OutsideUsizeRange(u64::from_le_bytes(bytes)))?,
+                | Endianness::Big => {
+                    usize::try_from(u64::from_be_bytes(bytes)).map_err(|_| {
+                        crate::error::cold_decode_error_outside_usize_range::<()>(
+                            u64::from_be_bytes(bytes),
+                        )
+                        .unwrap_err()
+                    })?
+                },
+                | Endianness::Little => {
+                    usize::try_from(u64::from_le_bytes(bytes)).map_err(|_| {
+                        crate::error::cold_decode_error_outside_usize_range::<()>(
+                            u64::from_le_bytes(bytes),
+                        )
+                        .unwrap_err()
+                    })?
+                },
             })
-        }
-        U128_BYTE => invalid_varint_discriminant(IntegerType::Usize, IntegerType::U128),
-        _ => invalid_varint_discriminant(IntegerType::Usize, IntegerType::Reserved),
+        },
+        | U128_BYTE => invalid_varint_discriminant(IntegerType::Usize, IntegerType::U128),
+        | _ => invalid_varint_discriminant(IntegerType::Usize, IntegerType::Reserved),
     }
 }
 
 #[inline(never)]
 #[cold]
-fn deserialize_varint_cold_u128<R>(read: &mut R, endian: Endianness) -> Result<u128, DecodeError>
+fn deserialize_varint_cold_u128<R>(
+    read: &mut R,
+    endian: Endianness,
+) -> Result<u128, DecodeError>
 where
     R: Reader,
 {
     let mut bytes = [0u8; 1];
     read.read(&mut bytes)?;
     match bytes[0] {
-        byte @ 0..=SINGLE_BYTE_MAX => Ok(u128::from(byte)),
-        U16_BYTE => {
+        | byte @ 0..=SINGLE_BYTE_MAX => Ok(u128::from(byte)),
+        | U16_BYTE => {
             let mut bytes = [0u8; 2];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endianness::Big => u128::from(u16::from_be_bytes(bytes)),
-                Endianness::Little => u128::from(u16::from_le_bytes(bytes)),
+                | Endianness::Big => u128::from(u16::from_be_bytes(bytes)),
+                | Endianness::Little => u128::from(u16::from_le_bytes(bytes)),
             })
-        }
-        U32_BYTE => {
+        },
+        | U32_BYTE => {
             let mut bytes = [0u8; 4];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endianness::Big => u128::from(u32::from_be_bytes(bytes)),
-                Endianness::Little => u128::from(u32::from_le_bytes(bytes)),
+                | Endianness::Big => u128::from(u32::from_be_bytes(bytes)),
+                | Endianness::Little => u128::from(u32::from_le_bytes(bytes)),
             })
-        }
-        U64_BYTE => {
+        },
+        | U64_BYTE => {
             let mut bytes = [0u8; 8];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endianness::Big => u128::from(u64::from_be_bytes(bytes)),
-                Endianness::Little => u128::from(u64::from_le_bytes(bytes)),
+                | Endianness::Big => u128::from(u64::from_be_bytes(bytes)),
+                | Endianness::Little => u128::from(u64::from_le_bytes(bytes)),
             })
-        }
-        U128_BYTE => {
+        },
+        | U128_BYTE => {
             let mut bytes = [0u8; 16];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endianness::Big => u128::from_be_bytes(bytes),
-                Endianness::Little => u128::from_le_bytes(bytes),
+                | Endianness::Big => u128::from_be_bytes(bytes),
+                | Endianness::Little => u128::from_le_bytes(bytes),
             })
-        }
-        _ => invalid_varint_discriminant(IntegerType::U128, IntegerType::Reserved),
+        },
+        | _ => invalid_varint_discriminant(IntegerType::U128, IntegerType::Reserved),
     }
 }
 
-#[inline(never)]
 #[cold]
+#[inline(never)]
 const fn invalid_varint_discriminant<T>(
     expected: IntegerType,
     found: IntegerType,
 ) -> Result<T, DecodeError> {
-    Err(DecodeError::InvalidIntegerType { expected, found })
+    crate::error::cold_decode_error_invalid_integer_type(expected, found)
 }
 
-pub fn varint_decode_u16<R: Reader>(read: &mut R, endian: Endianness) -> Result<u16, DecodeError> {
+pub fn varint_decode_u16<R: Reader>(
+    read: &mut R,
+    endian: Endianness,
+) -> Result<u16, DecodeError> {
     if let Some(bytes) = read.peek_read(3) {
         let (discriminant, bytes) = bytes.split_at(1);
         let (out, used) = match discriminant[0] {
-            byte @ 0..=SINGLE_BYTE_MAX => (u16::from(byte), 1),
-            U16_BYTE => {
+            | byte @ 0..=SINGLE_BYTE_MAX => (u16::from(byte), 1),
+            | U16_BYTE => {
                 let val = match endian {
-                    Endianness::Big => u16::from_be_bytes(bytes[..2].try_into().unwrap()),
-                    Endianness::Little => u16::from_le_bytes(bytes[..2].try_into().unwrap()),
+                    | Endianness::Big => u16::from_be_bytes(bytes[..2].try_into().unwrap()),
+                    | Endianness::Little => u16::from_le_bytes(bytes[..2].try_into().unwrap()),
                 };
 
                 (val, 3)
-            }
-            U32_BYTE => return invalid_varint_discriminant(IntegerType::U16, IntegerType::U32),
-            U64_BYTE => return invalid_varint_discriminant(IntegerType::U16, IntegerType::U64),
-            U128_BYTE => return invalid_varint_discriminant(IntegerType::U16, IntegerType::U128),
-            _ => return invalid_varint_discriminant(IntegerType::U16, IntegerType::Reserved),
+            },
+            | U32_BYTE => return invalid_varint_discriminant(IntegerType::U16, IntegerType::U32),
+            | U64_BYTE => return invalid_varint_discriminant(IntegerType::U16, IntegerType::U64),
+            | U128_BYTE => return invalid_varint_discriminant(IntegerType::U16, IntegerType::U128),
+            | _ => return invalid_varint_discriminant(IntegerType::U16, IntegerType::Reserved),
         };
 
         read.consume(used);
@@ -225,30 +258,33 @@ pub fn varint_decode_u16<R: Reader>(read: &mut R, endian: Endianness) -> Result<
     }
 }
 
-pub fn varint_decode_u32<R: Reader>(read: &mut R, endian: Endianness) -> Result<u32, DecodeError> {
+pub fn varint_decode_u32<R: Reader>(
+    read: &mut R,
+    endian: Endianness,
+) -> Result<u32, DecodeError> {
     if let Some(bytes) = read.peek_read(5) {
         let (discriminant, bytes) = bytes.split_at(1);
         let (out, used) = match discriminant[0] {
-            byte @ 0..=SINGLE_BYTE_MAX => (u32::from(byte), 1),
-            U16_BYTE => {
+            | byte @ 0..=SINGLE_BYTE_MAX => (u32::from(byte), 1),
+            | U16_BYTE => {
                 let val = match endian {
-                    Endianness::Big => u16::from_be_bytes(bytes[..2].try_into().unwrap()),
-                    Endianness::Little => u16::from_le_bytes(bytes[..2].try_into().unwrap()),
+                    | Endianness::Big => u16::from_be_bytes(bytes[..2].try_into().unwrap()),
+                    | Endianness::Little => u16::from_le_bytes(bytes[..2].try_into().unwrap()),
                 };
 
                 (u32::from(val), 3)
-            }
-            U32_BYTE => {
+            },
+            | U32_BYTE => {
                 let val = match endian {
-                    Endianness::Big => u32::from_be_bytes(bytes[..4].try_into().unwrap()),
-                    Endianness::Little => u32::from_le_bytes(bytes[..4].try_into().unwrap()),
+                    | Endianness::Big => u32::from_be_bytes(bytes[..4].try_into().unwrap()),
+                    | Endianness::Little => u32::from_le_bytes(bytes[..4].try_into().unwrap()),
                 };
 
                 (val, 5)
-            }
-            U64_BYTE => return invalid_varint_discriminant(IntegerType::U32, IntegerType::U64),
-            U128_BYTE => return invalid_varint_discriminant(IntegerType::U32, IntegerType::U128),
-            _ => return invalid_varint_discriminant(IntegerType::U32, IntegerType::Reserved),
+            },
+            | U64_BYTE => return invalid_varint_discriminant(IntegerType::U32, IntegerType::U64),
+            | U128_BYTE => return invalid_varint_discriminant(IntegerType::U32, IntegerType::U128),
+            | _ => return invalid_varint_discriminant(IntegerType::U32, IntegerType::Reserved),
         };
 
         read.consume(used);
@@ -258,37 +294,40 @@ pub fn varint_decode_u32<R: Reader>(read: &mut R, endian: Endianness) -> Result<
     }
 }
 
-pub fn varint_decode_u64<R: Reader>(read: &mut R, endian: Endianness) -> Result<u64, DecodeError> {
+pub fn varint_decode_u64<R: Reader>(
+    read: &mut R,
+    endian: Endianness,
+) -> Result<u64, DecodeError> {
     if let Some(bytes) = read.peek_read(9) {
         let (discriminant, bytes) = bytes.split_at(1);
         let (out, used) = match discriminant[0] {
-            byte @ 0..=SINGLE_BYTE_MAX => (u64::from(byte), 1),
-            U16_BYTE => {
+            | byte @ 0..=SINGLE_BYTE_MAX => (u64::from(byte), 1),
+            | U16_BYTE => {
                 let val = match endian {
-                    Endianness::Big => u16::from_be_bytes(bytes[..2].try_into().unwrap()),
-                    Endianness::Little => u16::from_le_bytes(bytes[..2].try_into().unwrap()),
+                    | Endianness::Big => u16::from_be_bytes(bytes[..2].try_into().unwrap()),
+                    | Endianness::Little => u16::from_le_bytes(bytes[..2].try_into().unwrap()),
                 };
 
                 (u64::from(val), 3)
-            }
-            U32_BYTE => {
+            },
+            | U32_BYTE => {
                 let val = match endian {
-                    Endianness::Big => u32::from_be_bytes(bytes[..4].try_into().unwrap()),
-                    Endianness::Little => u32::from_le_bytes(bytes[..4].try_into().unwrap()),
+                    | Endianness::Big => u32::from_be_bytes(bytes[..4].try_into().unwrap()),
+                    | Endianness::Little => u32::from_le_bytes(bytes[..4].try_into().unwrap()),
                 };
 
                 (u64::from(val), 5)
-            }
-            U64_BYTE => {
+            },
+            | U64_BYTE => {
                 let val = match endian {
-                    Endianness::Big => u64::from_be_bytes(bytes[..8].try_into().unwrap()),
-                    Endianness::Little => u64::from_le_bytes(bytes[..8].try_into().unwrap()),
+                    | Endianness::Big => u64::from_be_bytes(bytes[..8].try_into().unwrap()),
+                    | Endianness::Little => u64::from_le_bytes(bytes[..8].try_into().unwrap()),
                 };
 
                 (val, 9)
-            }
-            U128_BYTE => return invalid_varint_discriminant(IntegerType::U32, IntegerType::U128),
-            _ => return invalid_varint_discriminant(IntegerType::U32, IntegerType::Reserved),
+            },
+            | U128_BYTE => return invalid_varint_discriminant(IntegerType::U32, IntegerType::U128),
+            | _ => return invalid_varint_discriminant(IntegerType::U32, IntegerType::Reserved),
         };
 
         read.consume(used);
@@ -305,36 +344,40 @@ pub fn varint_decode_usize<R: Reader>(
     if let Some(bytes) = read.peek_read(9) {
         let (discriminant, bytes) = bytes.split_at(1);
         let (out, used) = match discriminant[0] {
-            byte @ 0..=SINGLE_BYTE_MAX => (byte as usize, 1),
-            U16_BYTE => {
+            | byte @ 0..=SINGLE_BYTE_MAX => (byte as usize, 1),
+            | U16_BYTE => {
                 let val = match endian {
-                    Endianness::Big => u16::from_be_bytes(bytes[..2].try_into().unwrap()),
-                    Endianness::Little => u16::from_le_bytes(bytes[..2].try_into().unwrap()),
+                    | Endianness::Big => u16::from_be_bytes(bytes[..2].try_into().unwrap()),
+                    | Endianness::Little => u16::from_le_bytes(bytes[..2].try_into().unwrap()),
                 };
 
                 (val as usize, 3)
-            }
-            U32_BYTE => {
+            },
+            | U32_BYTE => {
                 let val = match endian {
-                    Endianness::Big => u32::from_be_bytes(bytes[..4].try_into().unwrap()),
-                    Endianness::Little => u32::from_le_bytes(bytes[..4].try_into().unwrap()),
+                    | Endianness::Big => u32::from_be_bytes(bytes[..4].try_into().unwrap()),
+                    | Endianness::Little => u32::from_le_bytes(bytes[..4].try_into().unwrap()),
                 };
 
                 (val as usize, 5)
-            }
-            U64_BYTE => {
+            },
+            | U64_BYTE => {
                 let val = match endian {
-                    Endianness::Big => u64::from_be_bytes(bytes[..8].try_into().unwrap()),
-                    Endianness::Little => u64::from_le_bytes(bytes[..8].try_into().unwrap()),
+                    | Endianness::Big => u64::from_be_bytes(bytes[..8].try_into().unwrap()),
+                    | Endianness::Little => u64::from_le_bytes(bytes[..8].try_into().unwrap()),
                 };
 
                 (
-                    usize::try_from(val).map_err(|_| DecodeError::OutsideUsizeRange(val))?,
+                    usize::try_from(val).map_err(|_| {
+                        crate::error::cold_decode_error_outside_usize_range::<()>(val).unwrap_err()
+                    })?,
                     9,
                 )
-            }
-            U128_BYTE => return invalid_varint_discriminant(IntegerType::Usize, IntegerType::U128),
-            _ => return invalid_varint_discriminant(IntegerType::Usize, IntegerType::Reserved),
+            },
+            | U128_BYTE => {
+                return invalid_varint_discriminant(IntegerType::Usize, IntegerType::U128);
+            },
+            | _ => return invalid_varint_discriminant(IntegerType::Usize, IntegerType::Reserved),
         };
 
         read.consume(used);
@@ -351,40 +394,40 @@ pub fn varint_decode_u128<R: Reader>(
     if let Some(bytes) = read.peek_read(17) {
         let (discriminant, bytes) = bytes.split_at(1);
         let (out, used) = match discriminant[0] {
-            byte @ 0..=SINGLE_BYTE_MAX => (u128::from(byte), 1),
-            U16_BYTE => {
+            | byte @ 0..=SINGLE_BYTE_MAX => (u128::from(byte), 1),
+            | U16_BYTE => {
                 let val = match endian {
-                    Endianness::Big => u16::from_be_bytes(bytes[..2].try_into().unwrap()),
-                    Endianness::Little => u16::from_le_bytes(bytes[..2].try_into().unwrap()),
+                    | Endianness::Big => u16::from_be_bytes(bytes[..2].try_into().unwrap()),
+                    | Endianness::Little => u16::from_le_bytes(bytes[..2].try_into().unwrap()),
                 };
 
                 (u128::from(val), 3)
-            }
-            U32_BYTE => {
+            },
+            | U32_BYTE => {
                 let val = match endian {
-                    Endianness::Big => u32::from_be_bytes(bytes[..4].try_into().unwrap()),
-                    Endianness::Little => u32::from_le_bytes(bytes[..4].try_into().unwrap()),
+                    | Endianness::Big => u32::from_be_bytes(bytes[..4].try_into().unwrap()),
+                    | Endianness::Little => u32::from_le_bytes(bytes[..4].try_into().unwrap()),
                 };
 
                 (u128::from(val), 5)
-            }
-            U64_BYTE => {
+            },
+            | U64_BYTE => {
                 let val = match endian {
-                    Endianness::Big => u64::from_be_bytes(bytes[..8].try_into().unwrap()),
-                    Endianness::Little => u64::from_le_bytes(bytes[..8].try_into().unwrap()),
+                    | Endianness::Big => u64::from_be_bytes(bytes[..8].try_into().unwrap()),
+                    | Endianness::Little => u64::from_le_bytes(bytes[..8].try_into().unwrap()),
                 };
 
                 (u128::from(val), 9)
-            }
-            U128_BYTE => {
+            },
+            | U128_BYTE => {
                 let val = match endian {
-                    Endianness::Big => u128::from_be_bytes(bytes[..16].try_into().unwrap()),
-                    Endianness::Little => u128::from_le_bytes(bytes[..16].try_into().unwrap()),
+                    | Endianness::Big => u128::from_be_bytes(bytes[..16].try_into().unwrap()),
+                    | Endianness::Little => u128::from_le_bytes(bytes[..16].try_into().unwrap()),
                 };
 
                 (val, 17)
-            }
-            _ => return invalid_varint_discriminant(IntegerType::Usize, IntegerType::Reserved),
+            },
+            | _ => return invalid_varint_discriminant(IntegerType::Usize, IntegerType::Reserved),
         };
 
         read.consume(used);

@@ -9,14 +9,20 @@ pub(crate) struct DeriveZeroCopy {
 }
 
 impl DeriveZeroCopy {
-    pub fn generate(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate(
+        self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         self.generate_static_size(generator)?;
         self.generate_zerocopy_marker(generator)?;
         self.generate_builder(generator)?;
         Ok(())
     }
 
-    fn generate_static_size(&self, generator: &mut Generator) -> Result<()> {
+    fn generate_static_size(
+        &self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = &self.attributes.crate_name;
         generator
             .impl_for(format!("{}::relative_ptr::StaticSize", crate_name))
@@ -28,7 +34,10 @@ impl DeriveZeroCopy {
         Ok(())
     }
 
-    fn generate_zerocopy_marker(&self, generator: &mut Generator) -> Result<()> {
+    fn generate_zerocopy_marker(
+        &self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = &self.attributes.crate_name;
         generator
             .impl_for(format!("{}::relative_ptr::ZeroCopy", crate_name))
@@ -41,21 +50,24 @@ impl DeriveZeroCopy {
         Ok(())
     }
 
-    fn generate_builder(&self, generator: &mut Generator) -> Result<()> {
+    fn generate_builder(
+        &self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = &self.attributes.crate_name;
         let target_name = generator.target_name().to_string();
         let builder_name = format!("{}Builder", target_name);
 
         let endian_type = if let Some((ref e, _)) = self.attributes.endian {
             match e.as_str() {
-                "little" => format!("{}::relative_ptr::LittleEndian", crate_name),
-                "big" => format!("{}::relative_ptr::BigEndian", crate_name),
-                "native" => format!("{}::relative_ptr::NativeEndian", crate_name),
-                _ => {
+                | "little" => format!("{}::relative_ptr::LittleEndian", crate_name),
+                | "big" => format!("{}::relative_ptr::BigEndian", crate_name),
+                | "native" => format!("{}::relative_ptr::NativeEndian", crate_name),
+                | _ => {
                     return Err(Error::custom(
                         "Invalid endianness. Expected 'little', 'big', or 'native'",
                     ));
-                }
+                },
             }
         } else {
             format!("{}::relative_ptr::NativeEndian", crate_name)
@@ -64,16 +76,16 @@ impl DeriveZeroCopy {
         let mut fields_info = Vec::new();
         if let Some(ref fields) = self.fields {
             match fields {
-                Fields::Struct(s) => {
+                | Fields::Struct(s) => {
                     for (ident, field) in s {
                         fields_info.push((Some(ident.clone()), field.type_string()));
                     }
-                }
-                Fields::Tuple(t) => {
-                    for (_i, field) in t.iter().enumerate() {
+                },
+                | Fields::Tuple(t) => {
+                    for field in t.iter() {
                         fields_info.push((None, field.type_string()));
                     }
-                }
+                },
             }
         }
 

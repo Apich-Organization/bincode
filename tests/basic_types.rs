@@ -1,12 +1,14 @@
 mod utils;
 
 use bincode::error::DecodeError;
-use core::cell::{Cell, RefCell};
+use core::cell::Cell;
+use core::cell::RefCell;
 use core::cmp::Reverse;
 use core::ops::Bound;
 use core::time::Duration;
 use std::num::*;
-use utils::{the_same, the_same_with_comparer};
+use utils::the_same;
+use utils::the_same_with_comparer;
 
 extern crate bincode_next as bincode;
 
@@ -159,8 +161,8 @@ fn test_refcell_already_borrowed() {
         .expect_err("Encoding a borrowed refcell should fail");
 
     match result {
-        bincode::error::EncodeError::RefCellAlreadyBorrowed { .. } => {} // ok
-        x => panic!("Expected a RefCellAlreadyBorrowed error, found {:?}", x),
+        | bincode::error::EncodeError::RefCellAlreadyBorrowed { .. } => {}, // ok
+        | x => panic!("Expected a RefCellAlreadyBorrowed error, found {:?}", x),
     }
 }
 
@@ -283,12 +285,12 @@ fn test_duration_out_of_range() {
         bincode::decode_from_slice(&input, bincode::config::standard());
 
     match result {
-        Err(DecodeError::InvalidDuration {
+        | Err(DecodeError::InvalidDuration {
             secs: u64::MAX,
             nanos: u32::MAX,
-        }) => {}
-        Err(e) => panic!("Expected InvalidDuration, got {:?}", e),
-        Ok(_) => panic!("Expected the decode to fail"),
+        }) => {},
+        | Err(e) => panic!("Expected InvalidDuration, got {:?}", e),
+        | Ok(_) => panic!("Expected the decode to fail"),
     }
 }
 

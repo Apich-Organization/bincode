@@ -1,4 +1,9 @@
-use bincode_next::{Decode, Encode, Fingerprint, config, decode_from_slice, encode_into_slice};
+use bincode_next::Decode;
+use bincode_next::Encode;
+use bincode_next::Fingerprint;
+use bincode_next::config;
+use bincode_next::decode_from_slice;
+use bincode_next::encode_into_slice;
 
 #[derive(Fingerprint, Encode, Decode, PartialEq, Debug, Clone)]
 struct MyStruct {
@@ -55,14 +60,14 @@ fn test_fingerprint_mismatch() {
 
     let res: Result<(MyStructV2, usize), _> = decode_from_slice(&buf[..len], config);
     match res {
-        Err(bincode_next::error::DecodeError::SchemaMismatch { expected, actual }) => {
+        | Err(bincode_next::error::DecodeError::SchemaMismatch { expected, actual }) => {
             fn hash<C: config::Config, T: Fingerprint<C>>(_: C) -> u64 {
                 T::SCHEMA_HASH
             }
             assert_eq!(expected, hash::<_, MyStructV2>(config));
             assert_eq!(actual, hash::<_, MyStruct>(config));
-        }
-        _ => panic!("Expected SchemaMismatch, got {:?}", res),
+        },
+        | _ => panic!("Expected SchemaMismatch, got {:?}", res),
     }
 }
 
@@ -79,8 +84,8 @@ fn test_fingerprint_name_change_mismatch() {
 
     let res: Result<(MyStructNameChange, usize), _> = decode_from_slice(&buf[..len], config);
     match res {
-        Err(bincode_next::error::DecodeError::SchemaMismatch { .. }) => {}
-        _ => panic!("Expected SchemaMismatch because of field name change"),
+        | Err(bincode_next::error::DecodeError::SchemaMismatch { .. }) => {},
+        | _ => panic!("Expected SchemaMismatch because of field name change"),
     }
 }
 
@@ -139,11 +144,11 @@ fn test_fingerprint_legacy() {
     let legacy_config = config::standard().with_legacy_fingerprint::<0>(); // Wrong hash
     let res: Result<(MyStruct, usize), _> = decode_from_slice(&buf[..len], legacy_config);
     match res {
-        Err(bincode_next::error::DecodeError::SchemaMismatch { expected, actual }) => {
+        | Err(bincode_next::error::DecodeError::SchemaMismatch { expected, actual }) => {
             assert_eq!(expected, 0);
             assert_eq!(actual, EXPECTED_HASH);
-        }
-        _ => panic!("Expected SchemaMismatch for legacy with wrong hash"),
+        },
+        | _ => panic!("Expected SchemaMismatch for legacy with wrong hash"),
     }
 
     let legacy_config_correct = config::standard().with_legacy_fingerprint::<EXPECTED_HASH>();

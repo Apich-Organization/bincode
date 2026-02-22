@@ -51,7 +51,7 @@ perfectly with other stream-based APIs such as Rust files, network streams,
 and the [flate2-rs](https://github.com/rust-lang/flate2-rs) compression
 library.
 
-## [API Documentation](https://docs.rs/bincode/)
+## [API Documentation](https://docs.rs/bincode-next/)
 
 ## Bincode in the Wild
 
@@ -178,7 +178,7 @@ maximum size limit. Malicious inputs will fail upon deserialization.
 
 ### What is Bincode's MSRV (minimum supported Rust version)?
 
-Bincode 2.2 has an MSRV of 1.87.0. Any changes to the MSRV are considered a breaking change for semver purposes, except when certain features are enabled. Features affecting MSRV are documented in the crate root.
+Bincode 2.2 has an MSRV of 1.89.0. Any changes to the MSRV are considered a breaking change for semver purposes, except when certain features are enabled. Features affecting MSRV are documented in the crate root.
 
 ### Why does bincode not respect `#[repr(u8)]`?
 

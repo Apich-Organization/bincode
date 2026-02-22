@@ -1,4 +1,5 @@
-use bincode_next::{BitPacked, Decode, Encode, config};
+use bincode_next::BitPacked;
+use bincode_next::config;
 
 #[derive(BitPacked, Debug, PartialEq, Clone, Copy)]
 enum TestEnum {

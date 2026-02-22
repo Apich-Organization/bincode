@@ -1,5 +1,5 @@
 #![cfg(feature = "derive")]
-use bincode_next::{BitPacked, Decode, Encode};
+use bincode_next::BitPacked;
 
 #[derive(BitPacked, PartialEq, Debug)]
 struct Telemetry {

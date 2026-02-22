@@ -30,3 +30,6 @@ issue19.md
 expanded.rs
 test_expand.rs
 test_trait.rs
+issue21.md
+issue21_implementation.md
+parse_error.py

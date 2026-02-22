@@ -10,8 +10,8 @@ pub struct BitReader<'a, R: Reader> {
 
 impl<'a, R: Reader> BitReader<'a, R> {
     /// Creates a new `BitReader`.
-    #[inline]
-    pub fn new(reader: &'a mut R) -> Self {
+    #[inline(always)]
+    pub const fn new(reader: &'a mut R) -> Self {
         Self {
             reader,
             current_byte: 0,
@@ -20,8 +20,12 @@ impl<'a, R: Reader> BitReader<'a, R> {
     }
 
     /// Creates a new `BitReader` with an existing state.
-    #[inline]
-    pub fn from_state(reader: &'a mut R, current_byte: u8, bits_available: u8) -> Self {
+    #[inline(always)]
+    pub const fn from_state(
+        reader: &'a mut R,
+        current_byte: u8,
+        bits_available: u8,
+    ) -> Self {
         Self {
             reader,
             current_byte,
@@ -29,14 +33,19 @@ impl<'a, R: Reader> BitReader<'a, R> {
         }
     }
 
-    /// Returns the current state of the bit reader (current_byte, bits_available).
-    #[inline]
-    pub fn get_state(&self) -> (u8, u8) {
+    /// Returns the current state of the bit reader (`current_byte`, `bits_available`).
+    #[inline(always)]
+    #[must_use]
+    pub const fn get_state(&self) -> (u8, u8) {
         (self.current_byte, self.bits_available)
     }
 
     /// Reads `num_bits` from the stream, using LSB-first bit ordering.
-    pub fn read_bits_lsb(&mut self, mut num_bits: u8) -> Result<u64, DecodeError> {
+    #[inline]
+    pub fn read_bits_lsb(
+        &mut self,
+        mut num_bits: u8,
+    ) -> Result<u64, DecodeError> {
         let mut result: u64 = 0;
         let mut bits_read: u8 = 0;
 
@@ -52,7 +61,7 @@ impl<'a, R: Reader> BitReader<'a, R> {
             let mask = ((1u16 << bits_to_read) - 1) as u8;
 
             let chunk = self.current_byte & mask;
-            result |= (chunk as u64) << bits_read;
+            result |= u64::from(chunk) << bits_read;
 
             self.current_byte >>= bits_to_read;
             self.bits_available -= bits_to_read;
@@ -65,7 +74,11 @@ impl<'a, R: Reader> BitReader<'a, R> {
     }
 
     /// Reads `num_bits` from the stream, using MSB-first bit ordering.
-    pub fn read_bits_msb(&mut self, mut num_bits: u8) -> Result<u64, DecodeError> {
+    #[inline]
+    pub fn read_bits_msb(
+        &mut self,
+        mut num_bits: u8,
+    ) -> Result<u64, DecodeError> {
         let mut result: u64 = 0;
 
         while num_bits > 0 {
@@ -81,7 +94,7 @@ impl<'a, R: Reader> BitReader<'a, R> {
             let mask = ((1u16 << bits_to_read) - 1) as u8;
 
             let chunk = (self.current_byte >> shift_down) & mask;
-            result = (result << bits_to_read) | (chunk as u64);
+            result = (result << bits_to_read) | u64::from(chunk);
 
             self.bits_available -= bits_to_read;
             num_bits -= bits_to_read;
@@ -91,21 +104,21 @@ impl<'a, R: Reader> BitReader<'a, R> {
     }
 
     /// Discards any remaining unread bits in the current byte, effectively returning to byte alignment.
-    #[inline]
-    pub fn align_to_byte(&mut self) {
+    #[inline(always)]
+    pub const fn align_to_byte(&mut self) {
         self.bits_available = 0;
         self.current_byte = 0;
     }
 }
 
-/// A helper trait to unpack `u64` into various types for the BitPacked macro.
+/// A helper trait to unpack `u64` into various types for the `BitPacked` macro.
 pub trait Unpackable {
     /// Convert the unpacked `u64` to `Self`.
     fn unpack(val: u64) -> Self;
 }
 
 impl Unpackable for bool {
-    #[inline]
+    #[inline(always)]
     fn unpack(val: u64) -> Self {
         val != 0
     }

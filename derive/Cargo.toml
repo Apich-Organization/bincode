@@ -1,6 +1,7 @@
 [package]
 name = "bincode_derive-next"
-version = "2.1.0" # remember to update bincode
+version = "2.2.0-rc.1"
+# remember to update bincode
 authors = [
     "Xinyu Yang <xinyu.yang@apich.org>",
     "Zoey Riordan <zoey@dos.cafe>",

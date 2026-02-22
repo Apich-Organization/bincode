@@ -10,8 +10,8 @@ pub struct BitWriter<'a, W: Writer> {
 
 impl<'a, W: Writer> BitWriter<'a, W> {
     /// Creates a new `BitWriter`.
-    #[inline]
-    pub fn new(writer: &'a mut W) -> Self {
+    #[inline(always)]
+    pub const fn new(writer: &'a mut W) -> Self {
         Self {
             writer,
             current_byte: 0,
@@ -20,8 +20,12 @@ impl<'a, W: Writer> BitWriter<'a, W> {
     }
 
     /// Creates a new `BitWriter` with an existing state.
-    #[inline]
-    pub fn from_state(writer: &'a mut W, current_byte: u8, bit_count: u8) -> Self {
+    #[inline(always)]
+    pub const fn from_state(
+        writer: &'a mut W,
+        current_byte: u8,
+        bit_count: u8,
+    ) -> Self {
         Self {
             writer,
             current_byte,
@@ -29,14 +33,20 @@ impl<'a, W: Writer> BitWriter<'a, W> {
         }
     }
 
-    /// Returns the current state of the bit writer (current_byte, bit_count).
-    #[inline]
-    pub fn get_state(&self) -> (u8, u8) {
+    /// Returns the current state of the bit writer (`current_byte`, `bit_count`).
+    #[inline(always)]
+    #[must_use]
+    pub const fn get_state(&self) -> (u8, u8) {
         (self.current_byte, self.bit_count)
     }
 
     /// Writes `num_bits` from `val` into the stream, using LSB-first bit ordering.
-    pub fn write_bits_lsb(&mut self, mut val: u64, mut num_bits: u8) -> Result<(), EncodeError> {
+    #[inline]
+    pub fn write_bits_lsb(
+        &mut self,
+        mut val: u64,
+        mut num_bits: u8,
+    ) -> Result<(), EncodeError> {
         while num_bits > 0 {
             let space_in_byte = 8 - self.bit_count;
             let bits_to_write = num_bits.min(space_in_byte);
@@ -58,7 +68,12 @@ impl<'a, W: Writer> BitWriter<'a, W> {
     }
 
     /// Writes `num_bits` from `val` into the stream, using MSB-first bit ordering.
-    pub fn write_bits_msb(&mut self, val: u64, mut num_bits: u8) -> Result<(), EncodeError> {
+    #[inline]
+    pub fn write_bits_msb(
+        &mut self,
+        val: u64,
+        mut num_bits: u8,
+    ) -> Result<(), EncodeError> {
         while num_bits > 0 {
             let space_in_byte = 8 - self.bit_count;
             let bits_to_write = num_bits.min(space_in_byte);

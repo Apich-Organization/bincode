@@ -5,7 +5,9 @@ mod impl_tuples;
 mod impls;
 
 use self::write::Writer;
-use crate::{config::Config, error::EncodeError, utils::Sealed};
+use crate::config::Config;
+use crate::error::EncodeError;
+use crate::utils::Sealed;
 
 /// Bit-level writer for space-optimized packing.
 pub mod bit_writer;
@@ -55,11 +57,14 @@ pub trait Encode {
     /// # Errors
     ///
     /// Returns any error encountered during encoding.
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError>;
+    fn encode<E: Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), EncodeError>;
 }
 
 /// Helper trait to encode basic types into.
-pub trait Encoder: Sealed {
+pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     /// The concrete [Writer] type
     type W: Writer;
 
@@ -73,13 +78,17 @@ pub trait Encoder: Sealed {
     fn config(&self) -> &Self::C;
 }
 
+impl<T> crate::error_path::BincodeErrorPathCovered<1> for &mut T where
+    T: crate::error_path::BincodeErrorPathCovered<1>
+{
+}
+
 impl<T> Encoder for &mut T
 where
     T: Encoder,
 {
-    type W = T::W;
-
     type C = T::C;
+    type W = T::W;
 
     fn writer(&mut self) -> &mut Self::W {
         T::writer(self)
@@ -96,14 +105,19 @@ pub(crate) fn encode_option_variant<E: Encoder, T>(
     encoder: &mut E,
     value: Option<&T>,
 ) -> Result<(), EncodeError> {
+    E::assert_covered();
     match value {
-        None => 0u8.encode(encoder),
-        Some(_) => 1u8.encode(encoder),
+        | None => 0u8.encode(encoder),
+        | Some(_) => 1u8.encode(encoder),
     }
 }
 
 /// Encodes the length of any slice, container, etc into the given encoder
 #[inline]
-pub(crate) fn encode_slice_len<E: Encoder>(encoder: &mut E, len: usize) -> Result<(), EncodeError> {
+pub(crate) fn encode_slice_len<E: Encoder>(
+    encoder: &mut E,
+    len: usize,
+) -> Result<(), EncodeError> {
+    E::assert_covered();
     (len as u64).encode(encoder)
 }

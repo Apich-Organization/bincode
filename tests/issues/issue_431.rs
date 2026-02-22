@@ -4,7 +4,8 @@
 extern crate std;
 
 extern crate bincode_next as bincode;
-use bincode::{Decode, Encode};
+use bincode::Decode;
+use bincode::Encode;
 use std::borrow::Cow;
 use std::string::String;
 
@@ -31,9 +32,7 @@ fn test() {
     let u = U {
         u: Cow::Owned(String::from("Hello world")),
     };
-    let t = T {
-        t: Cow::Borrowed(&u),
-    };
+    let t = T { t: Cow::Borrowed(&u) };
     let vec = bincode::encode_to_vec(&t, bincode::config::standard()).unwrap();
 
     let (decoded, len): (T<String>, usize) =

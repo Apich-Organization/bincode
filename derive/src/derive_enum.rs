@@ -1,4 +1,5 @@
-use crate::attribute::{ContainerAttributes, FieldAttributes};
+use crate::attribute::ContainerAttributes;
+use crate::attribute::FieldAttributes;
 use virtue::prelude::*;
 
 const TUPLE_FIELD_PREFIX: &str = "field_";
@@ -16,7 +17,10 @@ impl DeriveEnum {
         }
     }
 
-    pub fn generate_encode(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate_encode(
+        self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = self.attributes.crate_name.as_str();
         generator
             .impl_for(format!("{}::Encode", crate_name))
@@ -138,85 +142,69 @@ impl DeriveEnum {
 
     /// If we're encoding an empty enum, we need to add an empty case in the form of:
     /// `_ => core::unreachable!(),`
-    fn encode_empty_enum_case(&self, builder: &mut StreamBuilder) -> Result {
+    fn encode_empty_enum_case(
+        &self,
+        builder: &mut StreamBuilder,
+    ) -> Result {
         builder.push_parsed("_ => core::unreachable!()").map(|_| ())
     }
 
     /// Build the catch-all case for an int-to-enum decode implementation
-    fn invalid_variant_case(&self, enum_name: &str, result: &mut StreamBuilder) -> Result {
+    fn invalid_variant_case(
+        &self,
+        enum_name: &str,
+        result: &mut StreamBuilder,
+    ) -> Result {
         let crate_name = self.attributes.crate_name.as_str();
 
-        // we'll be generating:
-        // variant => Err(
-        //    bincode::error::DecodeError::UnexpectedVariant {
-        //        found: variant,
-        //        type_name: <enum_name>
-        //        allowed: ...,
-        //    }
-        // )
-        //
-        // Where allowed is either:
-        // - bincode::error::AllowedEnumVariants::Range { min: 0, max: <max> }
-        //   if we have no fixed value variants
-        // - bincode::error::AllowedEnumVariants::Allowed(&[<variant1>, <variant2>, ...])
-        //   if we have fixed value variants
         result.ident_str("variant");
         result.puncts("=>");
-        result.push_parsed("core::result::Result::Err")?;
-        result.group(Delimiter::Parenthesis, |err_inner| {
-            err_inner.push_parsed(format!(
-                "{}::error::DecodeError::UnexpectedVariant",
-                crate_name
-            ))?;
-            err_inner.group(Delimiter::Brace, |variant_inner| {
-                variant_inner.ident_str("found");
-                variant_inner.punct(':');
-                variant_inner.ident_str("variant");
-                variant_inner.punct(',');
+        result.push_parsed(format!(
+            "{}::error::cold_decode_error_unexpected_variant",
+            crate_name
+        ))?;
+        result.group(Delimiter::Parenthesis, |args| {
+            args.lit_str(enum_name);
+            args.punct(',');
 
-                variant_inner.ident_str("type_name");
-                variant_inner.punct(':');
-                variant_inner.lit_str(enum_name);
-                variant_inner.punct(',');
-
-                variant_inner.ident_str("allowed");
-                variant_inner.punct(':');
-
-                if self.variants.iter().any(|i| i.value.is_some()) {
-                    // we have fixed values, implement AllowedEnumVariants::Allowed
-                    variant_inner.push_parsed(format!(
-                        "&{}::error::AllowedEnumVariants::Allowed",
-                        crate_name
-                    ))?;
-                    variant_inner.group(Delimiter::Parenthesis, |allowed_inner| {
-                        allowed_inner.punct('&');
-                        allowed_inner.group(Delimiter::Bracket, |allowed_slice| {
-                            for (idx, (ident, _)) in self.iter_fields().enumerate() {
-                                if idx != 0 {
-                                    allowed_slice.punct(',');
-                                }
-                                allowed_slice.extend(ident);
+            if self.variants.iter().any(|i| i.value.is_some()) {
+                // we have fixed values, implement AllowedEnumVariants::Allowed
+                args.push_parsed(format!(
+                    "&{}::error::AllowedEnumVariants::Allowed",
+                    crate_name
+                ))?;
+                args.group(Delimiter::Parenthesis, |allowed_inner| {
+                    allowed_inner.punct('&');
+                    allowed_inner.group(Delimiter::Bracket, |allowed_slice| {
+                        for (idx, (ident, _)) in self.iter_fields().enumerate() {
+                            if idx != 0 {
+                                allowed_slice.punct(',');
                             }
-                            Ok(())
-                        })?;
+                            allowed_slice.extend(ident);
+                        }
                         Ok(())
                     })?;
-                } else {
-                    // no fixed values, implement a range
-                    variant_inner.push_parsed(format!(
-                        "&{0}::error::AllowedEnumVariants::Range {{ min: 0, max: {1} }}",
-                        crate_name,
-                        self.variants.len() - 1
-                    ))?;
-                }
-                Ok(())
-            })?;
+                    Ok(())
+                })?;
+            } else {
+                // no fixed values, implement a range
+                args.push_parsed(format!(
+                    "&{0}::error::AllowedEnumVariants::Range {{ min: 0, max: {1} }}",
+                    crate_name,
+                    self.variants.len() - 1
+                ))?;
+            }
+            args.punct(',');
+            args.ident_str("variant");
             Ok(())
         })?;
         Ok(())
     }
 
-    pub fn generate_decode(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate_decode(
+        self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = self.attributes.crate_name.as_str();
 
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
@@ -254,7 +242,7 @@ impl DeriveEnum {
             .body(|fn_builder| {
                 if self.variants.is_empty() {
                     fn_builder.push_parsed(format!(
-                        "core::result::Result::Err({}::error::DecodeError::EmptyEnum {{ type_name: core::any::type_name::<Self>() }})",
+                        "{}::error::cold_decode_error_empty_enum(core::any::type_name::<Self>())",
                         crate_name
                     ))?;
                 } else {
@@ -326,7 +314,10 @@ impl DeriveEnum {
         Ok(())
     }
 
-    pub fn generate_borrow_decode(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate_borrow_decode(
+        self,
+        generator: &mut Generator,
+    ) -> Result<()> {
         let crate_name = &self.attributes.crate_name;
 
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
@@ -367,7 +358,7 @@ impl DeriveEnum {
             .body(|fn_builder| {
                 if self.variants.is_empty() {
                     fn_builder.push_parsed(format!(
-                        "core::result::Result::Err({}::error::DecodeError::EmptyEnum {{ type_name: core::any::type_name::<Self>() }})",
+                        "{}::error::cold_decode_error_empty_enum(core::any::type_name::<Self>())",
                         crate_name
                     ))?;
                 } else {

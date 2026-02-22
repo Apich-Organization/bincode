@@ -3,7 +3,7 @@ members = ["derive", "compatibility"]
 
 [package]
 name = "bincode-next"
-version = "2.1.0"
+version = "2.2.0-rc.1"
 # Remember to update html_root_url and bincode_derive
 authors = [
     "Xinyu Yang <xinyu.yang@apich.org>",
@@ -13,7 +13,7 @@ authors = [
     "The bincode-next & bincode developers",
 ]
 exclude = ["logo.svg", "examples/*", ".gitignore", ".github/"]
-rust-version = "1.87.0"
+rust-version = "1.89.0"
 
 publish = true
 
@@ -38,10 +38,11 @@ static-size = ["bincode_derive-next?/static-size"]
 # Remember to run 'MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --all-features --no-fail-fast'
 
 [dependencies]
-bincode_derive-next = { path = "derive", version = "2.1.0", optional = true }
+bincode_derive-next = { path = "derive", version = "2.2.0-rc.1", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
 unty = { version = "0.1.0", package = "unty-next" }
 rapidhash = { version = "4.4", default-features = false }
+paste = "1.0"
 
 # Used for tests
 [dev-dependencies]

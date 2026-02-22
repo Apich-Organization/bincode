@@ -1,5 +1,9 @@
 #![cfg(feature = "zero-copy")]
-use bincode_next::relative_ptr::{NativeEndian, RelativePtr, Validator, ZeroArray, ZeroString};
+use bincode_next::relative_ptr::NativeEndian;
+use bincode_next::relative_ptr::RelativePtr;
+use bincode_next::relative_ptr::Validator;
+use bincode_next::relative_ptr::ZeroArray;
+use bincode_next::relative_ptr::ZeroString;
 
 #[repr(align(8))]
 struct AlignedBuffer<const N: usize>(pub [u8; N]);
@@ -130,7 +134,9 @@ fn test_zero_array() {
 #[test]
 #[cfg(feature = "alloc")]
 fn test_zero_string() {
-    use bincode_next::relative_ptr::{FixedString, ZeroBuilder, ZeroCopyBuilder};
+    use bincode_next::relative_ptr::FixedString;
+    use bincode_next::relative_ptr::ZeroBuilder;
+    use bincode_next::relative_ptr::ZeroCopyBuilder;
     let mut builder = ZeroBuilder::new();
     let text = "hello".to_string();
     let z_builder: FixedString<5> = FixedString(text);
@@ -146,7 +152,8 @@ fn test_zero_string() {
 
 // Testing Dynamic Size slices
 
-use bincode_next::relative_ptr::{ZeroSlice, ZeroStr};
+use bincode_next::relative_ptr::ZeroSlice;
+use bincode_next::relative_ptr::ZeroStr;
 
 #[test]
 fn test_zero_slice() {
@@ -216,7 +223,7 @@ fn test_nested_slices() {
     // Element 1 of outer slice (lies at buffer[8..16])
     let inner_1_len: u32 = 1;
     buffer[8..12].copy_from_slice(&inner_1_len.to_ne_bytes());
-    let inner_1_offset: i32 = 16; // From 12 + 16 = offset 28. But wait: RelativePtr is an i32 relative to its OWN address.
+    let _inner_1_offset: i32 = 16; // From 12 + 16 = offset 28. But wait: RelativePtr is an i32 relative to its OWN address.
     // Address of inner_1_offset is 12. If we put inner array 1 at 32: 32 - 12 = 20
     buffer[12..16].copy_from_slice(&20i32.to_ne_bytes());
 

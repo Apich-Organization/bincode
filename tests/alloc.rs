@@ -12,7 +12,8 @@ use alloc::collections::*;
 use alloc::rc::Rc;
 #[cfg(all(target_has_atomic = "ptr", not(feature = "serde")))]
 use alloc::sync::Arc;
-use utils::{the_same, the_same_with_comparer};
+use utils::the_same;
+use utils::the_same_with_comparer;
 
 struct Foo {
     pub a: u32,
@@ -32,7 +33,7 @@ impl bincode::Encode for Foo {
 
 impl<Context> bincode::Decode<Context> for Foo {
     fn decode<D: bincode::de::Decoder>(
-        decoder: &mut D,
+        decoder: &mut D
     ) -> Result<Self, bincode::error::DecodeError> {
         Ok(Self {
             a: bincode::Decode::decode(decoder)?,
@@ -131,7 +132,9 @@ fn test_alloc_commons() {
 
 #[test]
 fn test_container_limits() {
-    use bincode::{BorrowDecode, Decode, error::DecodeError};
+    use bincode::BorrowDecode;
+    use bincode::Decode;
+    use bincode::error::DecodeError;
 
     const DECODE_LIMIT: usize = 100_000;
 
@@ -147,7 +150,7 @@ fn test_container_limits() {
     ];
 
     fn validate_fail<T: Decode<()> + for<'de> BorrowDecode<'de, ()> + core::fmt::Debug>(
-        slice: &[u8],
+        slice: &[u8]
     ) {
         let result = bincode::decode_from_slice::<T, _>(
             slice,
@@ -156,13 +159,15 @@ fn test_container_limits() {
 
         let name = core::any::type_name::<T>();
         match result {
-            Ok(_) => panic!("Decoding {} should fail, it instead succeeded", name),
-            Err(DecodeError::OutsideUsizeRange(_)) if cfg!(target_pointer_width = "32") => {}
-            Err(DecodeError::LimitExceeded) => {}
-            Err(e) => panic!(
-                "Expected OutsideUsizeRange (on 32 bit platforms) or LimitExceeded whilst decoding {}, got {:?}",
-                name, e
-            ),
+            | Ok(_) => panic!("Decoding {} should fail, it instead succeeded", name),
+            | Err(DecodeError::OutsideUsizeRange(_)) if cfg!(target_pointer_width = "32") => {},
+            | Err(DecodeError::LimitExceeded) => {},
+            | Err(e) => {
+                panic!(
+                    "Expected OutsideUsizeRange (on 32 bit platforms) or LimitExceeded whilst decoding {}, got {:?}",
+                    name, e
+                )
+            },
         }
     }
 

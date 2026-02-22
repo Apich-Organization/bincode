@@ -1,9 +1,51 @@
 //! Errors that can be encountering by Encoding and Decoding.
+// Necessary to allow dead code since we don't use all variants in all configurations
+#![allow(dead_code)]
 
-/// Errors that can be encountered by encoding a type
-#[non_exhaustive]
-#[derive(Debug)]
-pub enum EncodeError {
+#[doc(hidden)]
+#[macro_export]
+macro_rules! bincode_error {
+    (
+        $(#[$meta:meta])*
+        $vis:vis enum $name:ident {
+            $(
+                $(#[$variant_meta:meta])*
+                $variant:ident $( { $( $(#[$field_meta:meta])* $field:ident : $ftype:ty ),* $(,)? } )? $( ( $( $(#[$tuple_meta:meta])* $tname:ident : $ttype:ty ),* $(,)? ) )?
+            ),* $(,)?
+        }
+    ) => {
+        $(#[$meta])*
+        $vis enum $name {
+            $(
+                $(#[$variant_meta])*
+                $variant $( { $( $(#[$field_meta])* $field : $ftype ),* } )? $( ( $( $(#[$tuple_meta])* $ttype ),* ) )?,
+            )*
+        }
+
+        paste::paste! {
+            $(
+                $(#[$variant_meta])*
+                #[doc(hidden)]
+                #[cold]
+                #[track_caller]
+                #[inline(never)]
+                pub const fn [<cold_ $name:snake _ $variant:snake>]<T>(
+                    $($($field : $ftype),*)?
+                    $($($tname : $ttype),*)?
+                ) -> core::result::Result<T, $name> {
+                    core::result::Result::Err($name::$variant $( { $($field),* } )? $( ( $( $tname ),* ) )?)
+                }
+            )*
+        }
+    };
+}
+
+
+bincode_error! {
+    /// Errors that can be encountered by encoding a type
+    #[non_exhaustive]
+    #[derive(Debug)]
+    pub enum EncodeError {
     /// The writer ran out of storage.
     UnexpectedEnd,
 
@@ -16,11 +58,11 @@ pub enum EncodeError {
     },
 
     /// An uncommon error occurred, see the inner text for more information
-    Other(&'static str),
+    Other(inner: &'static str),
 
     /// An uncommon error occurred, see the inner text for more information
     #[cfg(feature = "alloc")]
-    OtherString(alloc::string::String),
+    OtherString(inner: alloc::string::String),
 
     /// A `std::path::Path` was being encoded but did not contain a valid `&str` representation
     #[cfg(feature = "std")]
@@ -53,11 +95,15 @@ pub enum EncodeError {
 
     #[cfg(feature = "serde")]
     /// A serde-specific error that occurred while decoding.
-    Serde(crate::features::serde::EncodeError),
+    Serde(inner: crate::features::serde::EncodeError),
+}
 }
 
 impl core::fmt::Display for EncodeError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> core::fmt::Result {
         // TODO: Improve this?
         write!(f, "{self:?}")
     }
@@ -66,28 +112,29 @@ impl core::fmt::Display for EncodeError {
 impl core::error::Error for EncodeError {
     fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
         match self {
-            Self::RefCellAlreadyBorrowed { inner, .. } => Some(inner),
+            | Self::RefCellAlreadyBorrowed { inner, .. } => Some(inner),
             #[cfg(feature = "std")]
-            Self::Io { inner, .. } => Some(inner),
+            | Self::Io { inner, .. } => Some(inner),
             #[cfg(feature = "std")]
-            Self::InvalidSystemTime { inner, .. } => Some(inner),
-            _ => None,
+            | Self::InvalidSystemTime { inner, .. } => Some(inner),
+            | _ => None,
         }
     }
 }
 impl core::error::Error for DecodeError {
     fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
         match self {
-            Self::Utf8 { inner } => Some(inner),
-            _ => None,
+            | Self::Utf8 { inner } => Some(inner),
+            | _ => None,
         }
     }
 }
 
-/// Errors that can be encountered by decoding a type
-#[non_exhaustive]
-#[derive(Debug)]
-pub enum DecodeError {
+bincode_error! {
+    /// Errors that can be encountered by decoding a type
+    #[non_exhaustive]
+    #[derive(Debug)]
+    pub enum DecodeError {
     /// The reader reached its end but more bytes were expected.
     UnexpectedEnd {
         /// Gives an estimate of how many extra bytes are needed.
@@ -134,10 +181,10 @@ pub enum DecodeError {
     },
 
     /// The decoder tried to decode a `char` and failed. The given buffer contains the bytes that are read at the moment of failure.
-    InvalidCharEncoding([u8; 4]),
+    InvalidCharEncoding(inner: [u8; 4]),
 
     /// The decoder tried to decode a `bool` and failed. The given value is what is actually read.
-    InvalidBooleanValue(u8),
+    InvalidBooleanValue(inner: u8),
 
     /// The decoder tried to decode an array of length `required`, but the binary data contained an array of length `found`.
     ArrayLengthMismatch {
@@ -153,7 +200,7 @@ pub enum DecodeError {
     /// usize type and then decoded on an architecture with a smaller one. For
     /// example going from a 64 bit architecture to a 32 or 16 bit one may
     /// cause this error.
-    OutsideUsizeRange(u64),
+    OutsideUsizeRange(inner: u64),
 
     /// Tried to decode an enum with no variants
     EmptyEnum {
@@ -200,15 +247,15 @@ pub enum DecodeError {
     },
 
     /// An uncommon error occurred, see the inner text for more information
-    Other(&'static str),
+    Other(inner: &'static str),
 
     /// An uncommon error occurred, see the inner text for more information
     #[cfg(feature = "alloc")]
-    OtherString(alloc::string::String),
+    OtherString(inner: alloc::string::String),
 
     #[cfg(feature = "serde")]
     /// A serde-specific error that occurred while decoding.
-    Serde(crate::features::serde::DecodeError),
+    Serde(inner: crate::features::serde::DecodeError),
 
     /// The schema of the type being decoded does not match the schema of the encoded data.
     SchemaMismatch {
@@ -218,9 +265,13 @@ pub enum DecodeError {
         actual: u64,
     },
 }
+}
 
 impl core::fmt::Display for DecodeError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> core::fmt::Result {
         // TODO: Improve this?
         write!(f, "{self:?}")
     }
@@ -232,13 +283,17 @@ impl DecodeError {
     /// reporting in `src/varint/decode_signed.rs` since this calls
     /// `src/varint/decode_unsigned.rs` and needs to correct the `expected` and
     /// `found` types.
+    #[cold]
+    #[inline(never)]
     pub(crate) fn change_integer_type_to_signed(self) -> Self {
         match self {
-            Self::InvalidIntegerType { expected, found } => Self::InvalidIntegerType {
-                expected: expected.into_signed(),
-                found: found.into_signed(),
+            | Self::InvalidIntegerType { expected, found } => {
+                Self::InvalidIntegerType {
+                    expected: expected.into_signed(),
+                    found: found.into_signed(),
+                }
             },
-            other => other,
+            | other => other,
         }
     }
 }
@@ -281,14 +336,14 @@ impl IntegerType {
     /// Returns the old value if `self` is already `Ix`.
     pub(crate) const fn into_signed(self) -> Self {
         match self {
-            Self::U8 => Self::I8,
-            Self::U16 => Self::I16,
-            Self::U32 => Self::I32,
-            Self::U64 => Self::I64,
-            Self::U128 => Self::I128,
-            Self::Usize => Self::Isize,
+            | Self::U8 => Self::I8,
+            | Self::U16 => Self::I16,
+            | Self::U32 => Self::I32,
+            | Self::U64 => Self::I64,
+            | Self::U128 => Self::I128,
+            | Self::Usize => Self::Isize,
 
-            other => other,
+            | other => other,
         }
     }
 }
