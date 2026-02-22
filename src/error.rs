@@ -202,6 +202,14 @@ bincode_error! {
     /// cause this error.
     OutsideUsizeRange(inner: u64),
 
+    /// The encoded value is outside of the range of the target isize type.
+    ///
+    /// This can happen if an isize was encoded on an architecture with a larger
+    /// isize type and then decoded on an architecture with a smaller one. For
+    /// example going from a 64 bit architecture to a 32 or 16 bit one may
+    /// cause this error.
+    OutsideIsizeRange(inner: i64),
+
     /// Tried to decode an enum with no variants
     EmptyEnum {
         /// The type that was being decoded

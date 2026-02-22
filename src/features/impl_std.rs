@@ -98,7 +98,11 @@ where
         bytes: &mut [u8],
     ) -> Result<(), DecodeError> {
         self.reader.read_exact(bytes).map_err(|inner| {
-            crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err()
+            if inner.kind() == std::io::ErrorKind::UnexpectedEof {
+                crate::error::cold_decode_error_unexpected_end::<()>(bytes.len()).unwrap_err()
+            } else {
+                crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err()
+            }
         })
     }
 }
@@ -112,7 +116,11 @@ where
         bytes: &mut [u8],
     ) -> Result<(), DecodeError> {
         self.read_exact(bytes).map_err(|inner| {
-            crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err()
+            if inner.kind() == std::io::ErrorKind::UnexpectedEof {
+                crate::error::cold_decode_error_unexpected_end::<()>(bytes.len()).unwrap_err()
+            } else {
+                crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err()
+            }
         })
     }
 
@@ -156,12 +164,16 @@ where
     C::Mode::encode_check(&config, &mut writer)?;
     let mut encoder = EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
-    Ok(encoder.into_writer().bytes_written())
+    let mut final_writer = encoder.into_writer();
+    final_writer.flush()?;
+    Ok(final_writer.bytes_written())
 }
 
 /// A writer that writes to a `std::io::Write`.
 pub struct IoWriter<'a, W: std::io::Write> {
     writer: &'a mut W,
+    buffer: [u8; 2048],
+    buffer_len: usize,
     bytes_written: usize,
 }
 
@@ -170,6 +182,8 @@ impl<'a, W: std::io::Write> IoWriter<'a, W> {
     pub const fn new(writer: &'a mut W) -> Self {
         Self {
             writer,
+            buffer: [0; 2048],
+            buffer_len: 0,
             bytes_written: 0,
         }
     }
@@ -179,19 +193,57 @@ impl<'a, W: std::io::Write> IoWriter<'a, W> {
     pub const fn bytes_written(&self) -> usize {
         self.bytes_written
     }
+
+    /// Flushes any buffered data to the underlying writer.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `EncodeError` if the writer flushing fails.
+    pub fn flush(&mut self) -> Result<(), EncodeError> {
+        if self.buffer_len > 0 {
+            self.writer
+                .write_all(&self.buffer[..self.buffer_len])
+                .map_err(|inner| {
+                    crate::error::cold_encode_error_io::<()>(
+                        inner,
+                        self.bytes_written - self.buffer_len,
+                    )
+                    .unwrap_err()
+                })?;
+            self.buffer_len = 0;
+        }
+        Ok(())
+    }
 }
 
 impl<W: std::io::Write> Writer for IoWriter<'_, W> {
-    #[inline]
+    #[inline(always)]
     fn write(
         &mut self,
         bytes: &[u8],
     ) -> Result<(), EncodeError> {
-        self.writer.write_all(bytes).map_err(|inner| {
-            crate::error::cold_encode_error_io::<()>(inner, self.bytes_written).unwrap_err()
-        })?;
+        if bytes.len() <= self.buffer.len() - self.buffer_len {
+            self.buffer[self.buffer_len..self.buffer_len + bytes.len()].copy_from_slice(bytes);
+            self.buffer_len += bytes.len();
+        } else {
+            self.flush()?;
+            if bytes.len() >= self.buffer.len() {
+                self.writer.write_all(bytes).map_err(|inner| {
+                    crate::error::cold_encode_error_io::<()>(inner, self.bytes_written).unwrap_err()
+                })?;
+            } else {
+                self.buffer[..bytes.len()].copy_from_slice(bytes);
+                self.buffer_len = bytes.len();
+            }
+        }
         self.bytes_written += bytes.len();
         Ok(())
+    }
+}
+
+impl<W: std::io::Write> Drop for IoWriter<'_, W> {
+    fn drop(&mut self) {
+        let _ = self.flush();
     }
 }
 

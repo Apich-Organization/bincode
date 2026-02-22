@@ -376,10 +376,13 @@ impl<Context> Decode<Context> for isize {
             | IntEncoding::Fixed => {
                 let mut bytes = [0u8; 8];
                 decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
+                let val = match D::C::ENDIAN {
                     | Endianness::Little => i64::from_le_bytes(bytes),
                     | Endianness::Big => i64::from_be_bytes(bytes),
-                } as Self)
+                };
+                val.try_into().map_err(|_| {
+                    crate::error::cold_decode_error_outside_isize_range::<()>(val).unwrap_err()
+                })
             },
         }
     }

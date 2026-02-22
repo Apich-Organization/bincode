@@ -1,6 +1,7 @@
 //! This module contains writer-based structs and traits.
 //!
 //! Because `std::io::Write` is only limited to `std` and not `core`, we provide our own [Writer].
+#![allow(unsafe_code)]
 
 use crate::error::EncodeError;
 
@@ -73,9 +74,15 @@ impl Writer for SliceWriter<'_> {
         if bytes.len() > self.slice.len() {
             return crate::error::cold_encode_error_unexpected_end();
         }
-        let (a, b) = core::mem::take(&mut self.slice).split_at_mut(bytes.len());
-        a.copy_from_slice(bytes);
-        self.slice = b;
+        // SAFETY: `bytes.len() <= self.slice.len()` is checked above.
+        // `copy_nonoverlapping` is safe since the pointers won't overlap and bounds are exact.
+        // Advancing the pointer by `bytes.len()` is safe for the same reason.
+        unsafe {
+            core::ptr::copy_nonoverlapping(bytes.as_ptr(), self.slice.as_mut_ptr(), bytes.len());
+            let ptr = self.slice.as_mut_ptr().add(bytes.len());
+            let len = self.slice.len() - bytes.len();
+            self.slice = core::slice::from_raw_parts_mut(ptr, len);
+        }
 
         Ok(())
     }
