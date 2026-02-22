@@ -1,6 +1,4 @@
 use bincode_next::BitPacked;
-use bincode_next::Decode;
-use bincode_next::Encode;
 use bincode_next::config;
 
 #[derive(BitPacked, Debug, PartialEq, Clone, Copy)]

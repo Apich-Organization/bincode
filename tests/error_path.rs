@@ -1,4 +1,3 @@
-use bincode_next::Decode;
 use bincode_next::config;
 use bincode_next::de::Decoder;
 use bincode_next::error::DecodeError;

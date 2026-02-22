@@ -1,8 +1,6 @@
 #![cfg(feature = "derive")]
 
 use bincode_next::BitPacked;
-use bincode_next::Decode;
-use bincode_next::Encode;
 use proptest::prelude::*;
 
 #[derive(BitPacked, Debug, PartialEq, Clone)]

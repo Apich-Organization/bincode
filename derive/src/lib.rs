@@ -1,3 +1,9 @@
+//! Procedural macros for the bincode-next serialization library.
+//!
+//! This crate provides derive macros for `Encode`, `Decode`, `BorrowDecode`, `BitPacked`, `ZeroCopy`, `Fingerprint`, and `StaticSize`.
+
+#![allow(dead_code)]
+
 mod attribute;
 mod derive_bit_packed;
 mod derive_enum;

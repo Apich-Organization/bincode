@@ -19,10 +19,10 @@
 //! |std   | Yes    | No          |`HashMap` and `HashSet`|`decode_from_std_read` and `encode_into_std_write`|
 //! |alloc | Yes    | No          |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec`|
 //! |atomic| Yes    | No          |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
-//! |derive| Yes    | No          |||Enables the `BorrowDecode`, `Decode` and `Encode` derive macros|
+//! |derive| Yes    | No          |||Enables the `BorrowDecode`, `Decode`, `Encode`, `Fingerprint` and `BitPacked` derive macros|
 //! |serde | No     | Yes (MSRV reliant on serde)|`Compat` and `BorrowCompat`, which will work for all types that implement serde's traits|serde-specific encode/decode functions in the [`serde`\] module|Note: There are several [known issues](serde/index.html#known-issues) when using serde and bincode|
-//! |zero-copy| No    | No          |||Enables the `relative_ptr` module and the `ZeroCopy` derive macro|
-//! |static-size| No    | No          |||Enables the `static_size` module, the `bounded` module and the `StaticSize` derive macro|
+//! |zero-copy| No    | No          |`RelativePtr`, `ZeroArray`, `ZeroSlice`, `ZeroStr`, `ZeroString`|Enables the `relative_ptr` module and the `ZeroCopy` derive macro|Zero-copy nested structures using offsets|
+//! |static-size| No    | No          |||Enables the `static_size` module, the `bounded` module and the `StaticSize` derive macro|Compile-time size verification|
 //!
 //! # Which functions to use
 //!

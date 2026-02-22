@@ -223,7 +223,7 @@ fn test_nested_slices() {
     // Element 1 of outer slice (lies at buffer[8..16])
     let inner_1_len: u32 = 1;
     buffer[8..12].copy_from_slice(&inner_1_len.to_ne_bytes());
-    let inner_1_offset: i32 = 16; // From 12 + 16 = offset 28. But wait: RelativePtr is an i32 relative to its OWN address.
+    let _inner_1_offset: i32 = 16; // From 12 + 16 = offset 28. But wait: RelativePtr is an i32 relative to its OWN address.
     // Address of inner_1_offset is 12. If we put inner array 1 at 32: 32 - 12 = 20
     buffer[12..16].copy_from_slice(&20i32.to_ne_bytes());
 

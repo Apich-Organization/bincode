@@ -1,9 +1,9 @@
 use bincode_next::relative_ptr::ZeroArray;
 use bincode_next::relative_ptr::ZeroString;
 use criterion::Criterion;
-use criterion::black_box;
 use criterion::criterion_group;
 use criterion::criterion_main;
+use std::hint::black_box;
 
 fn bench_zero_array_decode(c: &mut Criterion) {
     let mut buffer = [0u8; 12];
@@ -36,7 +36,7 @@ fn bench_zero_string_decode(c: &mut Criterion) {
     c.bench_function("zero_string_get", |b| {
         b.iter(|| {
             let z_str = unsafe { &*(buffer.as_ptr() as *const ZeroString<54>) };
-            let resolved = z_str.get(black_box(&buffer)).unwrap();
+            let resolved = z_str.get().unwrap();
             black_box(resolved.len());
         })
     });
