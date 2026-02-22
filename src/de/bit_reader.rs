@@ -10,7 +10,7 @@ pub struct BitReader<'a, R: Reader> {
 
 impl<'a, R: Reader> BitReader<'a, R> {
     /// Creates a new `BitReader`.
-    #[inline]
+    #[inline(always)]
     pub fn new(reader: &'a mut R) -> Self {
         Self {
             reader,
@@ -20,7 +20,7 @@ impl<'a, R: Reader> BitReader<'a, R> {
     }
 
     /// Creates a new `BitReader` with an existing state.
-    #[inline]
+    #[inline(always)]
     pub fn from_state(reader: &'a mut R, current_byte: u8, bits_available: u8) -> Self {
         Self {
             reader,
@@ -30,12 +30,13 @@ impl<'a, R: Reader> BitReader<'a, R> {
     }
 
     /// Returns the current state of the bit reader (current_byte, bits_available).
-    #[inline]
+    #[inline(always)]
     pub fn get_state(&self) -> (u8, u8) {
         (self.current_byte, self.bits_available)
     }
 
     /// Reads `num_bits` from the stream, using LSB-first bit ordering.
+    #[inline]
     pub fn read_bits_lsb(&mut self, mut num_bits: u8) -> Result<u64, DecodeError> {
         let mut result: u64 = 0;
         let mut bits_read: u8 = 0;
@@ -65,6 +66,7 @@ impl<'a, R: Reader> BitReader<'a, R> {
     }
 
     /// Reads `num_bits` from the stream, using MSB-first bit ordering.
+    #[inline]
     pub fn read_bits_msb(&mut self, mut num_bits: u8) -> Result<u64, DecodeError> {
         let mut result: u64 = 0;
 
@@ -91,7 +93,7 @@ impl<'a, R: Reader> BitReader<'a, R> {
     }
 
     /// Discards any remaining unread bits in the current byte, effectively returning to byte alignment.
-    #[inline]
+    #[inline(always)]
     pub fn align_to_byte(&mut self) {
         self.bits_available = 0;
         self.current_byte = 0;
@@ -105,7 +107,7 @@ pub trait Unpackable {
 }
 
 impl Unpackable for bool {
-    #[inline]
+    #[inline(always)]
     fn unpack(val: u64) -> Self {
         val != 0
     }

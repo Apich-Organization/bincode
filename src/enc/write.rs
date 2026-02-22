@@ -61,7 +61,7 @@ impl Writer for SliceWriter<'_> {
     #[inline(always)]
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
         if bytes.len() > self.slice.len() {
-            return Err(EncodeError::UnexpectedEnd);
+            return crate::error::cold_encode_error_unexpected_end();
         }
         let (a, b) = core::mem::take(&mut self.slice).split_at_mut(bytes.len());
         a.copy_from_slice(bytes);

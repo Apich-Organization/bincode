@@ -1,5 +1,8 @@
 use super::{Encoder, write::Writer};
-use crate::{config::Config, utils::Sealed};
+use crate::{config::Config, utils::Sealed, error_path::BincodeErrorPathCovered};
+
+impl<W: Writer, C: Config> BincodeErrorPathCovered<1> for EncoderImpl<W, C> {}
+
 
 /// An Encoder that writes bytes into a given writer `W`.
 ///

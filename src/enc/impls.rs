@@ -420,12 +420,13 @@ where
     T: Encode + ?Sized,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        let borrow_guard = self
-            .try_borrow()
-            .map_err(|e| EncodeError::RefCellAlreadyBorrowed {
-                inner: e,
-                type_name: core::any::type_name::<Self>(),
-            })?;
+        let borrow_guard = self.try_borrow().map_err(|e| {
+            crate::error::cold_encode_error_ref_cell_already_borrowed::<()>(
+                e,
+                core::any::type_name::<Self>(),
+            )
+            .unwrap_err()
+        })?;
         T::encode(&borrow_guard, encoder)
     }
 }

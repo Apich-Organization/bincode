@@ -16,7 +16,6 @@ use crate::error::DecodeError;
 /// A reader for owned data. See the module documentation for more information.
 pub trait Reader {
     /// Fill the given `bytes` argument with values. Exactly the length of the given slice must be filled, or else an error must be returned.
-    /// Fill the given `bytes` argument with values. Exactly the length of the given slice must be filled, or else an error must be returned.
     ///
     /// # Errors
     ///
@@ -85,9 +84,7 @@ impl<'storage> Reader for SliceReader<'storage> {
     #[inline(always)]
     fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
         if bytes.len() > self.slice.len() {
-            return Err(DecodeError::UnexpectedEnd {
-                additional: bytes.len() - self.slice.len(),
-            });
+            return crate::error::cold_decode_error_unexpected_end(bytes.len() - self.slice.len());
         }
         let (read_slice, remaining) = self.slice.split_at(bytes.len());
         bytes.copy_from_slice(read_slice);
@@ -111,9 +108,7 @@ impl<'storage> BorrowReader<'storage> for SliceReader<'storage> {
     #[inline(always)]
     fn take_bytes(&mut self, length: usize) -> Result<&'storage [u8], DecodeError> {
         if length > self.slice.len() {
-            return Err(DecodeError::UnexpectedEnd {
-                additional: length - self.slice.len(),
-            });
+            return crate::error::cold_decode_error_unexpected_end(length - self.slice.len());
         }
         let (read_slice, remaining) = self.slice.split_at(length);
         self.slice = remaining;

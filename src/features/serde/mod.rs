@@ -110,7 +110,7 @@ impl serde::de::Error for crate::error::DecodeError {
         T: core::fmt::Display,
     {
         use alloc::string::ToString;
-        Self::OtherString(msg.to_string())
+        crate::error::cold_decode_error_other_string::<()>(msg.to_string()).unwrap_err()
     }
 }
 
@@ -120,14 +120,14 @@ impl serde::de::Error for crate::error::DecodeError {
     where
         T: core::fmt::Display,
     {
-        DecodeError::CustomError.into()
+        crate::error::cold_decode_error_serde::<()>(DecodeError::CustomError).unwrap_err()
     }
 }
 
 #[allow(clippy::from_over_into)]
 impl Into<crate::error::DecodeError> for DecodeError {
     fn into(self) -> crate::error::DecodeError {
-        crate::error::DecodeError::Serde(self)
+        crate::error::cold_decode_error_serde::<()>(self).unwrap_err()
     }
 }
 
@@ -150,7 +150,7 @@ pub enum EncodeError {
 #[allow(clippy::from_over_into)]
 impl Into<crate::error::EncodeError> for EncodeError {
     fn into(self) -> crate::error::EncodeError {
-        crate::error::EncodeError::Serde(self)
+        crate::error::cold_encode_error_serde::<()>(self).unwrap_err()
     }
 }
 
@@ -162,7 +162,7 @@ impl serde::ser::Error for crate::error::EncodeError {
     {
         use alloc::string::ToString;
 
-        Self::OtherString(msg.to_string())
+        crate::error::cold_encode_error_other_string::<()>(msg.to_string()).unwrap_err()
     }
 }
 
@@ -172,7 +172,7 @@ impl serde::ser::Error for crate::error::EncodeError {
     where
         T: core::fmt::Display,
     {
-        EncodeError::CustomError.into()
+        crate::error::cold_encode_error_serde::<()>(EncodeError::CustomError).unwrap_err()
     }
 }
 

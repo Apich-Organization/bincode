@@ -133,6 +133,7 @@ mod features;
 #[doc(hidden)]
 pub mod utils;
 pub(crate) mod varint;
+pub(crate) mod error_path;
 
 use de::{Decoder, read::Reader};
 use enc::write::Writer;

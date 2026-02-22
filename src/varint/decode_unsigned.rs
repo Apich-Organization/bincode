@@ -134,9 +134,9 @@ where
             read.read(&mut bytes)?;
             Ok(match endian {
                 Endianness::Big => usize::try_from(u64::from_be_bytes(bytes))
-                    .map_err(|_| DecodeError::OutsideUsizeRange(u64::from_be_bytes(bytes)))?,
+                    .map_err(|_| crate::error::cold_decode_error_outside_usize_range::<()>(u64::from_be_bytes(bytes)).unwrap_err())?,
                 Endianness::Little => usize::try_from(u64::from_le_bytes(bytes))
-                    .map_err(|_| DecodeError::OutsideUsizeRange(u64::from_le_bytes(bytes)))?,
+                    .map_err(|_| crate::error::cold_decode_error_outside_usize_range::<()>(u64::from_le_bytes(bytes)).unwrap_err())?,
             })
         }
         U128_BYTE => invalid_varint_discriminant(IntegerType::Usize, IntegerType::U128),
@@ -190,13 +190,11 @@ where
     }
 }
 
-#[inline(never)]
-#[cold]
-const fn invalid_varint_discriminant<T>(
+fn invalid_varint_discriminant<T>(
     expected: IntegerType,
     found: IntegerType,
 ) -> Result<T, DecodeError> {
-    Err(DecodeError::InvalidIntegerType { expected, found })
+    crate::error::cold_decode_error_invalid_integer_type(expected, found)
 }
 
 pub fn varint_decode_u16<R: Reader>(read: &mut R, endian: Endianness) -> Result<u16, DecodeError> {
@@ -329,7 +327,7 @@ pub fn varint_decode_usize<R: Reader>(
                 };
 
                 (
-                    usize::try_from(val).map_err(|_| DecodeError::OutsideUsizeRange(val))?,
+                    usize::try_from(val).map_err(|_| crate::error::cold_decode_error_outside_usize_range::<()>(val).unwrap_err())?,
                     9,
                 )
             }

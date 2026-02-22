@@ -10,7 +10,7 @@ pub struct BitWriter<'a, W: Writer> {
 
 impl<'a, W: Writer> BitWriter<'a, W> {
     /// Creates a new `BitWriter`.
-    #[inline]
+    #[inline(always)]
     pub fn new(writer: &'a mut W) -> Self {
         Self {
             writer,
@@ -20,7 +20,7 @@ impl<'a, W: Writer> BitWriter<'a, W> {
     }
 
     /// Creates a new `BitWriter` with an existing state.
-    #[inline]
+    #[inline(always)]
     pub fn from_state(writer: &'a mut W, current_byte: u8, bit_count: u8) -> Self {
         Self {
             writer,
@@ -30,12 +30,13 @@ impl<'a, W: Writer> BitWriter<'a, W> {
     }
 
     /// Returns the current state of the bit writer (current_byte, bit_count).
-    #[inline]
+    #[inline(always)]
     pub fn get_state(&self) -> (u8, u8) {
         (self.current_byte, self.bit_count)
     }
 
     /// Writes `num_bits` from `val` into the stream, using LSB-first bit ordering.
+    #[inline]
     pub fn write_bits_lsb(&mut self, mut val: u64, mut num_bits: u8) -> Result<(), EncodeError> {
         while num_bits > 0 {
             let space_in_byte = 8 - self.bit_count;
@@ -58,6 +59,7 @@ impl<'a, W: Writer> BitWriter<'a, W> {
     }
 
     /// Writes `num_bits` from `val` into the stream, using MSB-first bit ordering.
+    #[inline]
     pub fn write_bits_msb(&mut self, val: u64, mut num_bits: u8) -> Result<(), EncodeError> {
         while num_bits > 0 {
             let space_in_byte = 8 - self.bit_count;

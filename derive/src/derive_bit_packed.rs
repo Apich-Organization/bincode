@@ -60,7 +60,7 @@ impl DeriveBitPacked {
                                     b.push_parsed(format!("{{ fn check_width<const B: u8, T: {0}::utils::BitPackedCheck<B>>(_: &T) {{ let _ = <T as {0}::utils::BitPackedCheck<B>>::CHECK; }} check_width::<{1}, _>(&self.{2}); }}", crate_name, bits, field))?;
                                     b.push_parsed(format!("if (self.{} as u128) >= (1u128 << {})", field, bits))?;
                                     b.group(Delimiter::Brace, |b_err| {
-                                        b_err.push_parsed(format!("return core::result::Result::Err({}::error::EncodeError::Other(\"Value exceeds bit-packed width\"));", crate_name))?;
+                                        b_err.push_parsed(format!("return {}::error::cold_encode_error_other(\"Value exceeds bit-packed width\");", crate_name))?;
                                         Ok(())
                                     })?;
                                     b.push_parsed(format!("bit_writer.write_bits_msb((self.{}) as u64, {})?;", field, bits))?;
@@ -418,7 +418,7 @@ impl DeriveBitPackedEnum {
                                                         b.push_parsed(format!("{{ fn check_width<const B: u8, T: {0}::utils::BitPackedCheck<B>>(_: &T) {{ let _ = <T as {0}::utils::BitPackedCheck<B>>::CHECK; }} check_width::<{1}, _>({2}); }}", crate_name, bits_val, name))?;
                                                         b.push_parsed(format!("if ((*({})) as u128) >= (1u128 << {})", name, bits_val))?;
                                                         b.group(Delimiter::Brace, |b_err| {
-                                                            b_err.push_parsed(format!("return core::result::Result::Err({}::error::EncodeError::Other(\"Value exceeds bit-packed width\"));", crate_name))?;
+                                                            b_err.push_parsed(format!("return {}::error::cold_encode_error_other(\"Value exceeds bit-packed width\");", crate_name))?;
                                                             Ok(())
                                                         })?;
                                                         b.push_parsed(format!("bit_writer.write_bits_msb((*({})) as u64, {})?;", name, bits_val))?;
@@ -488,50 +488,41 @@ impl DeriveBitPackedEnum {
         let crate_name = self.attributes.crate_name.as_str();
         result.ident_str("variant");
         result.puncts("=>");
-        result.push_parsed("core::result::Result::Err")?;
-        result.group(Delimiter::Parenthesis, |err_inner| {
-            err_inner.push_parsed(format!(
-                "{}::error::DecodeError::UnexpectedVariant",
-                crate_name
-            ))?;
-            err_inner.group(Delimiter::Brace, |variant_inner| {
-                variant_inner.ident_str("found");
-                variant_inner.punct(':');
-                variant_inner.ident_str("variant");
-                variant_inner.punct(',');
-                variant_inner.ident_str("type_name");
-                variant_inner.punct(':');
-                variant_inner.lit_str(enum_name);
-                variant_inner.punct(',');
-                variant_inner.ident_str("allowed");
-                variant_inner.punct(':');
-                if self.variants.iter().any(|i| i.value.is_some()) {
-                    variant_inner.push_parsed(format!(
-                        "&{}::error::AllowedEnumVariants::Allowed",
-                        crate_name
-                    ))?;
-                    variant_inner.group(Delimiter::Parenthesis, |allowed_inner| {
-                        allowed_inner.punct('&');
-                        allowed_inner.group(Delimiter::Bracket, |allowed_slice| {
-                            for (idx, variant) in self.variants.iter().enumerate() {
-                                if idx != 0 {
-                                    allowed_slice.punct(',');
-                                }
-                                allowed_slice.ident(variant.name.clone());
+        result.push_parsed(format!(
+            "{}::error::cold_decode_error_unexpected_variant",
+            crate_name
+        ))?;
+        result.group(Delimiter::Parenthesis, |args| {
+            args.lit_str(enum_name);
+            args.punct(',');
+
+            if self.variants.iter().any(|i| i.value.is_some()) {
+                args.push_parsed(format!(
+                    "&{}::error::AllowedEnumVariants::Allowed",
+                    crate_name
+                ))?;
+                args.group(Delimiter::Parenthesis, |allowed_inner| {
+                    allowed_inner.punct('&');
+                    allowed_inner.group(Delimiter::Bracket, |allowed_slice| {
+                        for (idx, variant) in self.variants.iter().enumerate() {
+                            if idx != 0 {
+                                allowed_slice.punct(',');
                             }
-                            Ok(())
-                        })?;
+                            allowed_slice.ident(variant.name.clone());
+                        }
                         Ok(())
                     })?;
-                } else {
-                    variant_inner.push_parsed(format!(
-                        "&{0}::error::AllowedEnumVariants::Range {{ min: 0, max: {1} }}",
-                        crate_name,
-                        self.variants.len() - 1
-                    ))?;
-                }
-                Ok(())
-            })?;
+                    Ok(())
+                })?;
+            } else {
+                args.push_parsed(format!(
+                    "&{0}::error::AllowedEnumVariants::Range {{ min: 0, max: {1} }}",
+                    crate_name,
+                    self.variants.len() - 1
+                ))?;
+            }
+            args.punct(',');
+            args.ident_str("variant");
             Ok(())
         })?;
         Ok(())
@@ -577,7 +568,7 @@ impl DeriveBitPackedEnum {
                 fn_builder.push_parsed(format!("if {}::config::Config::bit_packing_enabled(decoder.config())", crate_name))?;
                 fn_builder.group(Delimiter::Brace, |b_packed| {
                     if self.variants.is_empty() {
-                        b_packed.push_parsed(format!("core::result::Result::Err({}::error::DecodeError::EmptyEnum {{ type_name: core::any::type_name::<Self>() }})", crate_name))?;
+                        b_packed.push_parsed(format!("{}::error::cold_decode_error_empty_enum(core::any::type_name::<Self>())", crate_name))?;
                     } else {
                         b_packed.push_parsed("let mut __bit_state: (u8, u8) = (0, 0);")?;
                         if variant_bits > 0 {
@@ -680,7 +671,7 @@ impl DeriveBitPackedEnum {
                 fn_builder.push_parsed("else")?;
                 fn_builder.group(Delimiter::Brace, |b_unpacked| {
                     if self.variants.is_empty() {
-                         b_unpacked.push_parsed(format!("core::result::Result::Err({}::error::DecodeError::EmptyEnum {{ type_name: core::any::type_name::<Self>() }})", crate_name))?;
+                         b_unpacked.push_parsed(format!("{}::error::cold_decode_error_empty_enum(core::any::type_name::<Self>())", crate_name))?;
                     } else {
                         b_unpacked.push_parsed(format!("let variant_index: u32 = {}::Decode::decode(decoder)?;", crate_name))?;
                         b_unpacked.push_parsed("match variant_index")?;
@@ -782,7 +773,7 @@ impl DeriveBitPackedEnum {
                 fn_builder.push_parsed(format!("if {}::config::Config::bit_packing_enabled(decoder.config())", crate_name))?;
                 fn_builder.group(Delimiter::Brace, |b_packed| {
                     if self.variants.is_empty() {
-                        b_packed.push_parsed(format!("core::result::Result::Err({}::error::DecodeError::EmptyEnum {{ type_name: core::any::type_name::<Self>() }})", crate_name))?;
+                        b_packed.push_parsed(format!("{}::error::cold_decode_error_empty_enum(core::any::type_name::<Self>())", crate_name))?;
                     } else {
                         b_packed.push_parsed("let mut __bit_state: (u8, u8) = (0, 0);")?;
                         if variant_bits > 0 {
@@ -885,7 +876,7 @@ impl DeriveBitPackedEnum {
                 fn_builder.push_parsed("else")?;
                 fn_builder.group(Delimiter::Brace, |b_unpacked| {
                     if self.variants.is_empty() {
-                         b_unpacked.push_parsed(format!("core::result::Result::Err({}::error::DecodeError::EmptyEnum {{ type_name: core::any::type_name::<Self>() }})", crate_name))?;
+                         b_unpacked.push_parsed(format!("{}::error::cold_decode_error_empty_enum(core::any::type_name::<Self>())", crate_name))?;
                     } else {
                         b_unpacked.push_parsed(format!("let variant_index: u32 = {}::Decode::decode(decoder)?;", crate_name))?;
                         b_unpacked.push_parsed("match variant_index")?;

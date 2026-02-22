@@ -24,7 +24,7 @@ impl<Context> Decode<Context> for bool {
         match u8::decode(decoder)? {
             0 => Ok(false),
             1 => Ok(true),
-            x => Err(DecodeError::InvalidBooleanValue(x)),
+            x => crate::error::cold_decode_error_invalid_boolean_value(x),
         }
     }
 }
@@ -49,9 +49,7 @@ impl_borrow_decode!(u8);
 
 impl<Context> Decode<Context> for NonZeroU8 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Self::new(u8::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
-            non_zero_type: IntegerType::U8,
-        })
+        Self::new(u8::decode(decoder)?).ok_or_else(|| crate::error::cold_decode_error_non_zero_type_is_zero::<()>(IntegerType::U8).unwrap_err())
     }
 }
 impl_borrow_decode!(NonZeroU8);
@@ -78,9 +76,7 @@ impl_borrow_decode!(u16);
 
 impl<Context> Decode<Context> for NonZeroU16 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Self::new(u16::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
-            non_zero_type: IntegerType::U16,
-        })
+        Self::new(u16::decode(decoder)?).ok_or_else(|| crate::error::cold_decode_error_non_zero_type_is_zero::<()>(IntegerType::U16).unwrap_err())
     }
 }
 impl_borrow_decode!(NonZeroU16);
@@ -107,9 +103,7 @@ impl_borrow_decode!(u32);
 
 impl<Context> Decode<Context> for NonZeroU32 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Self::new(u32::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
-            non_zero_type: IntegerType::U32,
-        })
+        Self::new(u32::decode(decoder)?).ok_or_else(|| crate::error::cold_decode_error_non_zero_type_is_zero::<()>(IntegerType::U32).unwrap_err())
     }
 }
 impl_borrow_decode!(NonZeroU32);
@@ -136,9 +130,7 @@ impl_borrow_decode!(u64);
 
 impl<Context> Decode<Context> for NonZeroU64 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Self::new(u64::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
-            non_zero_type: IntegerType::U64,
-        })
+        Self::new(u64::decode(decoder)?).ok_or_else(|| crate::error::cold_decode_error_non_zero_type_is_zero::<()>(IntegerType::U64).unwrap_err())
     }
 }
 impl_borrow_decode!(NonZeroU64);
@@ -165,9 +157,7 @@ impl_borrow_decode!(u128);
 
 impl<Context> Decode<Context> for NonZeroU128 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Self::new(u128::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
-            non_zero_type: IntegerType::U128,
-        })
+        Self::new(u128::decode(decoder)?).ok_or_else(|| crate::error::cold_decode_error_non_zero_type_is_zero::<()>(IntegerType::U128).unwrap_err())
     }
 }
 impl_borrow_decode!(NonZeroU128);
@@ -190,7 +180,7 @@ impl<Context> Decode<Context> for usize {
 
                 value
                     .try_into()
-                    .map_err(|_| DecodeError::OutsideUsizeRange(value))
+                    .map_err(|_| crate::error::cold_decode_error_outside_usize_range::<()>(value).unwrap_err())
             }
         }
     }
@@ -199,9 +189,7 @@ impl_borrow_decode!(usize);
 
 impl<Context> Decode<Context> for NonZeroUsize {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Self::new(usize::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
-            non_zero_type: IntegerType::Usize,
-        })
+        Self::new(usize::decode(decoder)?).ok_or_else(|| crate::error::cold_decode_error_non_zero_type_is_zero::<()>(IntegerType::Usize).unwrap_err())
     }
 }
 impl_borrow_decode!(NonZeroUsize);
@@ -218,9 +206,7 @@ impl_borrow_decode!(i8);
 
 impl<Context> Decode<Context> for NonZeroI8 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Self::new(i8::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
-            non_zero_type: IntegerType::I8,
-        })
+        Self::new(i8::decode(decoder)?).ok_or_else(|| crate::error::cold_decode_error_non_zero_type_is_zero::<()>(IntegerType::I8).unwrap_err())
     }
 }
 impl_borrow_decode!(NonZeroI8);
@@ -247,9 +233,7 @@ impl_borrow_decode!(i16);
 
 impl<Context> Decode<Context> for NonZeroI16 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Self::new(i16::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
-            non_zero_type: IntegerType::I16,
-        })
+        Self::new(i16::decode(decoder)?).ok_or_else(|| crate::error::cold_decode_error_non_zero_type_is_zero::<()>(IntegerType::I16).unwrap_err())
     }
 }
 impl_borrow_decode!(NonZeroI16);
@@ -276,9 +260,7 @@ impl_borrow_decode!(i32);
 
 impl<Context> Decode<Context> for NonZeroI32 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Self::new(i32::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
-            non_zero_type: IntegerType::I32,
-        })
+        Self::new(i32::decode(decoder)?).ok_or_else(|| crate::error::cold_decode_error_non_zero_type_is_zero::<()>(IntegerType::I32).unwrap_err())
     }
 }
 impl_borrow_decode!(NonZeroI32);
@@ -305,9 +287,7 @@ impl_borrow_decode!(i64);
 
 impl<Context> Decode<Context> for NonZeroI64 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Self::new(i64::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
-            non_zero_type: IntegerType::I64,
-        })
+        Self::new(i64::decode(decoder)?).ok_or_else(|| crate::error::cold_decode_error_non_zero_type_is_zero::<()>(IntegerType::I64).unwrap_err())
     }
 }
 impl_borrow_decode!(NonZeroI64);
@@ -334,9 +314,7 @@ impl_borrow_decode!(i128);
 
 impl<Context> Decode<Context> for NonZeroI128 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Self::new(i128::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
-            non_zero_type: IntegerType::I128,
-        })
+        Self::new(i128::decode(decoder)?).ok_or_else(|| crate::error::cold_decode_error_non_zero_type_is_zero::<()>(IntegerType::I128).unwrap_err())
     }
 }
 impl_borrow_decode!(NonZeroI128);
@@ -363,9 +341,7 @@ impl_borrow_decode!(isize);
 
 impl<Context> Decode<Context> for NonZeroIsize {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Self::new(isize::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
-            non_zero_type: IntegerType::Isize,
-        })
+        Self::new(isize::decode(decoder)?).ok_or_else(|| crate::error::cold_decode_error_non_zero_type_is_zero::<()>(IntegerType::Isize).unwrap_err())
     }
 }
 impl_borrow_decode!(NonZeroIsize);
@@ -432,7 +408,7 @@ impl<Context> Decode<Context> for char {
 
         let width = utf8_char_width(array[0]);
         if width == 0 {
-            return Err(DecodeError::InvalidCharEncoding(array));
+            return crate::error::cold_decode_error_invalid_char_encoding(array);
         }
         // Normally we have to `.claim_bytes_read` before reading, however in this
         // case the amount of bytes read from `char` can vary wildly, and it should
@@ -447,7 +423,7 @@ impl<Context> Decode<Context> for char {
         let res = core::str::from_utf8(&array[..width])
             .ok()
             .and_then(|s| s.chars().next())
-            .ok_or(DecodeError::InvalidCharEncoding(array))?;
+            .ok_or_else(|| crate::error::cold_decode_error_invalid_char_encoding::<()>(array).unwrap_err())?;
         Ok(res)
     }
 }
@@ -468,7 +444,7 @@ impl<'a, 'de: 'a, Context> BorrowDecode<'de, Context> for &'a str {
         decoder: &mut D,
     ) -> Result<Self, DecodeError> {
         let slice = <&[u8]>::borrow_decode(decoder)?;
-        core::str::from_utf8(slice).map_err(|inner| DecodeError::Utf8 { inner })
+        core::str::from_utf8(slice).map_err(|inner| crate::error::cold_decode_error_utf8::<()>(inner).unwrap_err())
     }
 }
 
@@ -596,11 +572,11 @@ where
                 let u = U::decode(decoder)?;
                 Ok(Err(u))
             }
-            x => Err(DecodeError::UnexpectedVariant {
-                found: x,
-                allowed: &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
-                type_name: core::any::type_name::<Self>(),
-            }),
+            x => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
+                x,
+            ),
         }
     }
 }
@@ -623,11 +599,11 @@ where
                 let u = U::borrow_decode(decoder)?;
                 Ok(Err(u))
             }
-            x => Err(DecodeError::UnexpectedVariant {
-                found: x,
-                allowed: &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
-                type_name: core::any::type_name::<Self>(),
-            }),
+            x => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
+                x,
+            ),
         }
     }
 }
@@ -682,7 +658,7 @@ impl<Context> Decode<Context> for Duration {
         let secs: u64 = Decode::decode(decoder)?;
         let nanos: u32 = Decode::decode(decoder)?;
         if secs.checked_add(u64::from(nanos) / NANOS_PER_SEC).is_none() {
-            return Err(DecodeError::InvalidDuration { secs, nanos });
+            return crate::error::cold_decode_error_invalid_duration(secs, nanos);
         }
         Ok(Self::new(secs, nanos))
     }
@@ -745,11 +721,11 @@ where
             0 => Ok(Self::Unbounded),
             1 => Ok(Self::Included(T::decode(decoder)?)),
             2 => Ok(Self::Excluded(T::decode(decoder)?)),
-            x => Err(DecodeError::UnexpectedVariant {
-                allowed: &crate::error::AllowedEnumVariants::Range { max: 2, min: 0 },
-                found: x,
-                type_name: core::any::type_name::<Self>(),
-            }),
+            x => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { max: 2, min: 0 },
+                x,
+            ),
         }
     }
 }
@@ -765,11 +741,11 @@ where
             0 => Ok(Self::Unbounded),
             1 => Ok(Self::Included(T::borrow_decode(decoder)?)),
             2 => Ok(Self::Excluded(T::borrow_decode(decoder)?)),
-            x => Err(DecodeError::UnexpectedVariant {
-                allowed: &crate::error::AllowedEnumVariants::Range { max: 2, min: 0 },
-                found: x,
-                type_name: core::any::type_name::<Self>(),
-            }),
+            x => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { max: 2, min: 0 },
+                x,
+            ),
         }
     }
 }

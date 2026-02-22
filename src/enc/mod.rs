@@ -59,7 +59,7 @@ pub trait Encode {
 }
 
 /// Helper trait to encode basic types into.
-pub trait Encoder: Sealed {
+pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     /// The concrete [Writer] type
     type W: Writer;
 
@@ -72,6 +72,11 @@ pub trait Encoder: Sealed {
     /// Returns a reference to the config
     fn config(&self) -> &Self::C;
 }
+
+impl<T> crate::error_path::BincodeErrorPathCovered<1> for &mut T
+where
+    T: crate::error_path::BincodeErrorPathCovered<1>,
+{}
 
 impl<T> Encoder for &mut T
 where
@@ -96,6 +101,7 @@ pub(crate) fn encode_option_variant<E: Encoder, T>(
     encoder: &mut E,
     value: Option<&T>,
 ) -> Result<(), EncodeError> {
+    E::assert_covered();
     match value {
         None => 0u8.encode(encoder),
         Some(_) => 1u8.encode(encoder),
@@ -105,5 +111,6 @@ pub(crate) fn encode_option_variant<E: Encoder, T>(
 /// Encodes the length of any slice, container, etc into the given encoder
 #[inline]
 pub(crate) fn encode_slice_len<E: Encoder>(encoder: &mut E, len: usize) -> Result<(), EncodeError> {
+    E::assert_covered();
     (len as u64).encode(encoder)
 }

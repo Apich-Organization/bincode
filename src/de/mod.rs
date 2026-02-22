@@ -156,7 +156,7 @@ macro_rules! impl_borrow_decode_with_context {
 }
 
 /// Any source that can decode basic types. This type is most notably implemented for [Decoder].
-pub trait Decoder: Sealed {
+pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     /// The concrete [Reader] type
     type R: Reader;
 
@@ -198,11 +198,13 @@ pub trait Decoder: Sealed {
     ///
     /// Returns `DecodeError::LimitExceeded` if the limit is exceeded or if `len * size_of::<T>()` overflows.
     fn claim_container_read<T>(&mut self, len: usize) -> Result<(), DecodeError> {
+        Self::assert_covered();
         if <Self::C as InternalLimitConfig>::LIMIT.is_some() {
-            len.checked_mul(core::mem::size_of::<T>())
-                .map_or(Err(DecodeError::LimitExceeded), |val| {
-                    self.claim_bytes_read(val)
-                })
+            if let Some(val) = len.checked_mul(core::mem::size_of::<T>()) {
+                self.claim_bytes_read(val)
+            } else {
+                crate::error::cold_decode_error_limit_exceeded()
+            }
         } else {
             Ok(())
         }
@@ -281,6 +283,11 @@ pub trait BorrowDecoder<'de>: Decoder {
     fn borrow_reader(&mut self) -> &mut Self::BR;
 }
 
+impl<T> crate::error_path::BincodeErrorPathCovered<0> for &mut T
+where
+    T: crate::error_path::BincodeErrorPathCovered<0>,
+{}
+
 impl<T> Decoder for &mut T
 where
     T: Decoder,
@@ -331,22 +338,25 @@ pub(crate) fn decode_option_variant<D: Decoder>(
     decoder: &mut D,
     type_name: &'static str,
 ) -> Result<Option<()>, DecodeError> {
+    D::assert_covered();
     let is_some = u8::decode(decoder)?;
     match is_some {
         0 => Ok(None),
         1 => Ok(Some(())),
-        x => Err(DecodeError::UnexpectedVariant {
-            found: u32::from(x),
-            allowed: &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
+        x => crate::error::cold_decode_error_unexpected_variant(
             type_name,
-        }),
+            &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
+            u32::from(x),
+        ),
     }
 }
 
 /// Decodes the length of any slice, container, etc from the decoder
 #[inline]
 pub(crate) fn decode_slice_len<D: Decoder>(decoder: &mut D) -> Result<usize, DecodeError> {
+    D::assert_covered();
     let v = u64::decode(decoder)?;
 
-    v.try_into().map_err(|_| DecodeError::OutsideUsizeRange(v))
+    v.try_into()
+        .map_err(|_| crate::error::cold_decode_error_outside_usize_range::<()>(v).unwrap_err())
 }

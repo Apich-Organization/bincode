@@ -2,7 +2,11 @@ use super::{
     BorrowDecoder, Decoder,
     read::{BorrowReader, Reader},
 };
-use crate::{config::Config, error::DecodeError, utils::Sealed};
+use crate::{config::Config, error::DecodeError, utils::Sealed, error_path::BincodeErrorPathCovered};
+
+impl<R, C: Config, Context> BincodeErrorPathCovered<0> for DecoderImpl<R, C, Context> {}
+impl<C, D: Decoder + ?Sized> BincodeErrorPathCovered<0> for WithContext<'_, D, C> {}
+
 
 /// A Decoder that reads bytes from a given reader `R`.
 ///
@@ -71,14 +75,14 @@ impl<R: Reader, C: Config, Context> Decoder for DecoderImpl<R, C, Context> {
         // C::LIMIT is a const so this check should get compiled away
         if let Some(limit) = C::LIMIT {
             // Make sure we don't accidentally overflow `bytes_read`
-            self.bytes_read = self
-                .bytes_read
-                .checked_add(n)
-                .ok_or(DecodeError::LimitExceeded)?;
-            if self.bytes_read > limit {
-                Err(DecodeError::LimitExceeded)
-            } else {
+            if let Some(sum) = self.bytes_read.checked_add(n) {
+                if sum > limit {
+                    return crate::error::cold_decode_error_limit_exceeded();
+                }
+                self.bytes_read = sum;
                 Ok(())
+            } else {
+                crate::error::cold_decode_error_limit_exceeded()
             }
         } else {
             Ok(())

@@ -524,10 +524,7 @@ pub mod internal {
             reader.read(&mut bytes)?;
             let actual = u64::from_le_bytes(bytes);
             if actual != D::SCHEMA_HASH {
-                return core::result::Result::Err(crate::error::DecodeError::SchemaMismatch {
-                    expected: D::SCHEMA_HASH,
-                    actual,
-                });
+                return crate::error::cold_decode_error_schema_mismatch(D::SCHEMA_HASH, actual);
             }
             core::result::Result::Ok(())
         }
@@ -552,10 +549,7 @@ pub mod internal {
             reader.read(&mut bytes)?;
             let actual = u64::from_le_bytes(bytes);
             if actual != EXPECTED {
-                return core::result::Result::Err(crate::error::DecodeError::SchemaMismatch {
-                    expected: EXPECTED,
-                    actual,
-                });
+                return crate::error::cold_decode_error_schema_mismatch(EXPECTED, actual);
             }
             core::result::Result::Ok(())
         }

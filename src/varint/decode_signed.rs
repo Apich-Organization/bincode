@@ -83,10 +83,10 @@ pub fn varint_decode_isize<R: Reader>(
     match varint_decode_i64(read, endian) {
         Ok(val) => Ok(val as isize),
         Err(DecodeError::InvalidIntegerType { found, .. }) => {
-            Err(DecodeError::InvalidIntegerType {
-                expected: IntegerType::Isize,
-                found: found.into_signed(),
-            })
+            crate::error::cold_decode_error_invalid_integer_type(
+                IntegerType::Isize,
+                found.into_signed(),
+            )
         }
         Err(e) => Err(e),
     }
