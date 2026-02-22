@@ -41,6 +41,10 @@ impl<'a, W: Writer> BitWriter<'a, W> {
     }
 
     /// Writes `num_bits` from `val` into the stream, using LSB-first bit ordering.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the underlying writer fails to write the data.
     #[inline]
     pub fn write_bits_lsb(
         &mut self,
@@ -68,6 +72,10 @@ impl<'a, W: Writer> BitWriter<'a, W> {
     }
 
     /// Writes `num_bits` from `val` into the stream, using MSB-first bit ordering.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the underlying writer fails to write the data.
     #[inline]
     pub fn write_bits_msb(
         &mut self,
@@ -97,6 +105,10 @@ impl<'a, W: Writer> BitWriter<'a, W> {
     }
 
     /// Flushes any remaining bits to the underlying writer, padding with 0s.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the underlying writer fails to write the data.
     #[inline]
     pub fn flush(&mut self) -> Result<(), EncodeError> {
         if self.bit_count > 0 {

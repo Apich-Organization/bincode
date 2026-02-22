@@ -207,11 +207,10 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     ) -> Result<(), DecodeError> {
         Self::assert_covered();
         if <Self::C as InternalLimitConfig>::LIMIT.is_some() {
-            if let Some(val) = len.checked_mul(core::mem::size_of::<T>()) {
-                self.claim_bytes_read(val)
-            } else {
-                crate::error::cold_decode_error_limit_exceeded()
-            }
+            len.checked_mul(core::mem::size_of::<T>()).map_or_else(
+                || crate::error::cold_decode_error_limit_exceeded(),
+                |val| self.claim_bytes_read(val),
+            )
         } else {
             Ok(())
         }
