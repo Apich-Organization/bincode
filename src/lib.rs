@@ -145,7 +145,15 @@ use enc::write::Writer;
 ))]
 pub use features::*;
 
+/// The major version of the bincode library.
+pub const BINCODE_MAJOR_VERSION: u64 = 2;
+
+#[doc(hidden)]
+pub use rapidhash;
+
 pub mod config;
+/// Fingerprinting support for schema verification.
+pub mod fingerprint;
 /// Relative pointer system for zero-copy nested structures
 #[cfg(feature = "zero-copy")]
 pub mod relative_ptr;
@@ -164,10 +172,12 @@ pub use static_size::StaticSize;
 
 pub use de::{BorrowDecode, Decode};
 pub use enc::Encode;
+pub use fingerprint::Fingerprint;
 #[cfg(feature = "zero-copy")]
 pub use relative_ptr::{ZeroCopy, ZeroCopyType};
 
 use config::Config;
+use config::internal::InternalFingerprintGuard;
 
 /// Encode the given value into the given slice. Returns the amount of bytes that have been written.
 ///
@@ -182,8 +192,12 @@ pub fn encode_into_slice<E: enc::Encode, C: Config>(
     val: E,
     dst: &mut [u8],
     config: C,
-) -> Result<usize, error::EncodeError> {
-    let writer = enc::write::SliceWriter::new(dst);
+) -> Result<usize, error::EncodeError>
+where
+    C::Mode: config::InternalFingerprintGuard<E, C>,
+{
+    let mut writer = enc::write::SliceWriter::new(dst);
+    C::Mode::encode_check(&config, &mut writer)?;
     let mut encoder = enc::EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(encoder.into_writer().bytes_written())
@@ -200,9 +214,13 @@ pub fn encode_into_slice<E: enc::Encode, C: Config>(
 /// [config]: config/index.html
 pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
     val: E,
-    writer: W,
+    mut writer: W,
     config: C,
-) -> Result<(), error::EncodeError> {
+) -> Result<(), error::EncodeError>
+where
+    C::Mode: config::InternalFingerprintGuard<E, C>,
+{
+    C::Mode::encode_check(&config, &mut writer)?;
     let mut encoder = enc::EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(())
@@ -222,7 +240,10 @@ pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
 pub fn decode_from_slice<D: de::Decode<()>, C: Config>(
     src: &[u8],
     config: C,
-) -> Result<(D, usize), error::DecodeError> {
+) -> Result<(D, usize), error::DecodeError>
+where
+    C::Mode: config::InternalFingerprintGuard<D, C>,
+{
     decode_from_slice_with_context(src, config, ())
 }
 
@@ -241,8 +262,12 @@ pub fn decode_from_slice_with_context<Context, D: de::Decode<Context>, C: Config
     src: &[u8],
     config: C,
     context: Context,
-) -> Result<(D, usize), error::DecodeError> {
-    let reader = de::read::SliceReader::new(src);
+) -> Result<(D, usize), error::DecodeError>
+where
+    C::Mode: config::InternalFingerprintGuard<D, C>,
+{
+    let mut reader = de::read::SliceReader::new(src);
+    C::Mode::decode_check(&config, &mut reader)?;
     let mut decoder = de::DecoderImpl::<_, C, Context>::new(reader, config, context);
     let result = D::decode(&mut decoder)?;
     let bytes_read = src.len() - decoder.reader().slice.len();
@@ -261,7 +286,10 @@ pub fn decode_from_slice_with_context<Context, D: de::Decode<Context>, C: Config
 pub fn borrow_decode_from_slice<'a, D: de::BorrowDecode<'a, ()>, C: Config>(
     src: &'a [u8],
     config: C,
-) -> Result<(D, usize), error::DecodeError> {
+) -> Result<(D, usize), error::DecodeError>
+where
+    C::Mode: config::InternalFingerprintGuard<D, C>,
+{
     borrow_decode_from_slice_with_context(src, config, ())
 }
 
@@ -283,8 +311,12 @@ pub fn borrow_decode_from_slice_with_context<
     src: &'a [u8],
     config: C,
     context: Context,
-) -> Result<(D, usize), error::DecodeError> {
-    let reader = de::read::SliceReader::new(src);
+) -> Result<(D, usize), error::DecodeError>
+where
+    C::Mode: config::InternalFingerprintGuard<D, C>,
+{
+    let mut reader = de::read::SliceReader::new(src);
+    C::Mode::decode_check(&config, &mut reader)?;
     let mut decoder = de::DecoderImpl::<_, C, Context>::new(reader, config, context);
     let result = D::borrow_decode(&mut decoder)?;
     let bytes_read = src.len() - decoder.reader().slice.len();
@@ -306,6 +338,7 @@ pub fn decode_from_slice_static<D, const CAP: usize, C>(
 where
     D: de::Decode<()> + static_size::StaticSize,
     C: Config,
+    C::Mode: config::InternalFingerprintGuard<D, C>,
 {
     const {
         assert!(D::MAX_SIZE <= CAP, "Buffer too small for target type");
@@ -332,6 +365,7 @@ pub fn decode_from_slice_static_with_context<Context, D, const CAP: usize, C>(
 where
     D: de::Decode<Context> + static_size::StaticSize,
     C: Config,
+    C::Mode: config::InternalFingerprintGuard<D, C>,
 {
     const {
         assert!(D::MAX_SIZE <= CAP, "Buffer too small for target type");
@@ -356,6 +390,7 @@ pub fn borrow_decode_from_slice_static<'a, D, const CAP: usize, C>(
 where
     D: de::BorrowDecode<'a, ()> + static_size::StaticSize,
     C: Config,
+    C::Mode: config::InternalFingerprintGuard<D, C>,
 {
     const {
         assert!(D::MAX_SIZE <= CAP, "Buffer too small for target type");
@@ -382,6 +417,7 @@ pub fn borrow_decode_from_slice_static_with_context<'a, Context, D, const CAP: u
 where
     D: de::BorrowDecode<'a, Context> + static_size::StaticSize,
     C: Config,
+    C::Mode: config::InternalFingerprintGuard<D, C>,
 {
     const {
         assert!(D::MAX_SIZE <= CAP, "Buffer too small for target type");
@@ -400,9 +436,13 @@ where
 ///
 /// [config]: config/index.html
 pub fn decode_from_reader<D: de::Decode<()>, R: Reader, C: Config>(
-    reader: R,
+    mut reader: R,
     config: C,
-) -> Result<D, error::DecodeError> {
+) -> Result<D, error::DecodeError>
+where
+    C::Mode: config::InternalFingerprintGuard<D, C>,
+{
+    C::Mode::decode_check(&config, &mut reader)?;
     let mut decoder = de::DecoderImpl::<_, C, ()>::new(reader, config, ());
     D::decode(&mut decoder)
 }
