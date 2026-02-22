@@ -1,6 +1,7 @@
 mod attribute;
 mod derive_bit_packed;
 mod derive_enum;
+mod derive_fingerprint;
 mod derive_static_size;
 mod derive_struct;
 mod derive_zerocopy;
@@ -218,6 +219,44 @@ fn derive_static_size_inner(input: TokenStream) -> Result<TokenStream> {
                 attributes,
             }
             .generate(&mut generator)?;
+        }
+    }
+
+    generator.finish()
+}
+
+#[proc_macro_derive(Fingerprint, attributes(bincode))]
+pub fn derive_fingerprint(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    derive_fingerprint_inner(input).unwrap_or_else(|e| e.into_token_stream())
+}
+
+fn derive_fingerprint_inner(input: TokenStream) -> Result<TokenStream> {
+    let parse = Parse::new(input)?;
+    let type_name = match &parse {
+        Parse::Struct { name, .. } | Parse::Enum { name, .. } => name.to_string(),
+        _ => unreachable!(),
+    };
+    let (mut generator, attributes, body) = parse.into_generator();
+    let attributes = attributes
+        .get_attribute::<ContainerAttributes>()?
+        .unwrap_or_default();
+
+    match body {
+        Body::Struct(body) => {
+            derive_fingerprint::DeriveFingerprint {
+                fields: body.fields,
+                variants: None,
+                attributes,
+            }
+            .generate(&mut generator, &type_name)?;
+        }
+        Body::Enum(body) => {
+            derive_fingerprint::DeriveFingerprint {
+                fields: None,
+                variants: Some(body.variants),
+                attributes,
+            }
+            .generate(&mut generator, &type_name)?;
         }
     }
 

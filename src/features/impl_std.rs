@@ -1,3 +1,4 @@
+use crate::config::internal::InternalFingerprintGuard;
 use crate::{
     config::Config,
     de::{BorrowDecode, BorrowDecoder, Decode, Decoder, DecoderImpl, read::Reader},
@@ -30,7 +31,10 @@ use std::{
 pub fn decode_from_std_read<D: Decode<()>, C: Config, R: std::io::Read>(
     src: &mut R,
     config: C,
-) -> Result<D, DecodeError> {
+) -> Result<D, DecodeError>
+where
+    C::Mode: crate::config::InternalFingerprintGuard<D, C>,
+{
     decode_from_std_read_with_context(src, config, ())
 }
 
@@ -44,17 +48,16 @@ pub fn decode_from_std_read<D: Decode<()>, C: Config, R: std::io::Read>(
 ///
 /// Returns a `DecodeError` if the reader fails or the data is invalid.
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn decode_from_std_read_with_context<
-    Context,
-    D: Decode<Context>,
-    C: Config,
-    R: std::io::Read,
->(
+pub fn decode_from_std_read_with_context<Context, D: Decode<Context>, C: Config, R: std::io::Read>(
     src: &mut R,
     config: C,
     context: Context,
-) -> Result<D, DecodeError> {
-    let reader = IoReader::new(src);
+) -> Result<D, DecodeError>
+where
+    C::Mode: crate::config::InternalFingerprintGuard<D, C>,
+{
+    let mut reader = IoReader::new(src);
+    C::Mode::decode_check(&config, &mut reader)?;
     let mut decoder = DecoderImpl::<_, C, Context>::new(reader, config, context);
     D::decode(&mut decoder)
 }
@@ -123,8 +126,12 @@ pub fn encode_into_std_write<E: Encode, C: Config, W: std::io::Write>(
     val: E,
     dst: &mut W,
     config: C,
-) -> Result<usize, EncodeError> {
-    let writer = IoWriter::new(dst);
+) -> Result<usize, EncodeError>
+where
+    C::Mode: crate::config::InternalFingerprintGuard<E, C>,
+{
+    let mut writer = IoWriter::new(dst);
+    C::Mode::encode_check(&config, &mut writer)?;
     let mut encoder = EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(encoder.into_writer().bytes_written())

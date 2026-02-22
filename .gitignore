@@ -25,3 +25,8 @@ test_infer3.rs
 test_infer4
 test_infer4.rs
 fix_docs.py
+issue19.md
+1
+expanded.rs
+test_expand.rs
+test_trait.rs

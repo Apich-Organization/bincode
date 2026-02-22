@@ -19,7 +19,8 @@
 //!
 //! See [Configuration] for more information on the configuration options.
 
-pub(crate) use self::internal::*;
+#[doc(hidden)]
+pub use self::internal::*;
 use core::marker::PhantomData;
 
 /// The Configuration struct is used to build bincode configurations. The [Config] trait is implemented
@@ -39,11 +40,18 @@ use core::marker::PhantomData;
 /// [with_bit_packing]: #method.with_bit_packing
 /// [with_no_bit_packing]: #method.with_no_bit_packing
 #[derive(Copy, Clone, Debug)]
-pub struct Configuration<E = LittleEndian, I = Varint, L = NoLimit, B = SkipBitPacking> {
+pub struct Configuration<
+    E = LittleEndian,
+    I = Varint,
+    L = NoLimit,
+    B = SkipBitPacking,
+    F = FingerprintDisabled,
+> {
     _e: PhantomData<E>,
     _i: PhantomData<I>,
     _l: PhantomData<L>,
     _b: PhantomData<B>,
+    _f: PhantomData<F>,
 }
 
 // When adding more features to configuration, follow these steps:
@@ -68,35 +76,37 @@ pub const fn standard() -> Configuration {
 /// - Little endian
 /// - Fixed int length encoding
 #[must_use]
-pub const fn legacy() -> Configuration<LittleEndian, Fixint, NoLimit, SkipBitPacking> {
+pub const fn legacy()
+-> Configuration<LittleEndian, Fixint, NoLimit, SkipBitPacking, FingerprintDisabled> {
     generate()
 }
 
-impl<E, I, L, B> Default for Configuration<E, I, L, B> {
+impl<E, I, L, B, F> Default for Configuration<E, I, L, B, F> {
     fn default() -> Self {
         generate()
     }
 }
 
-const fn generate<E, I, L, B>() -> Configuration<E, I, L, B> {
+const fn generate<E, I, L, B, F>() -> Configuration<E, I, L, B, F> {
     Configuration {
         _e: PhantomData,
         _i: PhantomData,
         _l: PhantomData,
         _b: PhantomData,
+        _f: PhantomData,
     }
 }
 
-impl<E, I, L, B> Configuration<E, I, L, B> {
+impl<E, I, L, B, F> Configuration<E, I, L, B, F> {
     /// Makes bincode encode all integer types in big endian.
     #[must_use]
-    pub const fn with_big_endian(self) -> Configuration<BigEndian, I, L, B> {
+    pub const fn with_big_endian(self) -> Configuration<BigEndian, I, L, B, F> {
         generate()
     }
 
     /// Makes bincode encode all integer types in little endian.
     #[must_use]
-    pub const fn with_little_endian(self) -> Configuration<LittleEndian, I, L, B> {
+    pub const fn with_little_endian(self) -> Configuration<LittleEndian, I, L, B, F> {
         generate()
     }
 
@@ -157,7 +167,7 @@ impl<E, I, L, B> Configuration<E, I, L, B> {
     /// Note that u256 and the like are unsupported by this format; if and when they are added to the
     /// language, they may be supported via the extension point given by the 255 byte.
     #[must_use]
-    pub const fn with_variable_int_encoding(self) -> Configuration<E, Varint, L, B> {
+    pub const fn with_variable_int_encoding(self) -> Configuration<E, Varint, L, B, F> {
         generate()
     }
 
@@ -167,31 +177,53 @@ impl<E, I, L, B> Configuration<E, I, L, B> {
     /// * Enum discriminants are encoded as u32
     /// * Lengths and usize are encoded as u64
     #[must_use]
-    pub const fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, L, B> {
+    pub const fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, L, B, F> {
         generate()
     }
 
     /// Sets the byte limit to `limit`.
     #[must_use]
-    pub const fn with_limit<const N: usize>(self) -> Configuration<E, I, Limit<N>, B> {
+    pub const fn with_limit<const N: usize>(self) -> Configuration<E, I, Limit<N>, B, F> {
         generate()
     }
 
     /// Clear the byte limit.
     #[must_use]
-    pub const fn with_no_limit(self) -> Configuration<E, I, NoLimit, B> {
+    pub const fn with_no_limit(self) -> Configuration<E, I, NoLimit, B, F> {
         generate()
     }
 
     /// Enables bit-packing for types that support it.
     #[must_use]
-    pub const fn with_bit_packing(self) -> Configuration<E, I, L, AllowBitPacking> {
+    pub const fn with_bit_packing(self) -> Configuration<E, I, L, AllowBitPacking, F> {
         generate()
     }
 
     /// Disables bit-packing.
     #[must_use]
-    pub const fn with_no_bit_packing(self) -> Configuration<E, I, L, SkipBitPacking> {
+    pub const fn with_no_bit_packing(self) -> Configuration<E, I, L, SkipBitPacking, F> {
+        generate()
+    }
+
+    /// Enables fingerprinting with the default deterministic seed (0).
+    #[must_use]
+    pub const fn with_fingerprint(self) -> Configuration<E, I, L, B, FingerprintEnabled<0>> {
+        generate()
+    }
+
+    /// Enables fingerprinting with a custom seed.
+    #[must_use]
+    pub const fn with_fingerprint_and_seed<const SEED: u64>(
+        self,
+    ) -> Configuration<E, I, L, B, FingerprintEnabled<SEED>> {
+        generate()
+    }
+
+    /// Enables legacy fingerprinting with an expected hash.
+    #[must_use]
+    pub const fn with_legacy_fingerprint<const EXPECTED: u64>(
+        self,
+    ) -> Configuration<E, I, L, B, FingerprintLegacy<EXPECTED>> {
         generate()
     }
 }
@@ -202,6 +234,9 @@ pub trait Config:
     + InternalIntEncodingConfig
     + InternalLimitConfig
     + InternalBitPackingConfig
+    + InternalFingerprintConfig
+    + InternalConfigFingerprint
+    + InternalFingerprintConfigExt
     + Copy
     + Clone
 {
@@ -216,6 +251,9 @@ pub trait Config:
 
     /// Whether bit-packing is enabled for this configuration
     fn bit_packing_enabled(&self) -> bool;
+
+    /// Returns the fingerprint mode of this configuration
+    fn fingerprint_mode(&self) -> FingerprintMode;
 }
 
 impl<T> Config for T
@@ -224,6 +262,9 @@ where
         + InternalIntEncodingConfig
         + InternalLimitConfig
         + InternalBitPackingConfig
+        + InternalFingerprintConfig
+        + InternalConfigFingerprint
+        + InternalFingerprintConfigExt
         + Copy
         + Clone,
 {
@@ -244,6 +285,10 @@ where
             <T as InternalBitPackingConfig>::BIT_PACKING,
             BitPacking::Enabled
         )
+    }
+
+    fn fingerprint_mode(&self) -> FingerprintMode {
+        <T as InternalFingerprintConfig>::FINGERPRINT_MODE
     }
 }
 
@@ -309,6 +354,30 @@ impl InternalBitPackingConfig for SkipBitPacking {
     const BIT_PACKING: BitPacking = BitPacking::Disabled;
 }
 
+/// Fingerprinting is disabled.
+#[derive(Copy, Clone, Debug)]
+pub struct FingerprintDisabled;
+
+impl InternalFingerprintConfig for FingerprintDisabled {
+    const FINGERPRINT_MODE: FingerprintMode = FingerprintMode::Disabled;
+}
+
+/// Fingerprinting is enabled with a seed.
+#[derive(Copy, Clone, Debug)]
+pub struct FingerprintEnabled<const SEED: u64>;
+
+impl<const SEED: u64> InternalFingerprintConfig for FingerprintEnabled<SEED> {
+    const FINGERPRINT_MODE: FingerprintMode = FingerprintMode::Enabled { seed: SEED };
+}
+
+/// Legacy fingerprinting with an expected hash.
+#[derive(Copy, Clone, Debug)]
+pub struct FingerprintLegacy<const EXPECTED: u64>;
+
+impl<const EXPECTED: u64> InternalFingerprintConfig for FingerprintLegacy<EXPECTED> {
+    const FINGERPRINT_MODE: FingerprintMode = FingerprintMode::Legacy { expected: EXPECTED };
+}
+
 /// Endianness of a `Configuration`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -339,14 +408,33 @@ pub enum BitPacking {
     Disabled,
 }
 
-mod internal {
-    use super::{BitPacking, Configuration, Endianness, IntEncoding};
+/// Fingerprint mode of a `Configuration`.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum FingerprintMode {
+    /// Fingerprinting is disabled.
+    Disabled,
+    /// Fingerprinting is enabled with a seed.
+    Enabled {
+        /// The seed to use for hashing.
+        seed: u64,
+    },
+    /// Legacy fingerprinting with an expected hash.
+    Legacy {
+        /// The hash that is expected to be present.
+        expected: u64,
+    },
+}
+
+#[doc(hidden)]
+pub mod internal {
+    use super::{BitPacking, Configuration, Endianness, FingerprintMode, IntEncoding};
 
     pub trait InternalEndianConfig {
         const ENDIAN: Endianness;
     }
 
-    impl<E: InternalEndianConfig, I, L, B> InternalEndianConfig for Configuration<E, I, L, B> {
+    impl<E: InternalEndianConfig, I, L, B, F> InternalEndianConfig for Configuration<E, I, L, B, F> {
         const ENDIAN: Endianness = E::ENDIAN;
     }
 
@@ -354,8 +442,8 @@ mod internal {
         const INT_ENCODING: IntEncoding;
     }
 
-    impl<E, I: InternalIntEncodingConfig, L, B> InternalIntEncodingConfig
-        for Configuration<E, I, L, B>
+    impl<E, I: InternalIntEncodingConfig, L, B, F> InternalIntEncodingConfig
+        for Configuration<E, I, L, B, F>
     {
         const INT_ENCODING: IntEncoding = I::INT_ENCODING;
     }
@@ -364,7 +452,7 @@ mod internal {
         const LIMIT: Option<usize>;
     }
 
-    impl<E, I, L: InternalLimitConfig, B> InternalLimitConfig for Configuration<E, I, L, B> {
+    impl<E, I, L: InternalLimitConfig, B, F> InternalLimitConfig for Configuration<E, I, L, B, F> {
         const LIMIT: Option<usize> = L::LIMIT;
     }
 
@@ -372,7 +460,137 @@ mod internal {
         const BIT_PACKING: BitPacking;
     }
 
-    impl<E, I, L, B: InternalBitPackingConfig> InternalBitPackingConfig for Configuration<E, I, L, B> {
+    impl<E, I, L, B: InternalBitPackingConfig, F> InternalBitPackingConfig
+        for Configuration<E, I, L, B, F>
+    {
         const BIT_PACKING: BitPacking = B::BIT_PACKING;
+    }
+
+    pub trait InternalFingerprintConfig {
+        const FINGERPRINT_MODE: FingerprintMode;
+    }
+
+    impl<E, I, L, B, F: InternalFingerprintConfig> InternalFingerprintConfig
+        for Configuration<E, I, L, B, F>
+    {
+        const FINGERPRINT_MODE: FingerprintMode = F::FINGERPRINT_MODE;
+    }
+
+    pub trait InternalFingerprintConfigExt {
+        type Mode;
+    }
+
+    impl<E, I, L, B, F> InternalFingerprintConfigExt for Configuration<E, I, L, B, F> {
+        type Mode = F;
+    }
+
+    pub trait InternalFingerprintGuard<D, C: super::Config> {
+        fn decode_check<R: crate::de::read::Reader>(
+            _config: &C,
+            reader: &mut R,
+        ) -> core::result::Result<(), crate::error::DecodeError>;
+        fn encode_check<W: crate::enc::write::Writer>(
+            _config: &C,
+            writer: &mut W,
+        ) -> core::result::Result<(), crate::error::EncodeError>;
+    }
+
+    impl<D, C: super::Config> InternalFingerprintGuard<D, C> for super::FingerprintDisabled {
+        #[inline(always)]
+        fn decode_check<R: crate::de::read::Reader>(
+            _config: &C,
+            _reader: &mut R,
+        ) -> core::result::Result<(), crate::error::DecodeError> {
+            core::result::Result::Ok(())
+        }
+        #[inline(always)]
+        fn encode_check<W: crate::enc::write::Writer>(
+            _config: &C,
+            _writer: &mut W,
+        ) -> core::result::Result<(), crate::error::EncodeError> {
+            core::result::Result::Ok(())
+        }
+    }
+
+    impl<D: crate::fingerprint::Fingerprint<C>, C: super::Config, const SEED: u64>
+        InternalFingerprintGuard<D, C> for super::FingerprintEnabled<SEED>
+    {
+        #[inline]
+        fn decode_check<R: crate::de::read::Reader>(
+            _config: &C,
+            reader: &mut R,
+        ) -> core::result::Result<(), crate::error::DecodeError> {
+            let mut bytes = [0u8; 8];
+            reader.read(&mut bytes)?;
+            let actual = u64::from_le_bytes(bytes);
+            if actual != D::SCHEMA_HASH {
+                return core::result::Result::Err(crate::error::DecodeError::SchemaMismatch {
+                    expected: D::SCHEMA_HASH,
+                    actual,
+                });
+            }
+            core::result::Result::Ok(())
+        }
+        #[inline]
+        fn encode_check<W: crate::enc::write::Writer>(
+            _config: &C,
+            writer: &mut W,
+        ) -> core::result::Result<(), crate::error::EncodeError> {
+            writer.write(&D::SCHEMA_HASH.to_le_bytes())
+        }
+    }
+
+    impl<D, C: super::Config, const EXPECTED: u64> InternalFingerprintGuard<D, C>
+        for super::FingerprintLegacy<EXPECTED>
+    {
+        #[inline]
+        fn decode_check<R: crate::de::read::Reader>(
+            _config: &C,
+            reader: &mut R,
+        ) -> core::result::Result<(), crate::error::DecodeError> {
+            let mut bytes = [0u8; 8];
+            reader.read(&mut bytes)?;
+            let actual = u64::from_le_bytes(bytes);
+            if actual != EXPECTED {
+                return core::result::Result::Err(crate::error::DecodeError::SchemaMismatch {
+                    expected: EXPECTED,
+                    actual,
+                });
+            }
+            core::result::Result::Ok(())
+        }
+        #[inline]
+        fn encode_check<W: crate::enc::write::Writer>(
+            _config: &C,
+            _writer: &mut W,
+        ) -> core::result::Result<(), crate::error::EncodeError> {
+            core::result::Result::Ok(())
+        }
+    }
+
+    pub trait InternalConfigFingerprint {
+        const CONFIG_HASH: u64;
+    }
+
+    impl<E, I, L, B, F> InternalConfigFingerprint for Configuration<E, I, L, B, F>
+    where
+        E: InternalEndianConfig,
+        I: InternalIntEncodingConfig,
+        L: InternalLimitConfig,
+        B: InternalBitPackingConfig,
+    {
+        const CONFIG_HASH: u64 = rapidhash::v3::rapidhash_v3_seeded(
+            &[
+                crate::BINCODE_MAJOR_VERSION as u8,
+                E::ENDIAN as u8,
+                I::INT_ENCODING as u8,
+                match L::LIMIT {
+                    None => 0,
+                    Some(_) => 1,
+                },
+                B::BIT_PACKING as u8,
+            ],
+            &rapidhash::v3::RapidSecrets::seed_cpp(0),
+        );
     }
 }

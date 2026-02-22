@@ -1,4 +1,5 @@
 #![allow(unsafe_code)]
+use crate::config::internal::InternalFingerprintGuard;
 use crate::{
     BorrowDecode, Config,
     de::{BorrowDecoder, Decode, Decoder, read::Reader},
@@ -57,13 +58,19 @@ impl enc::write::Writer for VecWriter {
 ///
 /// Returns an `EncodeError` if the value cannot be encoded.
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
-pub fn encode_to_vec<E: enc::Encode, C: Config>(val: E, config: C) -> Result<Vec<u8>, EncodeError> {
+pub fn encode_to_vec<E: enc::Encode, C: Config>(val: E, config: C) -> Result<Vec<u8>, EncodeError>
+where
+    C::Mode: crate::config::InternalFingerprintGuard<E, C>,
+{
     let size = {
         let mut size_writer = enc::EncoderImpl::<_, C>::new(SizeWriter::default(), config);
         val.encode(&mut size_writer)?;
         size_writer.into_writer().bytes_written
     };
-    let writer = VecWriter::with_capacity(size);
+    // Include the 8-byte prefix size if fingerprinting is enabled, we could just do capacity + 8 to be safe
+    // but the write below handles resizing anyway.
+    let mut writer = VecWriter::with_capacity(size + 8);
+    C::Mode::encode_check(&config, &mut writer)?;
     let mut encoder = enc::EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(encoder.into_writer().inner)

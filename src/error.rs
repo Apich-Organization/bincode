@@ -209,6 +209,14 @@ pub enum DecodeError {
     #[cfg(feature = "serde")]
     /// A serde-specific error that occurred while decoding.
     Serde(crate::features::serde::DecodeError),
+
+    /// The schema of the type being decoded does not match the schema of the encoded data.
+    SchemaMismatch {
+        /// The hash that was expected by the decoder
+        expected: u64,
+        /// The hash that was found in the encoded data
+        actual: u64,
+    },
 }
 
 impl core::fmt::Display for DecodeError {
