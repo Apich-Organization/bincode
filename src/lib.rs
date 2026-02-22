@@ -154,6 +154,14 @@ pub mod de;
 pub mod enc;
 pub mod error;
 
+#[cfg(feature = "static-size")]
+pub mod bounded;
+#[cfg(feature = "static-size")]
+pub mod static_size;
+
+#[cfg(feature = "static-size")]
+pub use static_size::StaticSize;
+
 pub use de::{BorrowDecode, Decode};
 pub use enc::Encode;
 #[cfg(feature = "zero-copy")]
@@ -281,6 +289,52 @@ pub fn borrow_decode_from_slice_with_context<
     let result = D::borrow_decode(&mut decoder)?;
     let bytes_read = src.len() - decoder.reader().slice.len();
     Ok((result, bytes_read))
+}
+
+/// Attempt to decode a given type `D` from the given slice with a compile-time bound check.
+///
+/// This function ensures that the target type `D` cannot exceed the provided buffer capacity `CAP` at compile-time.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the slice contains invalid data.
+#[cfg(feature = "static-size")]
+pub fn decode_from_slice_static<D, const CAP: usize, C>(
+    src: &[u8; CAP],
+    config: C,
+) -> Result<D, error::DecodeError>
+where
+    D: de::Decode<()> + static_size::StaticSize,
+    C: Config,
+{
+    const {
+        assert!(D::MAX_SIZE <= CAP, "Buffer too small for target type");
+    }
+    let (val, _) = decode_from_slice(src, config)?;
+    Ok(val)
+}
+
+/// Attempt to decode a given type `D` from the given slice with a compile-time bound check.
+///
+/// This function ensures that the target type `D` cannot exceed the provided buffer capacity `CAP` at compile-time.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the slice contains invalid data.
+#[cfg(feature = "static-size")]
+pub fn borrow_decode_from_slice_static<'a, D, const CAP: usize, C>(
+    src: &'a [u8; CAP],
+    config: C,
+) -> Result<D, error::DecodeError>
+where
+    D: de::BorrowDecode<'a, ()> + static_size::StaticSize,
+    C: Config,
+{
+    const {
+        assert!(D::MAX_SIZE <= CAP, "Buffer too small for target type");
+    }
+    let (val, _) = borrow_decode_from_slice(src, config)?;
+    Ok(val)
 }
 
 /// Attempt to decode a given type `D` from the given [`Reader`\].

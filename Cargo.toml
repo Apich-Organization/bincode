@@ -33,7 +33,8 @@ default = ["std", "derive"]
 std = ["alloc", "serde?/std"]
 alloc = ["serde?/alloc"]
 derive = ["bincode_derive-next"]
-zero-copy = []
+zero-copy = ["bincode_derive-next?/zero-copy"]
+static-size = ["bincode_derive-next?/static-size"]
 # Remember to run 'MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --all-features --no-fail-fast'
 
 [dependencies]
