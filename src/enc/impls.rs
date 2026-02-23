@@ -454,12 +454,12 @@ where
                             || unty::type_equal::<T, u128>()
                             || unty::type_equal::<T, i128>()))))
         {
-            let bytes_to_copy = self.len() * core::mem::size_of::<T>();
+            let bytes_to_copy = core::mem::size_of_val(self);
             // SAFETY: T is a primitive type (pod), so it's safe to copy its bytes.
             // We've checked that the encoding is Fixed and Endianness matches,
             // or that it's a 1-byte type (u8/i8).
             unsafe {
-                let slice_ptr = self.as_ptr() as *const u8;
+                let slice_ptr = self.as_ptr().cast::<u8>();
                 let slice = core::slice::from_raw_parts(slice_ptr, bytes_to_copy);
                 encoder.writer().write(slice)?;
             }
@@ -554,7 +554,7 @@ where
             // We've checked that the encoding is Fixed and Endianness matches,
             // or that it's a 1-byte type (u8/i8).
             unsafe {
-                let slice_ptr = self.as_ptr() as *const u8;
+                let slice_ptr = self.as_ptr().cast::<u8>();
                 let slice = core::slice::from_raw_parts(slice_ptr, bytes_to_copy);
                 encoder.writer().write(slice)?;
             }

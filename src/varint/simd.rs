@@ -1,8 +1,19 @@
 #![allow(unsafe_code)]
+#![allow(clippy::cast_ptr_alignment)]
 #[cfg(target_arch = "aarch64")]
 use core::arch::aarch64::*;
 #[cfg(target_arch = "x86_64")]
-use core::arch::x86_64::*;
+use core::arch::x86_64::__m128i;
+#[cfg(target_arch = "x86_64")]
+use core::arch::x86_64::_mm_cmpgt_epi8;
+#[cfg(target_arch = "x86_64")]
+use core::arch::x86_64::_mm_loadu_si128;
+#[cfg(target_arch = "x86_64")]
+use core::arch::x86_64::_mm_movemask_epi8;
+#[cfg(target_arch = "x86_64")]
+use core::arch::x86_64::_mm_set1_epi8;
+#[cfg(target_arch = "x86_64")]
+use core::arch::x86_64::_mm_xor_si128;
 
 /// Results of a SIMD varint scan.
 pub struct VarintScan {
@@ -21,7 +32,7 @@ pub fn scan_single_byte_varints(bytes: &[u8]) -> VarintScan {
         if bytes.len() >= 16 {
             unsafe {
                 while count + 16 <= bytes.len() {
-                    let chunk = _mm_loadu_si128(bytes.as_ptr().add(count) as *const __m128i);
+                    let chunk = _mm_loadu_si128(bytes.as_ptr().add(count).cast::<__m128i>());
                     // _mm_cmpgt_epi8 treats bytes as signed, so 0..127 are positive, 128..255 are negative.
                     // This makes it a bit tricky.
                     // Instead, let's use the unsigned comparison if available, or a trick.

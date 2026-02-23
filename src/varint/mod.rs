@@ -2,7 +2,7 @@ mod decode_signed;
 mod decode_unsigned;
 mod encode_signed;
 mod encode_unsigned;
-pub(crate) mod simd;
+pub mod simd;
 
 pub use self::decode_signed::varint_decode_i16;
 pub use self::decode_signed::varint_decode_i32;

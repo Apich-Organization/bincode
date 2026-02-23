@@ -313,6 +313,7 @@ impl<Context, T> Decode<Context> for Vec<T>
 where
     T: Decode<Context>,
 {
+    #[allow(clippy::too_many_lines)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
 
@@ -339,10 +340,10 @@ where
                     || unty::type_equal::<T, f32>()
                     || unty::type_equal::<T, f64>()))
         {
-            let mut vec = Vec::with_capacity(len);
+            let mut vec = Self::with_capacity(len);
             unsafe {
                 let bytes_to_read = len * core::mem::size_of::<T>();
-                let ptr = vec.as_mut_ptr() as *mut u8;
+                let ptr = vec.as_mut_ptr().cast::<u8>();
                 let slice = core::slice::from_raw_parts_mut(ptr, bytes_to_read);
                 decoder.reader().read(slice)?;
                 vec.set_len(len);
@@ -350,7 +351,7 @@ where
             Ok(vec)
         } else {
             let is_varint = matches!(D::C::INT_ENCODING, IntEncoding::Variable);
-            let mut vec = Vec::with_capacity(len);
+            let mut vec = Self::with_capacity(len);
             let mut i = 0;
 
             if is_varint {
@@ -379,9 +380,7 @@ where
 
                         macro_rules! decode_mega {
                             ($decode_fn:ident, $type:ty) => {{
-                                let v = unsafe {
-                                    core::mem::transmute::<&mut Vec<T>, &mut Vec<$type>>(&mut vec)
-                                };
+                                let v = unsafe { &mut *(&raw mut vec).cast::<Vec<$type>>() };
                                 let ptr = v.as_mut_ptr();
                                 for j in 0..len {
                                     // Architecture-specific prefetching for large batches
@@ -389,7 +388,7 @@ where
                                     unsafe {
                                         if j % 8 == 0 {
                                             core::arch::x86_64::_mm_prefetch(
-                                                reader.slice.as_ptr().add(64) as *const i8,
+                                                reader.slice.as_ptr().add(64).cast::<i8>(),
                                                 core::arch::x86_64::_MM_HINT_T0,
                                             );
                                         }
@@ -398,7 +397,7 @@ where
                                     unsafe {
                                         if j % 8 == 0 {
                                             core::arch::aarch64::__prefetch(
-                                                reader.slice.as_ptr().add(64) as *const i8,
+                                                reader.slice.as_ptr().add(64).cast::<i8>(),
                                             );
                                         }
                                     }
@@ -456,50 +455,47 @@ where
                     || unty::type_equal::<T, i64>()
                     || unty::type_equal::<T, usize>()
                     || unty::type_equal::<T, isize>())
+                && let Some(bytes) = decoder.reader().peek_read(len)
             {
-                if let Some(bytes) = decoder.reader().peek_read(len) {
-                    let scan = crate::varint::simd::scan_single_byte_varints(bytes);
-                    let to_decode = scan.single_byte_count.min(len);
-                    if to_decode > 0 {
-                        macro_rules! decode_simd {
-                            ($type:ty, $cast:expr) => {{
-                                let v = unsafe {
-                                    core::mem::transmute::<&mut Vec<T>, &mut Vec<$type>>(&mut vec)
-                                };
-                                let ptr = v.as_mut_ptr();
-                                for j in 0..to_decode {
-                                    let b = bytes[j];
-                                    unsafe {
-                                        std::ptr::write(ptr.add(j), $cast(b));
-                                    }
-                                }
+                let scan = crate::varint::simd::scan_single_byte_varints(bytes);
+                let to_decode = scan.single_byte_count.min(len);
+                if to_decode > 0 {
+                    macro_rules! decode_simd {
+                        ($type:ty, $cast:expr) => {{
+                            let v = unsafe { &mut *(&raw mut vec).cast::<Vec<$type>>() };
+                            let ptr = v.as_mut_ptr();
+                            for j in 0..to_decode {
+                                let b = bytes[j];
                                 unsafe {
-                                    v.set_len(to_decode);
+                                    std::ptr::write(ptr.add(j), $cast(b));
                                 }
-                            }};
-                        }
-                        if unty::type_equal::<T, u32>() {
-                            decode_simd!(u32, |b| b as u32);
-                        } else if unty::type_equal::<T, i32>() {
-                            decode_simd!(i32, |b: u8| ((b >> 1) as i32) ^ (-((b & 1) as i32)));
-                        } else if unty::type_equal::<T, u64>() {
-                            decode_simd!(u64, |b| b as u64);
-                        } else if unty::type_equal::<T, i64>() {
-                            decode_simd!(i64, |b: u8| ((b >> 1) as i64) ^ (-((b & 1) as i64)));
-                        } else if unty::type_equal::<T, usize>() {
-                            decode_simd!(usize, |b| b as usize);
-                        } else if unty::type_equal::<T, isize>() {
-                            decode_simd!(isize, |b: u8| {
-                                ((b >> 1) as isize) ^ (-((b & 1) as isize))
-                            });
-                        }
-
-                        decoder.reader().consume(to_decode);
-                        if <D::C as crate::config::InternalLimitConfig>::LIMIT.is_some() {
-                            decoder.unclaim_bytes_read(to_decode * core::mem::size_of::<T>());
-                        }
-                        i = to_decode;
+                            }
+                            unsafe {
+                                v.set_len(to_decode);
+                            }
+                        }};
                     }
+                    if unty::type_equal::<T, u32>() {
+                        decode_simd!(u32, u32::from);
+                    } else if unty::type_equal::<T, i32>() {
+                        decode_simd!(i32, |b: u8| i32::from(b >> 1) ^ (-i32::from(b & 1)));
+                    } else if unty::type_equal::<T, u64>() {
+                        decode_simd!(u64, u64::from);
+                    } else if unty::type_equal::<T, i64>() {
+                        decode_simd!(i64, |b: u8| i64::from(b >> 1) ^ (-i64::from(b & 1)));
+                    } else if unty::type_equal::<T, usize>() {
+                        decode_simd!(usize, usize::from);
+                    } else if unty::type_equal::<T, isize>() {
+                        decode_simd!(isize, |b: u8| {
+                            isize::from(b >> 1) ^ (-isize::from(b & 1))
+                        });
+                    }
+
+                    decoder.reader().consume(to_decode);
+                    if <D::C as crate::config::InternalLimitConfig>::LIMIT.is_some() {
+                        decoder.unclaim_bytes_read(to_decode * core::mem::size_of::<T>());
+                    }
+                    i = to_decode;
                 }
             }
 
@@ -519,6 +515,7 @@ impl<'de, T, Context> BorrowDecode<'de, Context> for Vec<T>
 where
     T: BorrowDecode<'de, Context>,
 {
+    #[allow(clippy::too_many_lines)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -547,10 +544,10 @@ where
                     || unty::type_equal::<T, f32>()
                     || unty::type_equal::<T, f64>()))
         {
-            let mut vec = Vec::with_capacity(len);
+            let mut vec = Self::with_capacity(len);
             unsafe {
                 let bytes_to_read = len * core::mem::size_of::<T>();
-                let ptr = vec.as_mut_ptr() as *mut u8;
+                let ptr = vec.as_mut_ptr().cast::<u8>();
                 let slice = core::slice::from_raw_parts_mut(ptr, bytes_to_read);
                 decoder.reader().read(slice)?;
                 vec.set_len(len);
@@ -558,7 +555,7 @@ where
             Ok(vec)
         } else {
             let is_varint = matches!(D::C::INT_ENCODING, IntEncoding::Variable);
-            let mut vec = Vec::with_capacity(len);
+            let mut vec = Self::with_capacity(len);
             let mut i = 0;
 
             if is_varint {
@@ -578,78 +575,76 @@ where
                     None
                 };
 
-                if let Some(ms) = max_size {
-                    if let Some(bytes) = decoder.reader().peek_read(len * ms) {
-                        let mut reader = crate::de::read::SliceReader::new(bytes);
-                        let endian = D::C::ENDIAN;
+                if let Some(ms) = max_size
+                    && let Some(bytes) = decoder.reader().peek_read(len * ms)
+                {
+                    let mut reader = crate::de::read::SliceReader::new(bytes);
+                    let endian = D::C::ENDIAN;
 
-                        macro_rules! borrow_mega {
-                            ($decode_fn:ident, $type:ty) => {{
-                                let v = unsafe {
-                                    core::mem::transmute::<&mut Vec<T>, &mut Vec<$type>>(&mut vec)
-                                };
-                                let ptr = v.as_mut_ptr();
-                                for j in 0..len {
-                                    // Architecture-specific prefetching for large batches
-                                    #[cfg(target_arch = "x86_64")]
-                                    unsafe {
-                                        if j % 8 == 0 {
-                                            core::arch::x86_64::_mm_prefetch(
-                                                reader.slice.as_ptr().add(64) as *const i8,
-                                                core::arch::x86_64::_MM_HINT_T0,
-                                            );
-                                        }
+                    macro_rules! borrow_mega {
+                        ($decode_fn:ident, $type:ty) => {{
+                            let v = unsafe { &mut *(&raw mut vec).cast::<Vec<$type>>() };
+                            let ptr = v.as_mut_ptr();
+                            for j in 0..len {
+                                // Architecture-specific prefetching for large batches
+                                #[cfg(target_arch = "x86_64")]
+                                unsafe {
+                                    if j % 8 == 0 {
+                                        core::arch::x86_64::_mm_prefetch(
+                                            reader.slice.as_ptr().add(64).cast::<i8>(),
+                                            core::arch::x86_64::_MM_HINT_T0,
+                                        );
                                     }
-                                    #[cfg(target_arch = "aarch64")]
-                                    unsafe {
-                                        if j % 8 == 0 {
-                                            core::arch::aarch64::__prefetch(
-                                                reader.slice.as_ptr().add(64) as *const i8,
-                                            );
-                                        }
-                                    }
-                                    unsafe {
-                                        std::ptr::write(
-                                            ptr.add(j),
-                                            crate::varint::$decode_fn(&mut reader, endian)?,
+                                }
+                                #[cfg(target_arch = "aarch64")]
+                                unsafe {
+                                    if j % 8 == 0 {
+                                        core::arch::aarch64::__prefetch(
+                                            reader.slice.as_ptr().add(64).cast::<i8>(),
                                         );
                                     }
                                 }
                                 unsafe {
-                                    v.set_len(len);
+                                    std::ptr::write(
+                                        ptr.add(j),
+                                        crate::varint::$decode_fn(&mut reader, endian)?,
+                                    );
                                 }
-                            }};
-                        }
-
-                        if unty::type_equal::<T, u64>() {
-                            borrow_mega!(varint_decode_u64, u64);
-                        } else if unty::type_equal::<T, i64>() {
-                            borrow_mega!(varint_decode_i64, i64);
-                        } else if unty::type_equal::<T, u32>() {
-                            borrow_mega!(varint_decode_u32, u32);
-                        } else if unty::type_equal::<T, i32>() {
-                            borrow_mega!(varint_decode_i32, i32);
-                        } else if unty::type_equal::<T, usize>() {
-                            borrow_mega!(varint_decode_usize, usize);
-                        } else if unty::type_equal::<T, isize>() {
-                            borrow_mega!(varint_decode_isize, isize);
-                        } else if unty::type_equal::<T, u16>() {
-                            borrow_mega!(varint_decode_u16, u16);
-                        } else if unty::type_equal::<T, i16>() {
-                            borrow_mega!(varint_decode_i16, i16);
-                        } else if unty::type_equal::<T, u128>() {
-                            borrow_mega!(varint_decode_u128, u128);
-                        } else if unty::type_equal::<T, i128>() {
-                            borrow_mega!(varint_decode_i128, i128);
-                        }
-
-                        let consumed = bytes.len() - reader.slice.len();
-                        decoder.reader().consume(consumed);
-                        if <D::C as crate::config::InternalLimitConfig>::LIMIT.is_some() {
-                            decoder.unclaim_bytes_read(len * core::mem::size_of::<T>() - consumed);
-                        }
-                        return Ok(vec);
+                            }
+                            unsafe {
+                                v.set_len(len);
+                            }
+                        }};
                     }
+
+                    if unty::type_equal::<T, u64>() {
+                        borrow_mega!(varint_decode_u64, u64);
+                    } else if unty::type_equal::<T, i64>() {
+                        borrow_mega!(varint_decode_i64, i64);
+                    } else if unty::type_equal::<T, u32>() {
+                        borrow_mega!(varint_decode_u32, u32);
+                    } else if unty::type_equal::<T, i32>() {
+                        borrow_mega!(varint_decode_i32, i32);
+                    } else if unty::type_equal::<T, usize>() {
+                        borrow_mega!(varint_decode_usize, usize);
+                    } else if unty::type_equal::<T, isize>() {
+                        borrow_mega!(varint_decode_isize, isize);
+                    } else if unty::type_equal::<T, u16>() {
+                        borrow_mega!(varint_decode_u16, u16);
+                    } else if unty::type_equal::<T, i16>() {
+                        borrow_mega!(varint_decode_i16, i16);
+                    } else if unty::type_equal::<T, u128>() {
+                        borrow_mega!(varint_decode_u128, u128);
+                    } else if unty::type_equal::<T, i128>() {
+                        borrow_mega!(varint_decode_i128, i128);
+                    }
+
+                    let consumed = bytes.len() - reader.slice.len();
+                    decoder.reader().consume(consumed);
+                    if <D::C as crate::config::InternalLimitConfig>::LIMIT.is_some() {
+                        decoder.unclaim_bytes_read(len * core::mem::size_of::<T>() - consumed);
+                    }
+                    return Ok(vec);
                 }
             }
 
@@ -661,50 +656,47 @@ where
                     || unty::type_equal::<T, i64>()
                     || unty::type_equal::<T, usize>()
                     || unty::type_equal::<T, isize>())
+                && let Some(bytes) = decoder.reader().peek_read(len)
             {
-                if let Some(bytes) = decoder.reader().peek_read(len) {
-                    let scan = crate::varint::simd::scan_single_byte_varints(bytes);
-                    let to_decode = scan.single_byte_count.min(len);
-                    if to_decode > 0 {
-                        macro_rules! borrow_simd {
-                            ($type:ty, $cast:expr) => {{
-                                let v = unsafe {
-                                    core::mem::transmute::<&mut Vec<T>, &mut Vec<$type>>(&mut vec)
-                                };
-                                let ptr = v.as_mut_ptr();
-                                for j in 0..to_decode {
-                                    let b = bytes[j];
-                                    unsafe {
-                                        std::ptr::write(ptr.add(j), $cast(b));
-                                    }
-                                }
+                let scan = crate::varint::simd::scan_single_byte_varints(bytes);
+                let to_decode = scan.single_byte_count.min(len);
+                if to_decode > 0 {
+                    macro_rules! borrow_simd {
+                        ($type:ty, $cast:expr) => {{
+                            let v = unsafe { &mut *(&raw mut vec).cast::<Vec<$type>>() };
+                            let ptr = v.as_mut_ptr();
+                            for j in 0..to_decode {
+                                let b = bytes[j];
                                 unsafe {
-                                    v.set_len(to_decode);
+                                    std::ptr::write(ptr.add(j), $cast(b));
                                 }
-                            }};
-                        }
-                        if unty::type_equal::<T, u32>() {
-                            borrow_simd!(u32, |b| b as u32);
-                        } else if unty::type_equal::<T, i32>() {
-                            borrow_simd!(i32, |b: u8| ((b >> 1) as i32) ^ (-((b & 1) as i32)));
-                        } else if unty::type_equal::<T, u64>() {
-                            borrow_simd!(u64, |b| b as u64);
-                        } else if unty::type_equal::<T, i64>() {
-                            borrow_simd!(i64, |b: u8| ((b >> 1) as i64) ^ (-((b & 1) as i64)));
-                        } else if unty::type_equal::<T, usize>() {
-                            borrow_simd!(usize, |b| b as usize);
-                        } else if unty::type_equal::<T, isize>() {
-                            borrow_simd!(isize, |b: u8| {
-                                ((b >> 1) as isize) ^ (-((b & 1) as isize))
-                            });
-                        }
-
-                        decoder.reader().consume(to_decode);
-                        if <D::C as crate::config::InternalLimitConfig>::LIMIT.is_some() {
-                            decoder.unclaim_bytes_read(to_decode * core::mem::size_of::<T>());
-                        }
-                        i = to_decode;
+                            }
+                            unsafe {
+                                v.set_len(to_decode);
+                            }
+                        }};
                     }
+                    if unty::type_equal::<T, u32>() {
+                        borrow_simd!(u32, u32::from);
+                    } else if unty::type_equal::<T, i32>() {
+                        borrow_simd!(i32, |b: u8| i32::from(b >> 1) ^ (-i32::from(b & 1)));
+                    } else if unty::type_equal::<T, u64>() {
+                        borrow_simd!(u64, u64::from);
+                    } else if unty::type_equal::<T, i64>() {
+                        borrow_simd!(i64, |b: u8| i64::from(b >> 1) ^ (-i64::from(b & 1)));
+                    } else if unty::type_equal::<T, usize>() {
+                        borrow_simd!(usize, usize::from);
+                    } else if unty::type_equal::<T, isize>() {
+                        borrow_simd!(isize, |b: u8| {
+                            isize::from(b >> 1) ^ (-isize::from(b & 1))
+                        });
+                    }
+
+                    decoder.reader().consume(to_decode);
+                    if <D::C as crate::config::InternalLimitConfig>::LIMIT.is_some() {
+                        decoder.unclaim_bytes_read(to_decode * core::mem::size_of::<T>());
+                    }
+                    i = to_decode;
                 }
             }
 
@@ -756,7 +748,7 @@ where
             // We've checked that the encoding is Fixed and Endianness matches,
             // or that it's a 1-byte type (u8/i8).
             unsafe {
-                let slice_ptr = self.as_ptr() as *const u8;
+                let slice_ptr = self.as_ptr().cast::<u8>();
                 let slice = core::slice::from_raw_parts(slice_ptr, bytes_to_copy);
                 encoder.writer().write(slice)?;
             }

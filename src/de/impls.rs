@@ -537,7 +537,7 @@ where
             // or that it's a 1-byte type (u8/i8).
             let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
             unsafe {
-                let slice_ptr = res.as_mut_ptr() as *mut u8;
+                let slice_ptr = res.as_mut_ptr().cast::<u8>();
                 let slice =
                     core::slice::from_raw_parts_mut(slice_ptr, core::mem::size_of::<[T; N]>());
                 decoder.reader().read(slice)?;
@@ -593,7 +593,7 @@ where
             // or that it's a 1-byte type (u8/i8).
             let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
             unsafe {
-                let slice_ptr = res.as_mut_ptr() as *mut u8;
+                let slice_ptr = res.as_mut_ptr().cast::<u8>();
                 let slice =
                     core::slice::from_raw_parts_mut(slice_ptr, core::mem::size_of::<[T; N]>());
                 decoder.reader().read(slice)?;

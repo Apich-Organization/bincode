@@ -1,4 +1,5 @@
 #![allow(unsafe_code)]
+#![allow(clippy::cast_ptr_alignment)]
 use super::SINGLE_BYTE_MAX;
 use super::U16_BYTE;
 use super::U32_BYTE;
@@ -241,7 +242,7 @@ pub fn varint_decode_u16<R: Reader>(
         }
         if b == U16_BYTE {
             let v = unsafe {
-                let ptr = bytes.as_ptr().add(1) as *const u16;
+                let ptr = bytes.as_ptr().add(1).cast::<u16>();
                 let val = ptr.read_unaligned();
                 match endian {
                     | Endianness::Little => u16::from_le(val),
@@ -268,7 +269,7 @@ pub fn varint_decode_u32<R: Reader>(
         }
         if b == U32_BYTE {
             let v = unsafe {
-                let ptr = bytes.as_ptr().add(1) as *const u32;
+                let ptr = bytes.as_ptr().add(1).cast::<u32>();
                 let val = ptr.read_unaligned();
                 match endian {
                     | Endianness::Little => u32::from_le(val),
@@ -295,7 +296,7 @@ pub fn varint_decode_u64<R: Reader>(
         }
         if b == U64_BYTE {
             let v = unsafe {
-                let ptr = bytes.as_ptr().add(1) as *const u64;
+                let ptr = bytes.as_ptr().add(1).cast::<u64>();
                 let val = ptr.read_unaligned();
                 match endian {
                     | Endianness::Little => u64::from_le(val),
@@ -322,7 +323,7 @@ pub fn varint_decode_usize<R: Reader>(
         }
         if b == U64_BYTE {
             let v = unsafe {
-                let ptr = bytes.as_ptr().add(1) as *const u64;
+                let ptr = bytes.as_ptr().add(1).cast::<u64>();
                 let val = ptr.read_unaligned();
                 match endian {
                     | Endianness::Little => u64::from_le(val),
@@ -352,7 +353,7 @@ pub fn varint_decode_u128<R: Reader>(
         }
         if b == U128_BYTE {
             let v = unsafe {
-                let ptr = bytes.as_ptr().add(1) as *const u128;
+                let ptr = bytes.as_ptr().add(1).cast::<u128>();
                 let val = ptr.read_unaligned();
                 match endian {
                     | Endianness::Little => u128::from_le(val),
