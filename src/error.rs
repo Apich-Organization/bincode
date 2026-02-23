@@ -22,7 +22,7 @@ macro_rules! bincode_error {
             )*
         }
 
-        paste::paste! {
+        pastey::paste! {
             $(
                 $(#[$variant_meta])*
                 #[doc(hidden)]
