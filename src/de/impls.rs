@@ -666,7 +666,7 @@ where
     U: Decode<Context>,
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let is_ok = u32::decode(decoder)?;
+        let is_ok = u8::decode(decoder)?;
         match is_ok {
             | 0 => {
                 let t = T::decode(decoder)?;
@@ -680,7 +680,7 @@ where
                 crate::error::cold_decode_error_unexpected_variant(
                     core::any::type_name::<Self>(),
                     &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
-                    x,
+                    u32::from(x),
                 )
             },
         }
@@ -695,7 +695,7 @@ where
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let is_ok = u32::decode(decoder)?;
+        let is_ok = u8::borrow_decode(decoder)?;
         match is_ok {
             | 0 => {
                 let t = T::borrow_decode(decoder)?;
@@ -709,7 +709,7 @@ where
                 crate::error::cold_decode_error_unexpected_variant(
                     core::any::type_name::<Self>(),
                     &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
-                    x,
+                    u32::from(x),
                 )
             },
         }

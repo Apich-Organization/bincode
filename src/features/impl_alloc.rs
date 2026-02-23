@@ -65,6 +65,15 @@ impl enc::write::Writer for VecWriter {
         self.inner.extend_from_slice(bytes);
         Ok(())
     }
+
+    #[inline]
+    fn write_u8(
+        &mut self,
+        value: u8,
+    ) -> Result<(), EncodeError> {
+        self.inner.push(value);
+        Ok(())
+    }
 }
 
 /// Encode the given value into a `Vec<u8>` with the given `Config`. See the [config] module for more information.
@@ -719,7 +728,44 @@ where
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        self.as_slice().encode(encoder)
+        crate::enc::encode_slice_len(encoder, self.len())?;
+
+        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        let is_fixed = matches!(E::C::INT_ENCODING, IntEncoding::Fixed);
+        let is_native_endian = match E::C::ENDIAN {
+            | Endianness::Little => cfg!(target_endian = "little"),
+            | Endianness::Big => cfg!(target_endian = "big"),
+        };
+
+        if is_u8
+            || (is_native_endian
+                && (unty::type_equal::<T, f32>()
+                    || unty::type_equal::<T, f64>()
+                    || (is_fixed
+                        && (unty::type_equal::<T, u16>()
+                            || unty::type_equal::<T, i16>()
+                            || unty::type_equal::<T, u32>()
+                            || unty::type_equal::<T, i32>()
+                            || unty::type_equal::<T, u64>()
+                            || unty::type_equal::<T, i64>()
+                            || unty::type_equal::<T, u128>()
+                            || unty::type_equal::<T, i128>()))))
+        {
+            let bytes_to_copy = self.len() * core::mem::size_of::<T>();
+            // SAFETY: T is a primitive type (pod), so it's safe to copy its bytes.
+            // We've checked that the encoding is Fixed and Endianness matches,
+            // or that it's a 1-byte type (u8/i8).
+            unsafe {
+                let slice_ptr = self.as_ptr() as *const u8;
+                let slice = core::slice::from_raw_parts(slice_ptr, bytes_to_copy);
+                encoder.writer().write(slice)?;
+            }
+        } else {
+            for item in self {
+                item.encode(encoder)?;
+            }
+        }
+        Ok(())
     }
 }
 

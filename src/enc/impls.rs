@@ -61,7 +61,7 @@ impl Encode for u8 {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        encoder.writer().write(&[*self])
+        encoder.writer().write_u8(*self)
     }
 }
 
@@ -219,7 +219,7 @@ impl Encode for i8 {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        encoder.writer().write(&self.to_ne_bytes())
+        encoder.writer().write_u8(*self as u8)
     }
 }
 
@@ -434,25 +434,25 @@ where
         super::encode_slice_len(encoder, self.len())?;
 
         let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
-        let is_fixed = matches!(E::C::INT_ENCODING, IntEncoding::Fixed);
+        let is_fixed = matches!(E::C::INT_ENCODING, crate::config::IntEncoding::Fixed);
         let is_native_endian = match E::C::ENDIAN {
-            | Endianness::Little => cfg!(target_endian = "little"),
-            | Endianness::Big => cfg!(target_endian = "big"),
+            | crate::config::Endianness::Little => cfg!(target_endian = "little"),
+            | crate::config::Endianness::Big => cfg!(target_endian = "big"),
         };
 
         if is_u8
-            || (is_fixed
-                && is_native_endian
-                && (unty::type_equal::<T, u16>()
-                    || unty::type_equal::<T, i16>()
-                    || unty::type_equal::<T, u32>()
-                    || unty::type_equal::<T, i32>()
-                    || unty::type_equal::<T, u64>()
-                    || unty::type_equal::<T, i64>()
-                    || unty::type_equal::<T, u128>()
-                    || unty::type_equal::<T, i128>()
-                    || unty::type_equal::<T, f32>()
-                    || unty::type_equal::<T, f64>()))
+            || (is_native_endian
+                && (unty::type_equal::<T, f32>()
+                    || unty::type_equal::<T, f64>()
+                    || (is_fixed
+                        && (unty::type_equal::<T, u16>()
+                            || unty::type_equal::<T, i16>()
+                            || unty::type_equal::<T, u32>()
+                            || unty::type_equal::<T, i32>()
+                            || unty::type_equal::<T, u64>()
+                            || unty::type_equal::<T, i64>()
+                            || unty::type_equal::<T, u128>()
+                            || unty::type_equal::<T, i128>()))))
         {
             let bytes_to_copy = self.len() * core::mem::size_of::<T>();
             // SAFETY: T is a primitive type (pod), so it's safe to copy its bytes.
@@ -489,7 +489,7 @@ fn encode_utf8(
     let code = c as u32;
 
     if code < MAX_ONE_B {
-        writer.write(&[c as u8])
+        writer.write_u8(c as u8)
     } else if code < MAX_TWO_B {
         let mut buf = [0u8; 2];
         buf[0] = ((code >> 6) & 0x1F) as u8 | TAG_TWO_B;
@@ -529,25 +529,25 @@ where
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
         let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
-        let is_fixed = matches!(E::C::INT_ENCODING, IntEncoding::Fixed);
+        let is_fixed = matches!(E::C::INT_ENCODING, crate::config::IntEncoding::Fixed);
         let is_native_endian = match E::C::ENDIAN {
-            | Endianness::Little => cfg!(target_endian = "little"),
-            | Endianness::Big => cfg!(target_endian = "big"),
+            | crate::config::Endianness::Little => cfg!(target_endian = "little"),
+            | crate::config::Endianness::Big => cfg!(target_endian = "big"),
         };
 
         if is_u8
-            || (is_fixed
-                && is_native_endian
-                && (unty::type_equal::<T, u16>()
-                    || unty::type_equal::<T, i16>()
-                    || unty::type_equal::<T, u32>()
-                    || unty::type_equal::<T, i32>()
-                    || unty::type_equal::<T, u64>()
-                    || unty::type_equal::<T, i64>()
-                    || unty::type_equal::<T, u128>()
-                    || unty::type_equal::<T, i128>()
-                    || unty::type_equal::<T, f32>()
-                    || unty::type_equal::<T, f64>()))
+            || (is_native_endian
+                && (unty::type_equal::<T, f32>()
+                    || unty::type_equal::<T, f64>()
+                    || (is_fixed
+                        && (unty::type_equal::<T, u16>()
+                            || unty::type_equal::<T, i16>()
+                            || unty::type_equal::<T, u32>()
+                            || unty::type_equal::<T, i32>()
+                            || unty::type_equal::<T, u64>()
+                            || unty::type_equal::<T, i64>()
+                            || unty::type_equal::<T, u128>()
+                            || unty::type_equal::<T, i128>()))))
         {
             let bytes_to_copy = N * core::mem::size_of::<T>();
             // SAFETY: T is a primitive type (pod), so it's safe to copy its bytes.
@@ -594,11 +594,11 @@ where
     ) -> Result<(), EncodeError> {
         match self {
             | Ok(val) => {
-                0u32.encode(encoder)?;
+                0u8.encode(encoder)?;
                 val.encode(encoder)
             },
             | Err(err) => {
-                1u32.encode(encoder)?;
+                1u8.encode(encoder)?;
                 err.encode(encoder)
             },
         }
