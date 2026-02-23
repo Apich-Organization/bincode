@@ -4,7 +4,7 @@
 
 [![Discord Server](https://img.shields.io/discord/1459399539403522074.svg?label=Discord&logo=discord&color=blue)](https://discord.gg/D5e2czMTT9)
 [![](https://img.shields.io/crates/v/bincode-next.svg)](https://crates.io/crates/bincode-next)
-[![](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![](https://img.shields.io/crates/l/bincode-next)](https://opensource.org/licenses/MIT)
 [![Scc Count Badge Code](https://sloc.xyz/github/Apich-Organization/bincode/?category=code)](https://github.com/Apich-Organization/bincode/)
 
 **Bincode-Next** is a high-performance binary encoder/decoder pair that uses a zero-fluff encoding scheme. It is a modernized fork of the original `bincode` library, maintained by the Apich Organization to ensure continued development and extreme performance optimizations for the Rust ecosystem.
@@ -13,10 +13,11 @@ The size of the encoded object will be the same or smaller than the size that th
 
 ## Key Features
 
-- **Extreme Performance**: Leverages SIMD (SSE2 on x86_64, NEON on AArch64) for rapid varint scanning and bulk primitive copying for massive throughput.
-- **Zero-Copy**: Optimized for minimal memory allocations during both encoding and decoding.
-- **Bit-Packing**: Support for bit-level field packing to squeeze every last bit of efficiency out of your data.
-- **Cross-Platform**: Rigorously tested for compatibility across different architectures and endianness.
+- **Performance**: Leverages SIMD (SSE2 on x86_64, NEON on AArch64) for rapid varint scanning and bulk primitive copying for massive throughput.
+- **Zero-Copy**: Nested Zero-copy support via Relative Pointers and Const Alignment. (optional feature, using the `zerocopy` feature to enable)
+- **Bit-Packing**: Bit-level Packing for Space-Optimized Serialization. (optional, using the `BitPacked` derive macro with the `config::standard().with_bit_packing()` config to enable)
+- **Schema Fingerprinting**: Schema Fingerprinting for Safe Versioning. (optional, using the `config::standard().with_fingerprint()` with the derive macro `Fingerprint` to enable)
+- **Compile-time Memory Bound Validation**: Compile-time Memory Bound Validation via Const Generics. (optional feature, enable the `static-size` feature to use it)
 - **Stream Support**: Works seamlessly with `std::io` (Reader/Writer) and `no_std` environments.
 
 ## Getting Started
@@ -89,6 +90,37 @@ Bincode-Next includes advanced optimizations for extreme performance:
 - **SIMD Varint Scanning**: Accelerates decoding of collections (like `Vec<u64>`) by scanning for small values using SSE2 or NEON instructions.
 - **Bulk Native Copy**: Automatically detects when data can be copied directly from memory (e.g., slices of primitives with matching endianness) to avoid element-wise processing.
 - **Uninitialized Memory**: Utilizes `MaybeUninit` and `set_len` optimizations for `Vec` decoding to avoid redundant zero-initialization.
+
+```shell
+git clone https://github.com/Apich-Organization/bincode.git
+cd bincode
+cargo bench --bench extreme_perf
+cargo bench --bench complex
+```
+
+|Benchmark Category|bincode-next (traits)|bincode-v1 (serde)|bincode-v2 (serde)|
+|:-|:-|:-|:-|
+|**Complex Decode**|**1.0x**|1.23x|1.39x|
+|**Complex Encode**|1.02x|**1.0x**|1.45x|
+|**u64 Small Varint Decode**|**1.0x**|N/A|3.88x|
+|**u64 Large Varint Decode**|**1.0x**|N/A|1.29x|
+|**u64 Fixed Native Decode**|**1.0x**|3.28x|3.29x|
+|**u8 Bulk Decode**|**1.0x**|43.52x|1.88x|
+
+## About Security and Code Quality
+
+For security issues, please visit [the Security Team Homepage](https://security.apich.org) for more details on reporting.
+
+All code tests passed `miri` and all main crate source code passed `clippy` without errors.
+
+```shell
+MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --all-features --no-fail-fast
+cargo clippy --all-features
+```
+
+We remain committed to code security and welcomed security reporting.
+
+And please notice that contributors shall follow the community guide lines of `bincode-next`.
 
 ## Specification
 
