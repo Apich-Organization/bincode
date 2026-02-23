@@ -153,7 +153,7 @@ use enc::write::Writer;
 pub use features::*;
 
 /// The major version of the bincode library.
-pub const BINCODE_MAJOR_VERSION: u64 = 2;
+pub const BINCODE_MAJOR_VERSION: u64 = 3;
 
 #[doc(hidden)]
 pub use rapidhash;

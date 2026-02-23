@@ -64,6 +64,32 @@ pub fn test_same_with_config<T, C, O>(
     assert_eq!(&decoded, t);
 }
 
+pub fn test_same_logic<T>(t: T)
+where
+    T: bincode_2::Encode
+        + bincode_2::Decode<()>
+        + serde::Serialize
+        + serde::de::DeserializeOwned
+        + core::fmt::Debug
+        + PartialEq,
+{
+    let bincode_2_config = bincode_2::config::legacy();
+    // Test bincode 2 round-trip
+    let bincode_2_output = bincode_2::encode_to_vec(&t, bincode_2_config).unwrap();
+    let decoded: T = bincode_2::decode_from_slice::<T, _>(&bincode_2_output, bincode_2_config)
+        .unwrap()
+        .0;
+    assert_eq!(decoded, t);
+
+    // Test bincode 2 serde round-trip
+    let bincode_2_serde_output = bincode_2::serde::encode_to_vec(&t, bincode_2_config).unwrap();
+    let decoded: T =
+        bincode_2::serde::decode_from_slice::<T, _>(&bincode_2_serde_output, bincode_2_config)
+            .unwrap()
+            .0;
+    assert_eq!(decoded, t);
+}
+
 pub fn test_same<T>(t: T)
 where
     T: bincode_2::Encode
