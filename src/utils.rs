@@ -14,3 +14,20 @@ impl<const BITS: u8, T> BitPackedCheck<BITS> for T {
         "Bit width must be 1-64 and not exceed type size"
     );
 }
+
+/// A trait to indicate that a type is a bincode primitive.
+/// This is used for bulk copy optimizations when the configuration allows it.
+pub trait IsPrimitive: Copy + 'static {}
+
+impl IsPrimitive for u8 {}
+impl IsPrimitive for i8 {}
+impl IsPrimitive for u16 {}
+impl IsPrimitive for i16 {}
+impl IsPrimitive for u32 {}
+impl IsPrimitive for i32 {}
+impl IsPrimitive for u64 {}
+impl IsPrimitive for i64 {}
+impl IsPrimitive for u128 {}
+impl IsPrimitive for i128 {}
+impl IsPrimitive for f32 {}
+impl IsPrimitive for f64 {}

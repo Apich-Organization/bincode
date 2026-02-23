@@ -1,3 +1,4 @@
+#![cfg(feature = "serde")]
 extern crate alloc;
 use alloc::string::String;
 use alloc::string::ToString;

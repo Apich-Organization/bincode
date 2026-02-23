@@ -1,6 +1,10 @@
 #![allow(unsafe_code)]
 use crate::BorrowDecode;
 use crate::Config;
+use crate::config::Endianness;
+use crate::config::IntEncoding;
+use crate::config::InternalEndianConfig;
+use crate::config::InternalIntEncodingConfig;
 use crate::config::internal::InternalFingerprintGuard;
 use crate::de::BorrowDecoder;
 use crate::de::Decode;
@@ -304,15 +308,108 @@ where
         let len = crate::de::decode_slice_len(decoder)?;
 
         decoder.claim_container_read::<T>(len)?;
-        if unty::type_equal::<T, u8>() {
-            // optimize for reading u8 vecs
-            let mut vec = alloc::vec![0u8; len];
-            decoder.reader().read(&mut vec)?;
-            // Safety: Vec<T> is Vec<u8>
-            Ok(unsafe { core::mem::transmute::<Vec<u8>, Self>(vec) })
+
+        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        let is_fixed = matches!(D::C::INT_ENCODING, IntEncoding::Fixed);
+        let is_native_endian = match D::C::ENDIAN {
+            | Endianness::Little => cfg!(target_endian = "little"),
+            | Endianness::Big => cfg!(target_endian = "big"),
+        };
+
+        if is_u8
+            || (is_fixed
+                && is_native_endian
+                && (unty::type_equal::<T, u16>()
+                    || unty::type_equal::<T, i16>()
+                    || unty::type_equal::<T, u32>()
+                    || unty::type_equal::<T, i32>()
+                    || unty::type_equal::<T, u64>()
+                    || unty::type_equal::<T, i64>()
+                    || unty::type_equal::<T, u128>()
+                    || unty::type_equal::<T, i128>()
+                    || unty::type_equal::<T, f32>()
+                    || unty::type_equal::<T, f64>()))
+        {
+            let mut vec = Vec::with_capacity(len);
+            unsafe {
+                let bytes_to_read = len * core::mem::size_of::<T>();
+                let ptr = vec.as_mut_ptr() as *mut u8;
+                let slice = core::slice::from_raw_parts_mut(ptr, bytes_to_read);
+                decoder.reader().read(slice)?;
+                vec.set_len(len);
+            }
+            Ok(vec)
         } else {
+            let mut i = 0;
             let mut vec = Self::with_capacity(len);
-            for _ in 0..len {
+
+            if is_native_endian
+                && !is_fixed
+                && (unty::type_equal::<T, u32>()
+                    || unty::type_equal::<T, i32>()
+                    || unty::type_equal::<T, u64>()
+                    || unty::type_equal::<T, i64>()
+                    || unty::type_equal::<T, usize>()
+                    || unty::type_equal::<T, isize>())
+            {
+                if let Some(bytes) = decoder.reader().peek_read(len) {
+                    let scan = crate::varint::simd::scan_single_byte_varints(bytes);
+                    let to_decode = scan.single_byte_count.min(len);
+                    if to_decode > 0 {
+                        if unty::type_equal::<T, u32>() {
+                            let v = unsafe {
+                                core::mem::transmute::<&mut Vec<T>, &mut Vec<u32>>(&mut vec)
+                            };
+                            for j in 0..to_decode {
+                                v.push(bytes[j] as u32);
+                            }
+                        } else if unty::type_equal::<T, i32>() {
+                            let v = unsafe {
+                                core::mem::transmute::<&mut Vec<T>, &mut Vec<i32>>(&mut vec)
+                            };
+                            for j in 0..to_decode {
+                                let b = bytes[j];
+                                v.push(((b >> 1) as i32) ^ (-((b & 1) as i32)));
+                            }
+                        } else if unty::type_equal::<T, u64>() {
+                            let v = unsafe {
+                                core::mem::transmute::<&mut Vec<T>, &mut Vec<u64>>(&mut vec)
+                            };
+                            for j in 0..to_decode {
+                                v.push(bytes[j] as u64);
+                            }
+                        } else if unty::type_equal::<T, i64>() {
+                            let v = unsafe {
+                                core::mem::transmute::<&mut Vec<T>, &mut Vec<i64>>(&mut vec)
+                            };
+                            for j in 0..to_decode {
+                                let b = bytes[j];
+                                v.push(((b >> 1) as i64) ^ (-((b & 1) as i64)));
+                            }
+                        } else if unty::type_equal::<T, usize>() {
+                            let v = unsafe {
+                                core::mem::transmute::<&mut Vec<T>, &mut Vec<usize>>(&mut vec)
+                            };
+                            for j in 0..to_decode {
+                                v.push(bytes[j] as usize);
+                            }
+                        } else if unty::type_equal::<T, isize>() {
+                            let v = unsafe {
+                                core::mem::transmute::<&mut Vec<T>, &mut Vec<isize>>(&mut vec)
+                            };
+                            for j in 0..to_decode {
+                                let b = bytes[j];
+                                v.push(((b >> 1) as isize) ^ (-((b & 1) as isize)));
+                            }
+                        }
+                        decoder.reader().consume(to_decode);
+                        decoder.unclaim_bytes_read(to_decode * core::mem::size_of::<T>());
+                        i = to_decode;
+                    }
+                }
+            }
+
+            for _ in i..len {
                 // See the documentation on `unclaim_bytes_read` as to why we're doing this here
                 decoder.unclaim_bytes_read(core::mem::size_of::<T>());
 
@@ -322,6 +419,7 @@ where
         }
     }
 }
+
 
 impl<'de, T, Context> BorrowDecode<'de, Context> for Vec<T>
 where
@@ -333,15 +431,108 @@ where
         let len = crate::de::decode_slice_len(decoder)?;
 
         decoder.claim_container_read::<T>(len)?;
-        if unty::type_equal::<T, u8>() {
-            // optimize for reading u8 vecs
-            let mut vec = alloc::vec![0u8; len];
-            decoder.reader().read(&mut vec)?;
-            // Safety: Vec<T> is Vec<u8>
-            Ok(unsafe { core::mem::transmute::<Vec<u8>, Self>(vec) })
+
+        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        let is_fixed = matches!(D::C::INT_ENCODING, IntEncoding::Fixed);
+        let is_native_endian = match D::C::ENDIAN {
+            | Endianness::Little => cfg!(target_endian = "little"),
+            | Endianness::Big => cfg!(target_endian = "big"),
+        };
+
+        if is_u8
+            || (is_fixed
+                && is_native_endian
+                && (unty::type_equal::<T, u16>()
+                    || unty::type_equal::<T, i16>()
+                    || unty::type_equal::<T, u32>()
+                    || unty::type_equal::<T, i32>()
+                    || unty::type_equal::<T, u64>()
+                    || unty::type_equal::<T, i64>()
+                    || unty::type_equal::<T, u128>()
+                    || unty::type_equal::<T, i128>()
+                    || unty::type_equal::<T, f32>()
+                    || unty::type_equal::<T, f64>()))
+        {
+            let mut vec = Vec::with_capacity(len);
+            unsafe {
+                let bytes_to_read = len * core::mem::size_of::<T>();
+                let ptr = vec.as_mut_ptr() as *mut u8;
+                let slice = core::slice::from_raw_parts_mut(ptr, bytes_to_read);
+                decoder.reader().read(slice)?;
+                vec.set_len(len);
+            }
+            Ok(vec)
         } else {
+            let mut i = 0;
             let mut vec = Self::with_capacity(len);
-            for _ in 0..len {
+
+            if is_native_endian
+                && !is_fixed
+                && (unty::type_equal::<T, u32>()
+                    || unty::type_equal::<T, i32>()
+                    || unty::type_equal::<T, u64>()
+                    || unty::type_equal::<T, i64>()
+                    || unty::type_equal::<T, usize>()
+                    || unty::type_equal::<T, isize>())
+            {
+                if let Some(bytes) = decoder.reader().peek_read(len) {
+                    let scan = crate::varint::simd::scan_single_byte_varints(bytes);
+                    let to_decode = scan.single_byte_count.min(len);
+                    if to_decode > 0 {
+                        if unty::type_equal::<T, u32>() {
+                            let v = unsafe {
+                                core::mem::transmute::<&mut Vec<T>, &mut Vec<u32>>(&mut vec)
+                            };
+                            for j in 0..to_decode {
+                                v.push(bytes[j] as u32);
+                            }
+                        } else if unty::type_equal::<T, i32>() {
+                            let v = unsafe {
+                                core::mem::transmute::<&mut Vec<T>, &mut Vec<i32>>(&mut vec)
+                            };
+                            for j in 0..to_decode {
+                                let b = bytes[j];
+                                v.push(((b >> 1) as i32) ^ (-((b & 1) as i32)));
+                            }
+                        } else if unty::type_equal::<T, u64>() {
+                            let v = unsafe {
+                                core::mem::transmute::<&mut Vec<T>, &mut Vec<u64>>(&mut vec)
+                            };
+                            for j in 0..to_decode {
+                                v.push(bytes[j] as u64);
+                            }
+                        } else if unty::type_equal::<T, i64>() {
+                            let v = unsafe {
+                                core::mem::transmute::<&mut Vec<T>, &mut Vec<i64>>(&mut vec)
+                            };
+                            for j in 0..to_decode {
+                                let b = bytes[j];
+                                v.push(((b >> 1) as i64) ^ (-((b & 1) as i64)));
+                            }
+                        } else if unty::type_equal::<T, usize>() {
+                            let v = unsafe {
+                                core::mem::transmute::<&mut Vec<T>, &mut Vec<usize>>(&mut vec)
+                            };
+                            for j in 0..to_decode {
+                                v.push(bytes[j] as usize);
+                            }
+                        } else if unty::type_equal::<T, isize>() {
+                            let v = unsafe {
+                                core::mem::transmute::<&mut Vec<T>, &mut Vec<isize>>(&mut vec)
+                            };
+                            for j in 0..to_decode {
+                                let b = bytes[j];
+                                v.push(((b >> 1) as isize) ^ (-((b & 1) as isize)));
+                            }
+                        }
+                        decoder.reader().consume(to_decode);
+                        decoder.unclaim_bytes_read(to_decode * core::mem::size_of::<T>());
+                        i = to_decode;
+                    }
+                }
+            }
+
+            for _ in i..len {
                 // See the documentation on `unclaim_bytes_read` as to why we're doing this here
                 decoder.unclaim_bytes_read(core::mem::size_of::<T>());
 
@@ -352,6 +543,7 @@ where
     }
 }
 
+
 impl<T> Encode for Vec<T>
 where
     T: Encode,
@@ -360,20 +552,10 @@ where
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(encoder, self.len())?;
-        if unty::type_equal::<T, u8>() {
-            // Safety: T == u8
-            let slice: &[u8] =
-                unsafe { &*(core::ptr::from_ref::<[T]>(self.as_slice()) as *const [u8]) };
-            encoder.writer().write(slice)?;
-        } else {
-            for item in self {
-                item.encode(encoder)?;
-            }
-        }
-        Ok(())
+        self.as_slice().encode(encoder)
     }
 }
+
 
 impl<Context> Decode<Context> for String {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
