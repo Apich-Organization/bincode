@@ -41,6 +41,10 @@ impl<'a, R: Reader> BitReader<'a, R> {
     }
 
     /// Reads `num_bits` from the stream, using LSB-first bit ordering.
+    ///
+    /// # Errors
+    ///
+    /// Returns `DecodeError` if the underlying reader fails to provide enough bytes.
     #[inline]
     pub fn read_bits_lsb(
         &mut self,
@@ -74,6 +78,10 @@ impl<'a, R: Reader> BitReader<'a, R> {
     }
 
     /// Reads `num_bits` from the stream, using MSB-first bit ordering.
+    ///
+    /// # Errors
+    ///
+    /// Returns `DecodeError` if the underlying reader fails to provide enough bytes.
     #[inline]
     pub fn read_bits_msb(
         &mut self,

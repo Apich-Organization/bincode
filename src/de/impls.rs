@@ -376,10 +376,13 @@ impl<Context> Decode<Context> for isize {
             | IntEncoding::Fixed => {
                 let mut bytes = [0u8; 8];
                 decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
+                let val = match D::C::ENDIAN {
                     | Endianness::Little => i64::from_le_bytes(bytes),
                     | Endianness::Big => i64::from_be_bytes(bytes),
-                } as Self)
+                };
+                val.try_into().map_err(|_| {
+                    crate::error::cold_decode_error_outside_isize_range::<()>(val).unwrap_err()
+                })
             },
         }
     }
@@ -508,15 +511,38 @@ where
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
 
-        if unty::type_equal::<T, u8>() {
-            let mut buf = [0u8; N];
-            decoder.reader().read(&mut buf)?;
-            let ptr = (&raw mut buf).cast::<[T; N]>();
+        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        let is_fixed = matches!(D::C::INT_ENCODING, IntEncoding::Fixed);
+        let is_native_endian = match D::C::ENDIAN {
+            | Endianness::Little => cfg!(target_endian = "little"),
+            | Endianness::Big => cfg!(target_endian = "big"),
+        };
 
-            // Safety: we know that T is a u8, so it is perfectly safe to
-            // translate an array of u8 into an array of T
-            let res = unsafe { ptr.read() };
-            Ok(res)
+        if is_u8
+            || (is_fixed
+                && is_native_endian
+                && (unty::type_equal::<T, u16>()
+                    || unty::type_equal::<T, i16>()
+                    || unty::type_equal::<T, u32>()
+                    || unty::type_equal::<T, i32>()
+                    || unty::type_equal::<T, u64>()
+                    || unty::type_equal::<T, i64>()
+                    || unty::type_equal::<T, u128>()
+                    || unty::type_equal::<T, i128>()
+                    || unty::type_equal::<T, f32>()
+                    || unty::type_equal::<T, f64>()))
+        {
+            // SAFETY: T is a primitive type (pod), so it's safe to read its bytes directly.
+            // We've checked that the encoding is Fixed and Endianness matches,
+            // or that it's a 1-byte type (u8/i8).
+            let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
+            unsafe {
+                let slice_ptr = res.as_mut_ptr().cast::<u8>();
+                let slice =
+                    core::slice::from_raw_parts_mut(slice_ptr, core::mem::size_of::<[T; N]>());
+                decoder.reader().read(slice)?;
+                Ok(res.assume_init())
+            }
         } else {
             let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
                 // See the documentation on `unclaim_bytes_read` as to why we're doing this here
@@ -531,6 +557,7 @@ where
     }
 }
 
+
 impl<'de, T, const N: usize, Context> BorrowDecode<'de, Context> for [T; N]
 where
     T: BorrowDecode<'de, Context>,
@@ -540,15 +567,38 @@ where
     ) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
 
-        if unty::type_equal::<T, u8>() {
-            let mut buf = [0u8; N];
-            decoder.reader().read(&mut buf)?;
-            let ptr = (&raw mut buf).cast::<[T; N]>();
+        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        let is_fixed = matches!(D::C::INT_ENCODING, IntEncoding::Fixed);
+        let is_native_endian = match D::C::ENDIAN {
+            | Endianness::Little => cfg!(target_endian = "little"),
+            | Endianness::Big => cfg!(target_endian = "big"),
+        };
 
-            // Safety: we know that T is a u8, so it is perfectly safe to
-            // translate an array of u8 into an array of T
-            let res = unsafe { ptr.read() };
-            Ok(res)
+        if is_u8
+            || (is_fixed
+                && is_native_endian
+                && (unty::type_equal::<T, u16>()
+                    || unty::type_equal::<T, i16>()
+                    || unty::type_equal::<T, u32>()
+                    || unty::type_equal::<T, i32>()
+                    || unty::type_equal::<T, u64>()
+                    || unty::type_equal::<T, i64>()
+                    || unty::type_equal::<T, u128>()
+                    || unty::type_equal::<T, i128>()
+                    || unty::type_equal::<T, f32>()
+                    || unty::type_equal::<T, f64>()))
+        {
+            // SAFETY: T is a primitive type (pod), so it's safe to read its bytes directly.
+            // We've checked that the encoding is Fixed and Endianness matches,
+            // or that it's a 1-byte type (u8/i8).
+            let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
+            unsafe {
+                let slice_ptr = res.as_mut_ptr().cast::<u8>();
+                let slice =
+                    core::slice::from_raw_parts_mut(slice_ptr, core::mem::size_of::<[T; N]>());
+                decoder.reader().read(slice)?;
+                Ok(res.assume_init())
+            }
         } else {
             let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
                 // See the documentation on `unclaim_bytes_read` as to why we're doing this here
@@ -562,6 +612,7 @@ where
         }
     }
 }
+
 
 impl<Context> Decode<Context> for () {
     fn decode<D: Decoder<Context = Context>>(_: &mut D) -> Result<Self, DecodeError> {
@@ -615,7 +666,7 @@ where
     U: Decode<Context>,
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let is_ok = u32::decode(decoder)?;
+        let is_ok = u8::decode(decoder)?;
         match is_ok {
             | 0 => {
                 let t = T::decode(decoder)?;
@@ -629,7 +680,7 @@ where
                 crate::error::cold_decode_error_unexpected_variant(
                     core::any::type_name::<Self>(),
                     &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
-                    x,
+                    u32::from(x),
                 )
             },
         }
@@ -644,7 +695,7 @@ where
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let is_ok = u32::decode(decoder)?;
+        let is_ok = u8::borrow_decode(decoder)?;
         match is_ok {
             | 0 => {
                 let t = T::borrow_decode(decoder)?;
@@ -658,7 +709,7 @@ where
                 crate::error::cold_decode_error_unexpected_variant(
                     core::any::type_name::<Self>(),
                     &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
-                    x,
+                    u32::from(x),
                 )
             },
         }

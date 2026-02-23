@@ -1,6 +1,7 @@
 //! This module contains writer-based structs and traits.
 //!
 //! Because `std::io::Write` is only limited to `std` and not `core`, we provide our own [Writer].
+#![allow(unsafe_code)]
 
 use crate::error::EncodeError;
 
@@ -17,6 +18,19 @@ pub trait Writer {
         &mut self,
         bytes: &[u8],
     ) -> Result<(), EncodeError>;
+
+    /// Write a single byte to the underlying writer.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError::UnexpectedEnd` if the writer does not have enough space.
+    #[inline(always)]
+    fn write_u8(
+        &mut self,
+        value: u8,
+    ) -> Result<(), EncodeError> {
+        self.write(&[value])
+    }
 }
 
 impl<T: Writer> Writer for &mut T {
@@ -26,6 +40,14 @@ impl<T: Writer> Writer for &mut T {
         bytes: &[u8],
     ) -> Result<(), EncodeError> {
         (**self).write(bytes)
+    }
+
+    #[inline]
+    fn write_u8(
+        &mut self,
+        value: u8,
+    ) -> Result<(), EncodeError> {
+        (**self).write_u8(value)
     }
 }
 
@@ -73,9 +95,34 @@ impl Writer for SliceWriter<'_> {
         if bytes.len() > self.slice.len() {
             return crate::error::cold_encode_error_unexpected_end();
         }
-        let (a, b) = core::mem::take(&mut self.slice).split_at_mut(bytes.len());
-        a.copy_from_slice(bytes);
-        self.slice = b;
+        // SAFETY: `bytes.len() <= self.slice.len()` is checked above.
+        // `copy_nonoverlapping` is safe since the pointers won't overlap and bounds are exact.
+        // Advancing the pointer by `bytes.len()` is safe for the same reason.
+        unsafe {
+            core::ptr::copy_nonoverlapping(bytes.as_ptr(), self.slice.as_mut_ptr(), bytes.len());
+            let ptr = self.slice.as_mut_ptr().add(bytes.len());
+            let len = self.slice.len() - bytes.len();
+            self.slice = core::slice::from_raw_parts_mut(ptr, len);
+        }
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u8(
+        &mut self,
+        value: u8,
+    ) -> Result<(), EncodeError> {
+        if self.slice.is_empty() {
+            return crate::error::cold_encode_error_unexpected_end();
+        }
+        // SAFETY: `!self.slice.is_empty()` is checked above.
+        unsafe {
+            *self.slice.as_mut_ptr() = value;
+            let ptr = self.slice.as_mut_ptr().add(1);
+            let len = self.slice.len() - 1;
+            self.slice = core::slice::from_raw_parts_mut(ptr, len);
+        }
 
         Ok(())
     }
@@ -94,6 +141,16 @@ impl Writer for SizeWriter {
         bytes: &[u8],
     ) -> Result<(), EncodeError> {
         self.bytes_written += bytes.len();
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u8(
+        &mut self,
+        _: u8,
+    ) -> Result<(), EncodeError> {
+        self.bytes_written += 1;
 
         Ok(())
     }

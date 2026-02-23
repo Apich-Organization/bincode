@@ -15,6 +15,7 @@ mod derive_zerocopy;
 use attribute::ContainerAttributes;
 use virtue::prelude::AttributeAccess;
 use virtue::prelude::Body;
+#[allow(unused_imports)]
 use virtue::prelude::Error;
 use virtue::prelude::Parse;
 use virtue::prelude::Result;

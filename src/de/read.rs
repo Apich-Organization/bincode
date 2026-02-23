@@ -10,6 +10,7 @@
 //!
 //! [Decode]: ../trait.Decode.html
 //! [BorrowDecode]: ../trait.BorrowDecode.html
+#![allow(unsafe_code)]
 
 use crate::error::DecodeError;
 
@@ -111,9 +112,13 @@ impl<'storage> Reader for SliceReader<'storage> {
         if bytes.len() > self.slice.len() {
             return crate::error::cold_decode_error_unexpected_end(bytes.len() - self.slice.len());
         }
-        let (read_slice, remaining) = self.slice.split_at(bytes.len());
-        bytes.copy_from_slice(read_slice);
-        self.slice = remaining;
+        // SAFETY: `bytes.len() <= self.slice.len()` is checked above.
+        // `copy_nonoverlapping` is safe because pointers do not overlap and the lengths match.
+        // `get_unchecked` is safe because `bytes.len()` is <= the length of `self.slice`.
+        unsafe {
+            core::ptr::copy_nonoverlapping(self.slice.as_ptr(), bytes.as_mut_ptr(), bytes.len());
+            self.slice = self.slice.get_unchecked(bytes.len()..);
+        }
 
         Ok(())
     }
@@ -144,8 +149,12 @@ impl<'storage> BorrowReader<'storage> for SliceReader<'storage> {
         if length > self.slice.len() {
             return crate::error::cold_decode_error_unexpected_end(length - self.slice.len());
         }
-        let (read_slice, remaining) = self.slice.split_at(length);
-        self.slice = remaining;
-        Ok(read_slice)
+        // SAFETY: `length <= self.slice.len()` is checked above.
+        // `get_unchecked` is therefore safe for both the read portion and the remainder.
+        unsafe {
+            let read_slice = self.slice.get_unchecked(..length);
+            self.slice = self.slice.get_unchecked(length..);
+            Ok(read_slice)
+        }
     }
 }

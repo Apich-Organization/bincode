@@ -467,12 +467,16 @@ impl<'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'_, DE> {
             {
                 if self.len > 0 {
                     self.len -= 1;
-                    let value = DeserializeSeed::deserialize(
+                    let value = match DeserializeSeed::deserialize(
                         seed,
                         SerdeDecoder {
                             de: self.deserializer.de,
                         },
-                    )?;
+                    ) {
+                        | Ok(v) => v,
+                        | Err(DecodeError::UnexpectedEnd { .. }) => return Ok(None),
+                        | Err(e) => return Err(e),
+                    };
                     Ok(Some(value))
                 } else {
                     Ok(None)

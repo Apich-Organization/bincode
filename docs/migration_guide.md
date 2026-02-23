@@ -8,12 +8,12 @@ Bincode 1 had the [Options](https://docs.rs/bincode/1/bincode/config/trait.Optio
 
 If you're using `Options`, you can change it like this:
 
-```rust,ignore
-# old
-bincode_1::DefaultOptions::new().with_varint_encoding()
+```rust
+// old bincode 1 API (pseudo-code)
+// bincode_1::DefaultOptions::new().with_varint_encoding()
 
-# new
-bincode_2::config::legacy().with_variable_int_encoding()
+// new bincode 2 API
+bincode_next::config::legacy().with_variable_int_encoding();
 ```
 
 If you want to be compatible with bincode 1, use the following table:
