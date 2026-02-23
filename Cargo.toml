@@ -35,7 +35,7 @@ alloc = ["serde?/alloc"]
 derive = ["bincode_derive-next"]
 zero-copy = ["bincode_derive-next?/zero-copy"]
 static-size = ["bincode_derive-next?/static-size"]
-# Remember to run 'MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --all-features --no-fail-fast'
+# Remember to run 'MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --all-features --all-targets --no-fail-fast'
 
 [dependencies]
 bincode_derive-next = { path = "derive", version = "2.2.0-rc.1", optional = true }

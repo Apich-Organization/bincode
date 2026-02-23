@@ -535,13 +535,13 @@ where
             // SAFETY: T is a primitive type (pod), so it's safe to read its bytes directly.
             // We've checked that the encoding is Fixed and Endianness matches,
             // or that it's a 1-byte type (u8/i8).
+            let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
             unsafe {
-                let mut res: [T; N] = core::mem::MaybeUninit::uninit().assume_init();
-                let slice_ptr = (&raw mut res) as *mut u8;
+                let slice_ptr = res.as_mut_ptr() as *mut u8;
                 let slice =
                     core::slice::from_raw_parts_mut(slice_ptr, core::mem::size_of::<[T; N]>());
                 decoder.reader().read(slice)?;
-                Ok(res)
+                Ok(res.assume_init())
             }
         } else {
             let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
@@ -591,13 +591,13 @@ where
             // SAFETY: T is a primitive type (pod), so it's safe to read its bytes directly.
             // We've checked that the encoding is Fixed and Endianness matches,
             // or that it's a 1-byte type (u8/i8).
+            let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
             unsafe {
-                let mut res: [T; N] = core::mem::MaybeUninit::uninit().assume_init();
-                let slice_ptr = (&raw mut res) as *mut u8;
+                let slice_ptr = res.as_mut_ptr() as *mut u8;
                 let slice =
                     core::slice::from_raw_parts_mut(slice_ptr, core::mem::size_of::<[T; N]>());
                 decoder.reader().read(slice)?;
-                Ok(res)
+                Ok(res.assume_init())
             }
         } else {
             let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
