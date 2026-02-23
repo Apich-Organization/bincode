@@ -8,6 +8,7 @@ use crate::config::Endianness;
 use crate::enc::write::Writer;
 use crate::error::EncodeError;
 
+#[inline(always)]
 pub fn varint_encode_u16<W: Writer>(
     writer: &mut W,
     endian: Endianness,
@@ -24,6 +25,7 @@ pub fn varint_encode_u16<W: Writer>(
     }
 }
 
+#[inline(always)]
 pub fn varint_encode_u32<W: Writer>(
     writer: &mut W,
     endian: Endianness,
@@ -46,6 +48,7 @@ pub fn varint_encode_u32<W: Writer>(
     }
 }
 
+#[inline(always)]
 pub fn varint_encode_u64<W: Writer>(
     writer: &mut W,
     endian: Endianness,
@@ -74,6 +77,7 @@ pub fn varint_encode_u64<W: Writer>(
     }
 }
 
+#[inline(always)]
 pub fn varint_encode_u128<W: Writer>(
     writer: &mut W,
     endian: Endianness,
@@ -108,6 +112,7 @@ pub fn varint_encode_u128<W: Writer>(
     }
 }
 
+#[inline(always)]
 pub fn varint_encode_usize<W: Writer>(
     writer: &mut W,
     endian: Endianness,

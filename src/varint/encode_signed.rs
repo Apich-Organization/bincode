@@ -10,6 +10,7 @@ use crate::error::EncodeError;
 #[cfg(test)]
 use crate::enc::write::SliceWriter;
 
+#[inline(always)]
 pub fn varint_encode_i16<W: Writer>(
     writer: &mut W,
     endian: Endianness,
@@ -29,6 +30,7 @@ pub fn varint_encode_i16<W: Writer>(
     )
 }
 
+#[inline(always)]
 pub fn varint_encode_i32<W: Writer>(
     writer: &mut W,
     endian: Endianness,
@@ -48,6 +50,7 @@ pub fn varint_encode_i32<W: Writer>(
     )
 }
 
+#[inline(always)]
 pub fn varint_encode_i64<W: Writer>(
     writer: &mut W,
     endian: Endianness,
@@ -67,6 +70,7 @@ pub fn varint_encode_i64<W: Writer>(
     )
 }
 
+#[inline(always)]
 pub fn varint_encode_i128<W: Writer>(
     writer: &mut W,
     endian: Endianness,
@@ -86,6 +90,7 @@ pub fn varint_encode_i128<W: Writer>(
     )
 }
 
+#[inline(always)]
 pub fn varint_encode_isize<W: Writer>(
     writer: &mut W,
     endian: Endianness,
