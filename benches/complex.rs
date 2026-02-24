@@ -112,12 +112,16 @@ fn bench_complex(c: &mut Criterion) {
     let bytes_v2 =
         bincode_v2::serde::encode_to_vec(&world, bincode_v2::config::standard()).unwrap();
 
+    // bincode-v2 original (Serde) - We use Serde since World implements it and v2 recognizes it.
+    let bytes_v2_fixint =
+        bincode_v2::serde::encode_to_vec(&world, bincode_v2::config::legacy()).unwrap();
+
     // bincode-v1 (Serde)
     let bytes_v1 = bincode_1::serialize(&world).unwrap();
 
     let mut group = c.benchmark_group("complex_world_decode");
 
-    group.bench_function("bincode-next (traits)", |b| {
+    group.bench_function("bincode-next (traits, varint)", |b| {
         b.iter(|| {
             let res: (World, usize) =
                 bincode::decode_from_slice(black_box(&bytes_next), config).unwrap();
@@ -125,11 +129,31 @@ fn bench_complex(c: &mut Criterion) {
         })
     });
 
-    group.bench_function("bincode-v2 (serde)", |b| {
+    group.bench_function("bincode-next (traits, fixed)", |b| {
+        b.iter(|| {
+            let res: (World, usize) =
+                bincode::decode_from_slice(black_box(&bytes_v1), bincode::config::legacy())
+                    .unwrap();
+            black_box(res);
+        })
+    });
+
+    group.bench_function("bincode-v2 (serde, varint)", |b| {
         b.iter(|| {
             let res: (World, usize) = bincode_v2::serde::decode_from_slice(
                 black_box(&bytes_v2),
                 bincode_v2::config::standard(),
+            )
+            .unwrap();
+            black_box(res);
+        })
+    });
+
+    group.bench_function("bincode-v2 (serde, fixed)", |b| {
+        b.iter(|| {
+            let res: (World, usize) = bincode_v2::serde::decode_from_slice(
+                black_box(&bytes_v2_fixint),
+                bincode_v2::config::legacy(),
             )
             .unwrap();
             black_box(res);
@@ -147,17 +171,33 @@ fn bench_complex(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("complex_world_encode");
 
-    group.bench_function("bincode-next (traits)", |b| {
+    group.bench_function("bincode-next (traits, varint)", |b| {
         b.iter(|| {
             let res = bincode::encode_to_vec(black_box(&world), config).unwrap();
             black_box(res);
         })
     });
 
-    group.bench_function("bincode-v2 (serde)", |b| {
+    group.bench_function("bincode-next (traits, fixed)", |b| {
+        b.iter(|| {
+            let res = bincode::encode_to_vec(black_box(&world), bincode::config::legacy()).unwrap();
+            black_box(res);
+        })
+    });
+
+    group.bench_function("bincode-v2 (serde, varint)", |b| {
         b.iter(|| {
             let res =
                 bincode_v2::serde::encode_to_vec(black_box(&world), bincode_v2::config::standard())
+                    .unwrap();
+            black_box(res);
+        })
+    });
+
+    group.bench_function("bincode-v2 (serde, fixed)", |b| {
+        b.iter(|| {
+            let res =
+                bincode_v2::serde::encode_to_vec(black_box(&world), bincode_v2::config::legacy())
                     .unwrap();
             black_box(res);
         })
