@@ -204,3 +204,37 @@ impl FromAttribute for FieldAttributes {
         }
     }
 }
+#[derive(Default)]
+pub struct ReprAttributes {
+    pub is_c: bool,
+    pub is_transparent: bool,
+}
+
+impl FromAttribute for ReprAttributes {
+    fn parse(group: &Group) -> Result<Option<Self>> {
+        let attributes = match parse_tagged_attribute(group, "repr")? {
+            | Some(body) => body,
+            | None => return Ok(None),
+        };
+        let mut result = Self::default();
+        let mut found = false;
+        for attribute in attributes {
+            match attribute {
+                | ParsedAttribute::Tag(i) if i.to_string() == "C" => {
+                    result.is_c = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "transparent" => {
+                    result.is_transparent = true;
+                    found = true;
+                },
+                | _ => {},
+            }
+        }
+        if found {
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
+    }
+}

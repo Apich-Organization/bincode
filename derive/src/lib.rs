@@ -181,6 +181,15 @@ fn derive_zerocopy_inner(input: TokenStream) -> Result<TokenStream> {
         | _ => unreachable!(),
     };
     let (mut generator, attributes, body) = parse.into_generator();
+    if attributes
+        .get_attribute::<attribute::ReprAttributes>()?
+        .is_none()
+    {
+        return Err(Error::custom(
+            "ZeroCopy structs must have #[repr(C)] or #[repr(transparent)]",
+        ));
+    }
+
     let attributes = attributes
         .get_attribute::<ContainerAttributes>()?
         .unwrap_or_default();

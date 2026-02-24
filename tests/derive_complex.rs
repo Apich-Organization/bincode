@@ -6,12 +6,14 @@ use bincode_next::relative_ptr::ZeroSlice;
 use bincode_next::relative_ptr::ZeroStr;
 use bincode_next::relative_ptr::ZeroString;
 
+#[repr(C)]
 #[derive(ZeroCopy)]
 struct Nested {
     a: u32,
     b: RelativePtr<u32, 4>,
 }
 
+#[repr(C)]
 #[derive(ZeroCopy)]
 struct Complex {
     str_inline: ZeroString<10>,
