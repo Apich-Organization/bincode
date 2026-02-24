@@ -29,7 +29,7 @@ Bincode-Next is built for **extreme performance**. Any PR that affects the hot-p
 2. **Implement your changes** and add tests.
 3. **Run the test suite**:
    ```bash
-   cargo test --all-features
+   cargo test --all-features --all-targets
    cargo clippy --all-features
    MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --all-features --no-fail-fast
    ```
