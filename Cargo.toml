@@ -3,7 +3,7 @@ members = ["derive", "compatibility"]
 
 [package]
 name = "bincode-next"
-version = "3.0.0-rc.1"
+version = "3.0.0-rc.2"
 # Remember to update html_root_url and bincode_derive
 authors = [
     "Xinyu Yang <xinyu.yang@apich.org>",
@@ -12,7 +12,23 @@ authors = [
     "Victor Koenders <bincode@trangar.com>",
     "The bincode-next & bincode developers",
 ]
-exclude = ["logo.svg", "examples/*", ".gitignore", ".github/"]
+exclude = [
+    "complex_world_decode/*",
+    "complex_world_encode/*",
+    "vec_u64_fixint_native_decode/*",
+    "vec_u64_large_varint_decode/*",
+    "vec_u64_small_varint_decode/*",
+    "vec_u8_bulk_decode/*",
+    "report/*",
+    "index.html",
+    "fuzz/*",
+    "CNAME",
+    "Cargo.lock",
+    'Bench Results of bincode-next.md',
+    "examples/*",
+    ".gitignore",
+    ".github/"
+]
 rust-version = "1.90.0"
 
 publish = true
@@ -20,11 +36,11 @@ publish = true
 repository = "https://github.com/Apich-Organization/bincode"
 documentation = "https://docs.rs/bincode_next"
 readme = "./README.md"
-categories = ["encoding", "network-programming"]
-keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
+categories = ["encoding", "data-structures", "no-std"]
+keywords = ["binary", "serialization", "serde", "encoding", "performance"]
 
 license = "MIT or Apache-2.0"
-description = "A binary serialization / deserialization strategy for transforming structs into bytes and vice versa!"
+description = "A compact, ultra-fast binary serialization format for Rust, optimized for networking and storage!"
 
 edition = "2024"
 
@@ -38,9 +54,9 @@ static-size = ["bincode_derive-next?/static-size"]
 # Remember to run 'MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --all-features --no-fail-fast'
 
 [dependencies]
-bincode_derive-next = { path = "derive", version = "3.0.0-rc.1", optional = true }
+bincode_derive-next = { path = "derive", version = "3.0.0-rc.2", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
-unty = { version = "0.1.0", package = "unty-next" }
+unty = { version = "0.1.1", package = "unty-next" }
 rapidhash = { version = "4.4", default-features = false }
 pastey = "0.2"
 
