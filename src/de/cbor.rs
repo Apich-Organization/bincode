@@ -8,6 +8,10 @@ use crate::error::cold_decode_error_outside_usize_range;
 use crate::error::cold_decode_error_unexpected_end;
 
 /// Decodes a CBOR "additional info" value (0-27).
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 fn decode_additional_info<R: Reader>(
     reader: &mut R,
@@ -26,6 +30,10 @@ fn decode_additional_info<R: Reader>(
 }
 
 /// Decode a `u8` value from CBOR.
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_u8<R: Reader>(reader: &mut R) -> Result<u8, DecodeError> {
     let first = reader.read_u8()?;
@@ -43,6 +51,10 @@ pub fn decode_u8<R: Reader>(reader: &mut R) -> Result<u8, DecodeError> {
 }
 
 /// Decode a `u16` value from CBOR.
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_u16<R: Reader>(reader: &mut R) -> Result<u16, DecodeError> {
     let first = reader.read_u8()?;
@@ -60,6 +72,10 @@ pub fn decode_u16<R: Reader>(reader: &mut R) -> Result<u16, DecodeError> {
 }
 
 /// Decode a `u32` value from CBOR.
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_u32<R: Reader>(reader: &mut R) -> Result<u32, DecodeError> {
     let first = reader.read_u8()?;
@@ -77,6 +93,10 @@ pub fn decode_u32<R: Reader>(reader: &mut R) -> Result<u32, DecodeError> {
 }
 
 /// Decode a `u64` value from CBOR.
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_u64<R: Reader>(reader: &mut R) -> Result<u64, DecodeError> {
     let first = reader.read_u8()?;
@@ -95,6 +115,10 @@ pub fn decode_u64<R: Reader>(reader: &mut R) -> Result<u64, DecodeError> {
 ///
 /// Handles both standard CBOR unsigned integers (major type 0, values ≤ `u64::MAX`)
 /// and Tag 2 (positive bignum) for values > `u64::MAX` (RFC 8949 §3.4.3).
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_u128<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
     let first = reader.read_u8()?;
@@ -119,6 +143,10 @@ pub fn decode_u128<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
 }
 
 /// Decode an `i8` value from CBOR.
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_i8<R: Reader>(reader: &mut R) -> Result<i8, DecodeError> {
     let first = reader.read_u8()?;
@@ -147,6 +175,10 @@ pub fn decode_i8<R: Reader>(reader: &mut R) -> Result<i8, DecodeError> {
 }
 
 /// Decode an `i16` value from CBOR.
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_i16<R: Reader>(reader: &mut R) -> Result<i16, DecodeError> {
     let first = reader.read_u8()?;
@@ -175,6 +207,10 @@ pub fn decode_i16<R: Reader>(reader: &mut R) -> Result<i16, DecodeError> {
 }
 
 /// Decode an `i32` value from CBOR.
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_i32<R: Reader>(reader: &mut R) -> Result<i32, DecodeError> {
     let first = reader.read_u8()?;
@@ -203,6 +239,10 @@ pub fn decode_i32<R: Reader>(reader: &mut R) -> Result<i32, DecodeError> {
 }
 
 /// Decode an `i64` value from CBOR.
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_i64<R: Reader>(reader: &mut R) -> Result<i64, DecodeError> {
     let first = reader.read_u8()?;
@@ -235,6 +275,10 @@ pub fn decode_i64<R: Reader>(reader: &mut R) -> Result<i64, DecodeError> {
 ///
 /// Handles standard CBOR integers (major types 0 and 1),
 /// Tag 2 (positive bignum), and Tag 3 (negative bignum) per RFC 8949 §3.4.3.
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_i128<R: Reader>(reader: &mut R) -> Result<i128, DecodeError> {
     let first = reader.read_u8()?;
@@ -295,6 +339,10 @@ pub fn decode_i128<R: Reader>(reader: &mut R) -> Result<i128, DecodeError> {
 }
 
 /// Decode a CBOR byte string into a u128 (big-endian bignum).
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 fn decode_bignum_bytes<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
     // Read byte string header (major type 2)
@@ -317,6 +365,10 @@ fn decode_bignum_bytes<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
 }
 
 /// Decode a `bool` value from CBOR.
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_bool<R: Reader>(reader: &mut R) -> Result<bool, DecodeError> {
     let first = reader.read_u8()?;
@@ -328,6 +380,10 @@ pub fn decode_bool<R: Reader>(reader: &mut R) -> Result<bool, DecodeError> {
 }
 
 /// Decode an `f32` value from CBOR.
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_f32<R: Reader>(reader: &mut R) -> Result<f32, DecodeError> {
     let first = reader.read_u8()?;
@@ -338,6 +394,10 @@ pub fn decode_f32<R: Reader>(reader: &mut R) -> Result<f32, DecodeError> {
 }
 
 /// Decode an `f64` value from CBOR.
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_f64<R: Reader>(reader: &mut R) -> Result<f64, DecodeError> {
     let first = reader.read_u8()?;
@@ -348,6 +408,10 @@ pub fn decode_f64<R: Reader>(reader: &mut R) -> Result<f64, DecodeError> {
 }
 
 /// Decode a slice length from CBOR.
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_slice_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
     let first = reader.read_u8()?;
@@ -362,6 +426,10 @@ pub fn decode_slice_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError>
 }
 
 /// Decode a map length from CBOR.
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_map_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
     let first = reader.read_u8()?;

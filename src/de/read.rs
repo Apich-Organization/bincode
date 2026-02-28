@@ -27,6 +27,10 @@ pub trait Reader {
     ) -> Result<(), DecodeError>;
 
     /// Read a single byte from the reader.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline]
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
         let mut byte = [0u8; 1];
@@ -35,6 +39,10 @@ pub trait Reader {
     }
 
     /// Read a `u16` from the reader.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
         let mut bytes = [0u8; 2];
@@ -43,6 +51,10 @@ pub trait Reader {
     }
 
     /// Read a `u32` from the reader.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
         let mut bytes = [0u8; 4];
@@ -51,6 +63,10 @@ pub trait Reader {
     }
 
     /// Read a `u64` from the reader.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
         let mut bytes = [0u8; 8];
@@ -59,6 +75,10 @@ pub trait Reader {
     }
 
     /// Read a `u128` from the reader.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline]
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
         let mut bytes = [0u8; 16];

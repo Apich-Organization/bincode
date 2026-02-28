@@ -1,9 +1,14 @@
 //! CBOR (RFC 8949) encoding implementation.
+#![allow(clippy::branches_sharing_code)]
 
 use crate::enc::write::Writer;
 use crate::error::EncodeError;
 
 /// Encode a `u8` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_u8<W: Writer>(
     writer: &mut W,
@@ -18,6 +23,10 @@ pub fn encode_u8<W: Writer>(
 }
 
 /// Encode a `u16` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_u16<W: Writer>(
     writer: &mut W,
@@ -35,6 +44,10 @@ pub fn encode_u16<W: Writer>(
 }
 
 /// Encode a `u32` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_u32<W: Writer>(
     writer: &mut W,
@@ -55,6 +68,10 @@ pub fn encode_u32<W: Writer>(
 }
 
 /// Encode a `u64` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_u64<W: Writer>(
     writer: &mut W,
@@ -78,6 +95,10 @@ pub fn encode_u64<W: Writer>(
 }
 
 /// Encode an `i8` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_i8<W: Writer>(
     writer: &mut W,
@@ -91,13 +112,17 @@ pub fn encode_i8<W: Writer>(
         if val <= 23 {
             writer.write_u8(0x20 | val)
         } else {
-            writer.write_u8(0x20 | 24)?;
+            writer.write_u8(0x20 | 0x0018)?;
             writer.write_u8(val)
         }
     }
 }
 
 /// Encode an `i16` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_i16<W: Writer>(
     writer: &mut W,
@@ -111,16 +136,20 @@ pub fn encode_i16<W: Writer>(
         if val <= 23 {
             writer.write_u8(0x20 | val as u8)
         } else if val <= 0xFF {
-            writer.write_u8(0x20 | 24)?;
+            writer.write_u8(0x20 | 0x0018)?;
             writer.write_u8(val as u8)
         } else {
-            writer.write_u8(0x20 | 25)?;
+            writer.write_u8(0x20 | 0x0019)?;
             writer.write_u16(val.to_be())
         }
     }
 }
 
 /// Encode an `i32` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_i32<W: Writer>(
     writer: &mut W,
@@ -134,19 +163,23 @@ pub fn encode_i32<W: Writer>(
         if val <= 23 {
             writer.write_u8(0x20 | val as u8)
         } else if val <= 0xFF {
-            writer.write_u8(0x20 | 24)?;
+            writer.write_u8(0x20 | 0x0018)?;
             writer.write_u8(val as u8)
         } else if val <= 0xFFFF {
-            writer.write_u8(0x20 | 25)?;
+            writer.write_u8(0x20 | 0x0019)?;
             writer.write_u16((val as u16).to_be())
         } else {
-            writer.write_u8(0x20 | 26)?;
+            writer.write_u8(0x20 | 0x001a)?;
             writer.write_u32(val.to_be())
         }
     }
 }
 
 /// Encode an `i64` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_i64<W: Writer>(
     writer: &mut W,
@@ -160,16 +193,16 @@ pub fn encode_i64<W: Writer>(
         if val <= 23 {
             writer.write_u8(0x20 | val as u8)
         } else if val <= 0xFF {
-            writer.write_u8(0x20 | 24)?;
+            writer.write_u8(0x20 | 0x0018)?;
             writer.write_u8(val as u8)
         } else if val <= 0xFFFF {
-            writer.write_u8(0x20 | 25)?;
+            writer.write_u8(0x20 | 0x0019)?;
             writer.write_u16((val as u16).to_be())
         } else if val <= 0xFFFF_FFFF {
-            writer.write_u8(0x20 | 26)?;
+            writer.write_u8(0x20 | 0x001a)?;
             writer.write_u32((val as u32).to_be())
         } else {
-            writer.write_u8(0x20 | 27)?;
+            writer.write_u8(0x20 | 0x001b)?;
             writer.write_u64(val.to_be())
         }
     }
@@ -180,6 +213,10 @@ pub fn encode_i64<W: Writer>(
 /// Values ≤ `u64::MAX` use standard CBOR unsigned integer encoding.
 /// Values > `u64::MAX` use Tag 2 (positive bignum) with a byte string
 /// containing the minimal big-endian representation (RFC 8949 §3.4.3).
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_u128<W: Writer>(
     writer: &mut W,
@@ -205,6 +242,10 @@ pub fn encode_u128<W: Writer>(
 /// Negative values that fit in i64 use standard CBOR negative integer encoding.
 /// Negative values < `i64::MIN` use Tag 3 (negative bignum) with a byte string
 /// containing the minimal big-endian representation of `-1 - val` (RFC 8949 §3.4.3).
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_i128<W: Writer>(
     writer: &mut W,
@@ -221,16 +262,16 @@ pub fn encode_i128<W: Writer>(
         if mag64 <= 23 {
             writer.write_u8(0x20 | mag64 as u8)
         } else if mag64 <= 0xFF {
-            writer.write_u8(0x20 | 24)?;
+            writer.write_u8(0x20 | 0x0018)?;
             writer.write_u8(mag64 as u8)
         } else if mag64 <= 0xFFFF {
-            writer.write_u8(0x20 | 25)?;
+            writer.write_u8(0x20 | 0x0019)?;
             writer.write_u16((mag64 as u16).to_be())
         } else if mag64 <= 0xFFFF_FFFF {
-            writer.write_u8(0x20 | 26)?;
+            writer.write_u8(0x20 | 0x001a)?;
             writer.write_u32((mag64 as u32).to_be())
         } else {
-            writer.write_u8(0x20 | 27)?;
+            writer.write_u8(0x20 | 0x001b)?;
             writer.write_u64(mag64.to_be())
         }
     } else {
@@ -245,6 +286,10 @@ pub fn encode_i128<W: Writer>(
 }
 
 /// Encode a CBOR byte string header (major type 2).
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 fn encode_bytestring_header<W: Writer>(
     writer: &mut W,
@@ -253,21 +298,25 @@ fn encode_bytestring_header<W: Writer>(
     if len <= 23 {
         writer.write_u8(0x40 | len as u8)
     } else if len <= 0xFF {
-        writer.write_u8(0x40 | 24)?;
+        writer.write_u8(0x40 | 0x0018)?;
         writer.write_u8(len as u8)
     } else if len <= 0xFFFF {
-        writer.write_u8(0x40 | 25)?;
+        writer.write_u8(0x40 | 0x0019)?;
         writer.write_u16((len as u16).to_be())
     } else if len <= 0xFFFF_FFFF {
-        writer.write_u8(0x40 | 26)?;
+        writer.write_u8(0x40 | 0x001a)?;
         writer.write_u32((len as u32).to_be())
     } else {
-        writer.write_u8(0x40 | 27)?;
+        writer.write_u8(0x40 | 0x001b)?;
         writer.write_u64((len as u64).to_be())
     }
 }
 
 /// Encode a `bool` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_bool<W: Writer>(
     writer: &mut W,
@@ -281,6 +330,10 @@ pub fn encode_bool<W: Writer>(
 }
 
 /// Encode an `f32` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_f32<W: Writer>(
     writer: &mut W,
@@ -291,6 +344,10 @@ pub fn encode_f32<W: Writer>(
 }
 
 /// Encode an `f64` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_f64<W: Writer>(
     writer: &mut W,
@@ -301,6 +358,10 @@ pub fn encode_f64<W: Writer>(
 }
 
 /// Encode a `str` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_str<W: Writer>(
     writer: &mut W,
@@ -310,22 +371,26 @@ pub fn encode_str<W: Writer>(
     if len <= 23 {
         writer.write_u8(0x60 | len as u8)?;
     } else if len <= 0xFF {
-        writer.write_u8(0x60 | 24)?;
+        writer.write_u8(0x60 | 0x0018)?;
         writer.write_u8(len as u8)?;
     } else if len <= 0xFFFF {
-        writer.write_u8(0x60 | 25)?;
+        writer.write_u8(0x60 | 0x0019)?;
         writer.write_u16((len as u16).to_be())?;
     } else if len <= 0xFFFF_FFFF {
-        writer.write_u8(0x60 | 26)?;
+        writer.write_u8(0x60 | 0x001a)?;
         writer.write_u32((len as u32).to_be())?;
     } else {
-        writer.write_u8(0x60 | 27)?;
+        writer.write_u8(0x60 | 0x001b)?;
         writer.write_u64((len as u64).to_be())?;
     }
     writer.write(val.as_bytes())
 }
 
 /// Encode a slice length into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_slice_len<W: Writer>(
     writer: &mut W,
@@ -335,21 +400,25 @@ pub fn encode_slice_len<W: Writer>(
     if len <= 23 {
         writer.write_u8(0x80 | len as u8)
     } else if len <= 0xFF {
-        writer.write_u8(0x80 | 24)?;
+        writer.write_u8(0x80 | 0x0018)?;
         writer.write_u8(len as u8)
     } else if len <= 0xFFFF {
-        writer.write_u8(0x80 | 25)?;
+        writer.write_u8(0x80 | 0x0019)?;
         writer.write_u16((len as u16).to_be())
     } else if len <= 0xFFFF_FFFF {
-        writer.write_u8(0x80 | 26)?;
+        writer.write_u8(0x80 | 0x001a)?;
         writer.write_u32((len as u32).to_be())
     } else {
-        writer.write_u8(0x80 | 27)?;
+        writer.write_u8(0x80 | 0x001b)?;
         writer.write_u64((len as u64).to_be())
     }
 }
 
 /// Encode a map length into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_map_len<W: Writer>(
     writer: &mut W,
@@ -359,16 +428,16 @@ pub fn encode_map_len<W: Writer>(
     if len <= 23 {
         writer.write_u8(0xA0 | len as u8)
     } else if len <= 0xFF {
-        writer.write_u8(0xA0 | 24)?;
+        writer.write_u8(0xA0 | 0x0018)?;
         writer.write_u8(len as u8)
     } else if len <= 0xFFFF {
-        writer.write_u8(0xA0 | 25)?;
+        writer.write_u8(0xA0 | 0x0019)?;
         writer.write_u16((len as u16).to_be())
     } else if len <= 0xFFFF_FFFF {
-        writer.write_u8(0xA0 | 26)?;
+        writer.write_u8(0xA0 | 0x001a)?;
         writer.write_u32((len as u32).to_be())
     } else {
-        writer.write_u8(0xA0 | 27)?;
+        writer.write_u8(0xA0 | 0x001b)?;
         writer.write_u64((len as u64).to_be())
     }
 }

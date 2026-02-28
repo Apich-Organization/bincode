@@ -9,6 +9,9 @@ use self::decoder::WithContext;
 use self::read::BorrowReader;
 use self::read::Reader;
 use crate::config::Config;
+use crate::config::Endianness;
+use crate::config::Format;
+use crate::config::IntEncoding;
 use crate::config::InternalLimitConfig;
 use crate::error::DecodeError;
 use crate::utils::Sealed;
@@ -96,6 +99,7 @@ pub use self::decoder::DecoderImpl;
 /// use bincode_next::error::DecodeError;
 /// struct BytesInArena<'a>(bumpalo::collections::Vec<'a, u8>);
 /// impl<'a> bincode_next::Decode<&'a bumpalo::Bump> for BytesInArena<'a> {
+///
 /// fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
 ///         todo!()
 ///     }
@@ -239,6 +243,7 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     /// #         Self(Vec::with_capacity(cap))
     /// #     }
     /// #
+    ///
     /// #     fn push(&mut self, t: T) {
     /// #         self.0.push(t);
     /// #     }
@@ -290,9 +295,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     );
 
     /// Decode a `u8` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_u8(&mut self) -> Result<u8, DecodeError> {
-        use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.reader().read_u8(),
             | Format::Cbor | Format::CborDeterministic => cbor::decode_u8(self.reader()),
@@ -300,11 +308,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode a `u16` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_u16(&mut self) -> Result<u16, DecodeError> {
-        use crate::config::Endianness;
-        use crate::config::Format;
-        use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
@@ -328,11 +337,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode a `u32` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_u32(&mut self) -> Result<u32, DecodeError> {
-        use crate::config::Endianness;
-        use crate::config::Format;
-        use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
@@ -356,11 +366,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode a `u64` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_u64(&mut self) -> Result<u64, DecodeError> {
-        use crate::config::Endianness;
-        use crate::config::Format;
-        use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
@@ -384,11 +395,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode a `u128` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_u128(&mut self) -> Result<u128, DecodeError> {
-        use crate::config::Endianness;
-        use crate::config::Format;
-        use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
@@ -412,6 +424,10 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode a `usize` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_usize(&mut self) -> Result<usize, DecodeError> {
         self.claim_bytes_read(8)?;
@@ -421,9 +437,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode an `i8` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_i8(&mut self) -> Result<i8, DecodeError> {
-        use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.reader().read_u8().map(|v| v as i8),
             | Format::Cbor | Format::CborDeterministic => cbor::decode_i8(self.reader()),
@@ -431,11 +450,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode an `i16` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_i16(&mut self) -> Result<i16, DecodeError> {
-        use crate::config::Endianness;
-        use crate::config::Format;
-        use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
@@ -459,11 +479,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode an `i32` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_i32(&mut self) -> Result<i32, DecodeError> {
-        use crate::config::Endianness;
-        use crate::config::Format;
-        use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
@@ -487,11 +508,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode an `i64` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_i64(&mut self) -> Result<i64, DecodeError> {
-        use crate::config::Endianness;
-        use crate::config::Format;
-        use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
@@ -515,11 +537,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode an `i128` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_i128(&mut self) -> Result<i128, DecodeError> {
-        use crate::config::Endianness;
-        use crate::config::Format;
-        use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
@@ -543,6 +566,10 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode an `isize` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_isize(&mut self) -> Result<isize, DecodeError> {
         self.claim_bytes_read(8)?;
@@ -552,10 +579,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode an `f32` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_f32(&mut self) -> Result<f32, DecodeError> {
-        use crate::config::Endianness;
-        use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
                 let val = self.reader().read_u32()?;
@@ -571,10 +600,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode an `f64` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_f64(&mut self) -> Result<f64, DecodeError> {
-        use crate::config::Endianness;
-        use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
                 let val = self.reader().read_u64()?;
@@ -590,9 +621,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode a `bool` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     #[inline(always)]
     fn decode_bool(&mut self) -> Result<bool, DecodeError> {
-        use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
                 match self.reader().read_u8()? {
@@ -606,9 +640,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode the length of a slice.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     fn decode_slice_len(&mut self) -> Result<usize, DecodeError> {
         self.claim_bytes_read(1)?;
-        use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.decode_usize(),
             | Format::Cbor | Format::CborDeterministic => cbor::decode_slice_len(self.reader()),
@@ -616,15 +653,22 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode the length of an array.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     fn decode_array_len(&mut self) -> Result<usize, DecodeError> {
         self.claim_bytes_read(1)?;
         self.decode_slice_len()
     }
 
     /// Decode the length of a map.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     fn decode_map_len(&mut self) -> Result<usize, DecodeError> {
         self.claim_bytes_read(1)?;
-        use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.decode_slice_len(),
             | Format::Cbor | Format::CborDeterministic => cbor::decode_map_len(self.reader()),
@@ -632,9 +676,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode an enum variant index.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     fn decode_variant_index(&mut self) -> Result<u32, DecodeError> {
         self.claim_bytes_read(1)?;
-        use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.decode_u8().map(u32::from),
             | Format::Cbor | Format::CborDeterministic => cbor::decode_u32(self.reader()),
@@ -805,6 +852,10 @@ where
 }
 
 /// Decodes only the option variant from the decoder. Will not read any more data than that.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub(crate) fn decode_option_variant<D: Decoder>(
     decoder: &mut D,
@@ -826,6 +877,10 @@ pub(crate) fn decode_option_variant<D: Decoder>(
 }
 
 /// Decodes the length of any slice, container, etc from the decoder
+///
+/// # Errors
+///
+/// Returns an error if the operation fails.
 #[inline]
 pub(crate) fn decode_slice_len<D: Decoder>(decoder: &mut D) -> Result<usize, DecodeError> {
     D::assert_covered();

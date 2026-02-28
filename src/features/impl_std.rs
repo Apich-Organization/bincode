@@ -189,6 +189,10 @@ impl<'a, W: std::io::Write> IoWriter<'a, W> {
     }
 
     /// Returns the number of bytes written to the underlying writer.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[must_use]
     pub const fn bytes_written(&self) -> usize {
         self.bytes_written

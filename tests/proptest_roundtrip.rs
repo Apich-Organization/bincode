@@ -180,6 +180,7 @@ fn roundtrip_float_cbor<T>(
 }
 
 /// Float-aware round-trip across all configs.
+#[allow(dead_code)]
 fn roundtrip_float_all<T>(
     val: &T,
     cmp: impl Fn(&T, &T) -> bool + Copy,
@@ -190,6 +191,7 @@ fn roundtrip_float_all<T>(
     roundtrip_float_cbor(val, cmp);
 }
 
+#[allow(dead_code)]
 fn proptest_cases() -> u32 {
     if std::env::var("MIRIFLAGS").is_ok() {
         2
@@ -631,8 +633,8 @@ proptest! {
     #[test]
     fn cbor_deterministic_u64(v in any::<u64>()) {
         let config = bincode::config::standard().with_deterministic_cbor();
-        let a = bincode::encode_to_vec(&v, config).unwrap();
-        let b = bincode::encode_to_vec(&v, config).unwrap();
+        let a = bincode::encode_to_vec(v, config).unwrap();
+        let b = bincode::encode_to_vec(v, config).unwrap();
         assert_eq!(a, b, "deterministic CBOR should produce identical output");
     }
 
@@ -666,7 +668,7 @@ proptest! {
     #[test]
     fn bincode_truncated_no_panic(v in any::<u64>(), trunc in 1usize..8) {
         let config = bincode::config::standard();
-        let encoded = bincode::encode_to_vec(&v, config).unwrap();
+        let encoded = bincode::encode_to_vec(v, config).unwrap();
         if trunc < encoded.len() {
             let result: Result<(u64, usize), _> =
                 bincode::decode_from_slice(&encoded[..encoded.len() - trunc], config);
@@ -678,7 +680,7 @@ proptest! {
     #[test]
     fn cbor_truncated_no_panic(v in any::<u64>(), trunc in 1usize..8) {
         let config = bincode::config::standard().with_cbor_format();
-        let encoded = bincode::encode_to_vec(&v, config).unwrap();
+        let encoded = bincode::encode_to_vec(v, config).unwrap();
         if trunc < encoded.len() {
             let result: Result<(u64, usize), _> =
                 bincode::decode_from_slice(&encoded[..encoded.len() - trunc], config);

@@ -76,9 +76,17 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     fn writer(&mut self) -> &mut Self::W;
 
     /// Returns a reference to the config
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     fn config(&self) -> &Self::C;
 
     /// Encode a `u8` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_u8(
         &mut self,
@@ -92,6 +100,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode a `u16` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_u16(
         &mut self,
@@ -123,6 +135,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode a `u32` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_u32(
         &mut self,
@@ -154,6 +170,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode a `u64` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_u64(
         &mut self,
@@ -185,6 +205,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode a `u128` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_u128(
         &mut self,
@@ -216,6 +240,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode a `usize` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_usize(
         &mut self,
@@ -231,6 +259,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `i8` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_i8(
         &mut self,
@@ -244,6 +276,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `i16` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_i16(
         &mut self,
@@ -275,6 +311,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `i32` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_i32(
         &mut self,
@@ -306,6 +346,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `i64` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_i64(
         &mut self,
@@ -337,6 +381,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `i128` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_i128(
         &mut self,
@@ -368,6 +416,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `isize` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_isize(
         &mut self,
@@ -383,6 +435,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `f32` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_f32(
         &mut self,
@@ -402,6 +458,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `f64` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_f64(
         &mut self,
@@ -421,6 +481,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode a `bool` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_bool(
         &mut self,
@@ -434,6 +498,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode a string.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_str(
         &mut self,
@@ -450,6 +518,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode the length of a slice.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_slice_len(
         &mut self,
@@ -465,6 +537,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode the length of an array.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_array_len(
         &mut self,
@@ -474,6 +550,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode the length of a map.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_map_len(
         &mut self,
@@ -486,6 +566,10 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ///
     /// Variant indices are always encoded as a single `u8` for Bincode format,
     /// matching the decode side which uses `u8::decode()`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[inline(always)]
     fn encode_variant_index(
         &mut self,
@@ -681,6 +765,10 @@ where
 }
 
 /// Encode the variant of the given option. Will not encode the option itself.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub(crate) fn encode_option_variant<E: Encoder, T>(
     encoder: &mut E,
@@ -694,6 +782,10 @@ pub(crate) fn encode_option_variant<E: Encoder, T>(
 }
 
 /// Encodes the length of any slice, container, etc into the given encoder
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub(crate) fn encode_slice_len<E: Encoder>(
     encoder: &mut E,
