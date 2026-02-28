@@ -3,6 +3,7 @@
 use crate::de::read::Reader;
 use crate::error::DecodeError;
 use crate::error::cold_decode_error_invalid_boolean_value;
+use crate::error::cold_decode_error_invalid_cbor_info;
 use crate::error::cold_decode_error_outside_isize_range;
 use crate::error::cold_decode_error_outside_usize_range;
 use crate::error::cold_decode_error_unexpected_end;
@@ -25,7 +26,7 @@ fn decode_additional_info<R: Reader>(
         | 25 => Ok(u64::from(u16::from_be(reader.read_u16()?))),
         | 26 => Ok(u64::from(u32::from_be(reader.read_u32()?))),
         | 27 => Ok(u64::from_be(reader.read_u64()?)),
-        | _ => cold_decode_error_unexpected_end(1),
+        | _ => cold_decode_error_invalid_cbor_info(info),
     }
 }
 

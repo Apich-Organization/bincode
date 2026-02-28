@@ -186,6 +186,9 @@ bincode_error! {
     /// The decoder tried to decode a `bool` and failed. The given value is what is actually read.
     InvalidBooleanValue(inner: u8),
 
+    /// Invalid CBOR "additional info" value (28-31) was found.
+    InvalidCborInfo(inner: u8),
+
     /// The decoder tried to decode an array of length `required`, but the binary data contained an array of length `found`.
     ArrayLengthMismatch {
         /// The length of the array required by the rust type.
