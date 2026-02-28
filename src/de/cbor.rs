@@ -313,23 +313,16 @@ pub fn decode_i128<R: Reader>(reader: &mut R) -> Result<i128, DecodeError> {
                 // Tag 3 = negative bignum: value = -1 - bignum
                 | 3 => {
                     let magnitude = decode_bignum_bytes(reader)?;
-                    // -1 - magnitude, checking for overflow into i128
-                    // i128::MIN = -170141183460469231731687303715884105728
-                    // max magnitude representable: u128::MAX but we only need up to |i128::MIN| - 1
-                    let result = -1i128 - (magnitude as i128);
-                    // If magnitude was large enough that casting to i128 wraps, detect overflow
-                    if magnitude > i128::MAX as u128 {
-                        // magnitude as i128 would be negative; compute directly
-                        // -1 - magnitude where magnitude > i128::MAX
-                        //   = -(1 + magnitude)
-                        // This is valid only if magnitude == i128::MAX as u128 + 1 (i.e., |i128::MIN|)
-                        // which gives i128::MIN
-                        if magnitude == (i128::MAX as u128) + 1 {
-                            return Ok(i128::MIN);
-                        }
+                    if magnitude > (i128::MAX as u128) + 1 {
+                        // magnitude is too large to be represented as a negative i128
                         return cold_decode_error_outside_isize_range(-1);
                     }
-                    Ok(result)
+                    if magnitude == (i128::MAX as u128) + 1 {
+                        // This is the special case for i128::MIN
+                        return Ok(i128::MIN);
+                    }
+                    // magnitude <= i128::MAX as u128, so it's safe to cast and compute
+                    Ok(-1 - (magnitude as i128))
                 },
                 | _ => cold_decode_error_unexpected_end(0),
             }
