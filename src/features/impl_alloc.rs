@@ -283,7 +283,11 @@ where
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
         crate::enc::encode_slice_len(encoder, self.len())?;
-        if unty::type_equal::<T, u8>() {
+        let is_bincode = matches!(
+            <E::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if is_bincode && unty::type_equal::<T, u8>() {
             let slices: (&[T], &[T]) = self.as_slices();
             // Safety: T is u8 so turning this into `&[u8]` is okay
             let slices: (&[u8], &[u8]) = unsafe {
@@ -321,19 +325,25 @@ where
             | Endianness::Big => cfg!(target_endian = "big"),
         };
 
-        if is_u8
-            || (is_fixed
-                && is_native_endian
-                && (unty::type_equal::<T, u16>()
-                    || unty::type_equal::<T, i16>()
-                    || unty::type_equal::<T, u32>()
-                    || unty::type_equal::<T, i32>()
-                    || unty::type_equal::<T, u64>()
-                    || unty::type_equal::<T, i64>()
-                    || unty::type_equal::<T, u128>()
-                    || unty::type_equal::<T, i128>()
-                    || unty::type_equal::<T, f32>()
-                    || unty::type_equal::<T, f64>()))
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+
+        if is_bincode
+            && (is_u8
+                || (is_fixed
+                    && is_native_endian
+                    && (unty::type_equal::<T, u16>()
+                        || unty::type_equal::<T, i16>()
+                        || unty::type_equal::<T, u32>()
+                        || unty::type_equal::<T, i32>()
+                        || unty::type_equal::<T, u64>()
+                        || unty::type_equal::<T, i64>()
+                        || unty::type_equal::<T, u128>()
+                        || unty::type_equal::<T, i128>()
+                        || unty::type_equal::<T, f32>()
+                        || unty::type_equal::<T, f64>())))
         {
             let mut vec = Self::with_capacity(len);
             unsafe {
@@ -345,7 +355,7 @@ where
             }
             Ok(vec)
         } else {
-            let is_varint = matches!(D::C::INT_ENCODING, IntEncoding::Variable);
+            let is_varint = matches!(D::C::INT_ENCODING, IntEncoding::Variable) && is_bincode;
             let mut vec = Self::with_capacity(len);
             let mut i = 0;
 
@@ -381,7 +391,7 @@ where
                                     // Architecture-specific prefetching for large batches
                                     #[cfg(target_arch = "x86_64")]
                                     unsafe {
-                                        if j % 8 == 0 {
+                                        if j % 8 == 0 && reader.slice.len() > 64 {
                                             core::arch::x86_64::_mm_prefetch(
                                                 reader.slice.as_ptr().add(64).cast::<i8>(),
                                                 core::arch::x86_64::_MM_HINT_T0,
@@ -390,7 +400,7 @@ where
                                     }
                                     #[cfg(target_arch = "aarch64")]
                                     unsafe {
-                                        if j % 8 == 0 {
+                                        if j % 8 == 0 && reader.slice.len() > 64 {
                                             core::arch::aarch64::__prefetch(
                                                 reader.slice.as_ptr().add(64).cast::<i8>(),
                                             );
@@ -444,6 +454,7 @@ where
 
             if is_native_endian
                 && !is_fixed
+                && is_bincode
                 && (unty::type_equal::<T, u32>()
                     || unty::type_equal::<T, i32>()
                     || unty::type_equal::<T, u64>()
@@ -525,19 +536,25 @@ where
             | Endianness::Big => cfg!(target_endian = "big"),
         };
 
-        if is_u8
-            || (is_fixed
-                && is_native_endian
-                && (unty::type_equal::<T, u16>()
-                    || unty::type_equal::<T, i16>()
-                    || unty::type_equal::<T, u32>()
-                    || unty::type_equal::<T, i32>()
-                    || unty::type_equal::<T, u64>()
-                    || unty::type_equal::<T, i64>()
-                    || unty::type_equal::<T, u128>()
-                    || unty::type_equal::<T, i128>()
-                    || unty::type_equal::<T, f32>()
-                    || unty::type_equal::<T, f64>()))
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+
+        if is_bincode
+            && (is_u8
+                || (is_fixed
+                    && is_native_endian
+                    && (unty::type_equal::<T, u16>()
+                        || unty::type_equal::<T, i16>()
+                        || unty::type_equal::<T, u32>()
+                        || unty::type_equal::<T, i32>()
+                        || unty::type_equal::<T, u64>()
+                        || unty::type_equal::<T, i64>()
+                        || unty::type_equal::<T, u128>()
+                        || unty::type_equal::<T, i128>()
+                        || unty::type_equal::<T, f32>()
+                        || unty::type_equal::<T, f64>())))
         {
             let mut vec = Self::with_capacity(len);
             unsafe {
@@ -724,19 +741,25 @@ where
             | Endianness::Big => cfg!(target_endian = "big"),
         };
 
-        if is_u8
-            || (is_native_endian
-                && (unty::type_equal::<T, f32>()
-                    || unty::type_equal::<T, f64>()
-                    || (is_fixed
-                        && (unty::type_equal::<T, u16>()
-                            || unty::type_equal::<T, i16>()
-                            || unty::type_equal::<T, u32>()
-                            || unty::type_equal::<T, i32>()
-                            || unty::type_equal::<T, u64>()
-                            || unty::type_equal::<T, i64>()
-                            || unty::type_equal::<T, u128>()
-                            || unty::type_equal::<T, i128>()))))
+        let is_bincode = matches!(
+            <E::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+
+        if is_bincode
+            && (is_u8
+                || (is_native_endian
+                    && (unty::type_equal::<T, f32>()
+                        || unty::type_equal::<T, f64>()
+                        || (is_fixed
+                            && (unty::type_equal::<T, u16>()
+                                || unty::type_equal::<T, i16>()
+                                || unty::type_equal::<T, u32>()
+                                || unty::type_equal::<T, i32>()
+                                || unty::type_equal::<T, u64>()
+                                || unty::type_equal::<T, i64>()
+                                || unty::type_equal::<T, u128>()
+                                || unty::type_equal::<T, i128>())))))
         {
             let bytes_to_copy = self.len() * core::mem::size_of::<T>();
             // SAFETY: T is a primitive type (pod), so it's safe to copy its bytes.

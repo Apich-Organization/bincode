@@ -247,26 +247,14 @@ impl_borrow_decode!(NonZeroIsize);
 
 impl<Context> Decode<Context> for f32 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(4)?;
-        let mut bytes = [0u8; 4];
-        decoder.reader().read(&mut bytes)?;
-        Ok(match D::C::ENDIAN {
-            | Endianness::Little => Self::from_le_bytes(bytes),
-            | Endianness::Big => Self::from_be_bytes(bytes),
-        })
+        decoder.decode_f32()
     }
 }
 impl_borrow_decode!(f32);
 
 impl<Context> Decode<Context> for f64 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(8)?;
-        let mut bytes = [0u8; 8];
-        decoder.reader().read(&mut bytes)?;
-        Ok(match D::C::ENDIAN {
-            | Endianness::Little => Self::from_le_bytes(bytes),
-            | Endianness::Big => Self::from_be_bytes(bytes),
-        })
+        decoder.decode_f64()
     }
 }
 impl_borrow_decode!(f64);
@@ -363,20 +351,25 @@ where
             | Endianness::Little => cfg!(target_endian = "little"),
             | Endianness::Big => cfg!(target_endian = "big"),
         };
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
 
-        if is_u8
-            || (is_fixed
-                && is_native_endian
-                && (unty::type_equal::<T, u16>()
-                    || unty::type_equal::<T, i16>()
-                    || unty::type_equal::<T, u32>()
-                    || unty::type_equal::<T, i32>()
-                    || unty::type_equal::<T, u64>()
-                    || unty::type_equal::<T, i64>()
-                    || unty::type_equal::<T, u128>()
-                    || unty::type_equal::<T, i128>()
-                    || unty::type_equal::<T, f32>()
-                    || unty::type_equal::<T, f64>()))
+        if is_bincode
+            && (is_u8
+                || (is_fixed
+                    && is_native_endian
+                    && (unty::type_equal::<T, u16>()
+                        || unty::type_equal::<T, i16>()
+                        || unty::type_equal::<T, u32>()
+                        || unty::type_equal::<T, i32>()
+                        || unty::type_equal::<T, u64>()
+                        || unty::type_equal::<T, i64>()
+                        || unty::type_equal::<T, u128>()
+                        || unty::type_equal::<T, i128>()
+                        || unty::type_equal::<T, f32>()
+                        || unty::type_equal::<T, f64>())))
         {
             // SAFETY: T is a primitive type (pod), so it's safe to read its bytes directly.
             // We've checked that the encoding is Fixed and Endianness matches,
@@ -419,20 +412,25 @@ where
             | Endianness::Little => cfg!(target_endian = "little"),
             | Endianness::Big => cfg!(target_endian = "big"),
         };
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
 
-        if is_u8
-            || (is_fixed
-                && is_native_endian
-                && (unty::type_equal::<T, u16>()
-                    || unty::type_equal::<T, i16>()
-                    || unty::type_equal::<T, u32>()
-                    || unty::type_equal::<T, i32>()
-                    || unty::type_equal::<T, u64>()
-                    || unty::type_equal::<T, i64>()
-                    || unty::type_equal::<T, u128>()
-                    || unty::type_equal::<T, i128>()
-                    || unty::type_equal::<T, f32>()
-                    || unty::type_equal::<T, f64>()))
+        if is_bincode
+            && (is_u8
+                || (is_fixed
+                    && is_native_endian
+                    && (unty::type_equal::<T, u16>()
+                        || unty::type_equal::<T, i16>()
+                        || unty::type_equal::<T, u32>()
+                        || unty::type_equal::<T, i32>()
+                        || unty::type_equal::<T, u64>()
+                        || unty::type_equal::<T, i64>()
+                        || unty::type_equal::<T, u128>()
+                        || unty::type_equal::<T, i128>()
+                        || unty::type_equal::<T, f32>()
+                        || unty::type_equal::<T, f64>())))
         {
             // SAFETY: T is a primitive type (pod), so it's safe to read its bytes directly.
             // We've checked that the encoding is Fixed and Endianness matches,
@@ -512,7 +510,7 @@ where
     U: Decode<Context>,
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let is_ok = u8::decode(decoder)?;
+        let is_ok = decoder.decode_variant_index()?;
         match is_ok {
             | 0 => {
                 let t = T::decode(decoder)?;
@@ -526,7 +524,7 @@ where
                 crate::error::cold_decode_error_unexpected_variant(
                     core::any::type_name::<Self>(),
                     &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
-                    u32::from(x),
+                    x,
                 )
             },
         }
@@ -541,7 +539,7 @@ where
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let is_ok = u8::borrow_decode(decoder)?;
+        let is_ok = decoder.decode_variant_index()?;
         match is_ok {
             | 0 => {
                 let t = T::borrow_decode(decoder)?;
@@ -555,7 +553,7 @@ where
                 crate::error::cold_decode_error_unexpected_variant(
                     core::any::type_name::<Self>(),
                     &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
-                    u32::from(x),
+                    x,
                 )
             },
         }

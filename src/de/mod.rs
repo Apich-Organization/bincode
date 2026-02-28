@@ -299,7 +299,6 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
 
     /// Decode a `u16` value.
     fn decode_u16(&mut self) -> Result<u16, DecodeError> {
-        self.claim_bytes_read(2)?;
         use crate::config::Endianness;
         use crate::config::Format;
         use crate::config::IntEncoding;
@@ -307,12 +306,14 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
+                        self.claim_bytes_read(2)?;
                         crate::varint::varint_decode_u16(
                             self.reader(),
                             <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
                         )
                     },
                     | IntEncoding::Fixed => {
+                        self.claim_bytes_read(2)?;
                         let mut bytes = [0u8; 2];
                         self.reader().read(&mut bytes)?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -322,13 +323,15 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::decode_u16(self.reader()),
+            | Format::Cbor | Format::CborDeterministic => {
+                self.claim_bytes_read(1)?;
+                cbor::decode_u16(self.reader())
+            },
         }
     }
 
     /// Decode a `u32` value.
     fn decode_u32(&mut self) -> Result<u32, DecodeError> {
-        self.claim_bytes_read(4)?;
         use crate::config::Endianness;
         use crate::config::Format;
         use crate::config::IntEncoding;
@@ -336,12 +339,14 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
+                        self.claim_bytes_read(4)?;
                         crate::varint::varint_decode_u32(
                             self.reader(),
                             <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
                         )
                     },
                     | IntEncoding::Fixed => {
+                        self.claim_bytes_read(4)?;
                         let mut bytes = [0u8; 4];
                         self.reader().read(&mut bytes)?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -351,13 +356,15 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::decode_u32(self.reader()),
+            | Format::Cbor | Format::CborDeterministic => {
+                self.claim_bytes_read(1)?;
+                cbor::decode_u32(self.reader())
+            },
         }
     }
 
     /// Decode a `u64` value.
     fn decode_u64(&mut self) -> Result<u64, DecodeError> {
-        self.claim_bytes_read(8)?;
         use crate::config::Endianness;
         use crate::config::Format;
         use crate::config::IntEncoding;
@@ -365,12 +372,14 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
+                        self.claim_bytes_read(8)?;
                         crate::varint::varint_decode_u64(
                             self.reader(),
                             <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
                         )
                     },
                     | IntEncoding::Fixed => {
+                        self.claim_bytes_read(8)?;
                         let mut bytes = [0u8; 8];
                         self.reader().read(&mut bytes)?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -380,13 +389,15 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::decode_u64(self.reader()),
+            | Format::Cbor | Format::CborDeterministic => {
+                self.claim_bytes_read(1)?;
+                cbor::decode_u64(self.reader())
+            },
         }
     }
 
     /// Decode a `u128` value.
     fn decode_u128(&mut self) -> Result<u128, DecodeError> {
-        self.claim_bytes_read(16)?;
         use crate::config::Endianness;
         use crate::config::Format;
         use crate::config::IntEncoding;
@@ -394,12 +405,14 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
+                        self.claim_bytes_read(16)?;
                         crate::varint::varint_decode_u128(
                             self.reader(),
                             <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
                         )
                     },
                     | IntEncoding::Fixed => {
+                        self.claim_bytes_read(16)?;
                         let mut bytes = [0u8; 16];
                         self.reader().read(&mut bytes)?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -409,15 +422,16 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::decode_u128(self.reader()),
+            | Format::Cbor | Format::CborDeterministic => {
+                self.claim_bytes_read(1)?;
+                cbor::decode_u128(self.reader())
+            },
         }
     }
 
     /// Decode a `usize` value.
     fn decode_usize(&mut self) -> Result<usize, DecodeError> {
-        self.claim_bytes_read(8)?;
         let v = self.decode_u64()?;
-        self.unclaim_bytes_read(8);
         v.try_into()
             .map_err(|_| crate::error::cold_decode_error_outside_usize_range::<()>(v).unwrap_err())
     }
@@ -434,7 +448,6 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
 
     /// Decode an `i16` value.
     fn decode_i16(&mut self) -> Result<i16, DecodeError> {
-        self.claim_bytes_read(2)?;
         use crate::config::Endianness;
         use crate::config::Format;
         use crate::config::IntEncoding;
@@ -442,12 +455,14 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
+                        self.claim_bytes_read(2)?;
                         crate::varint::varint_decode_i16(
                             self.reader(),
                             <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
                         )
                     },
                     | IntEncoding::Fixed => {
+                        self.claim_bytes_read(2)?;
                         let mut bytes = [0u8; 2];
                         self.reader().read(&mut bytes)?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -457,13 +472,15 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::decode_i16(self.reader()),
+            | Format::Cbor | Format::CborDeterministic => {
+                self.claim_bytes_read(1)?;
+                cbor::decode_i16(self.reader())
+            },
         }
     }
 
     /// Decode an `i32` value.
     fn decode_i32(&mut self) -> Result<i32, DecodeError> {
-        self.claim_bytes_read(4)?;
         use crate::config::Endianness;
         use crate::config::Format;
         use crate::config::IntEncoding;
@@ -471,12 +488,14 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
+                        self.claim_bytes_read(4)?;
                         crate::varint::varint_decode_i32(
                             self.reader(),
                             <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
                         )
                     },
                     | IntEncoding::Fixed => {
+                        self.claim_bytes_read(4)?;
                         let mut bytes = [0u8; 4];
                         self.reader().read(&mut bytes)?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -486,13 +505,15 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::decode_i32(self.reader()),
+            | Format::Cbor | Format::CborDeterministic => {
+                self.claim_bytes_read(1)?;
+                cbor::decode_i32(self.reader())
+            },
         }
     }
 
     /// Decode an `i64` value.
     fn decode_i64(&mut self) -> Result<i64, DecodeError> {
-        self.claim_bytes_read(8)?;
         use crate::config::Endianness;
         use crate::config::Format;
         use crate::config::IntEncoding;
@@ -500,12 +521,14 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
+                        self.claim_bytes_read(8)?;
                         crate::varint::varint_decode_i64(
                             self.reader(),
                             <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
                         )
                     },
                     | IntEncoding::Fixed => {
+                        self.claim_bytes_read(8)?;
                         let mut bytes = [0u8; 8];
                         self.reader().read(&mut bytes)?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -515,13 +538,15 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::decode_i64(self.reader()),
+            | Format::Cbor | Format::CborDeterministic => {
+                self.claim_bytes_read(1)?;
+                cbor::decode_i64(self.reader())
+            },
         }
     }
 
     /// Decode an `i128` value.
     fn decode_i128(&mut self) -> Result<i128, DecodeError> {
-        self.claim_bytes_read(16)?;
         use crate::config::Endianness;
         use crate::config::Format;
         use crate::config::IntEncoding;
@@ -529,12 +554,14 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
+                        self.claim_bytes_read(16)?;
                         crate::varint::varint_decode_i128(
                             self.reader(),
                             <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
                         )
                     },
                     | IntEncoding::Fixed => {
+                        self.claim_bytes_read(16)?;
                         let mut bytes = [0u8; 16];
                         self.reader().read(&mut bytes)?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -544,26 +571,27 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::decode_i128(self.reader()),
+            | Format::Cbor | Format::CborDeterministic => {
+                self.claim_bytes_read(1)?;
+                cbor::decode_i128(self.reader())
+            },
         }
     }
 
     /// Decode an `isize` value.
     fn decode_isize(&mut self) -> Result<isize, DecodeError> {
-        self.claim_bytes_read(8)?;
         let v = self.decode_i64()?;
-        self.unclaim_bytes_read(8);
         v.try_into()
             .map_err(|_| crate::error::cold_decode_error_outside_isize_range::<()>(v).unwrap_err())
     }
 
     /// Decode an `f32` value.
     fn decode_f32(&mut self) -> Result<f32, DecodeError> {
-        self.claim_bytes_read(4)?;
         use crate::config::Endianness;
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
+                self.claim_bytes_read(4)?;
                 let mut bytes = [0u8; 4];
                 self.reader().read(&mut bytes)?;
                 match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -577,11 +605,11 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
 
     /// Decode an `f64` value.
     fn decode_f64(&mut self) -> Result<f64, DecodeError> {
-        self.claim_bytes_read(8)?;
         use crate::config::Endianness;
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
+                self.claim_bytes_read(8)?;
                 let mut bytes = [0u8; 8];
                 self.reader().read(&mut bytes)?;
                 match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -635,7 +663,7 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     fn decode_variant_index(&mut self) -> Result<u32, DecodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.decode_u32(),
+            | Format::Bincode => self.decode_u8().map(u32::from),
             | Format::Cbor | Format::CborDeterministic => cbor::decode_u32(self.reader()),
         }
     }

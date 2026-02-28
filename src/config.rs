@@ -501,7 +501,9 @@ pub mod internal {
         const ENDIAN: Endianness;
     }
 
-    impl<E: InternalEndianConfig, I, L, B, F> InternalEndianConfig for Configuration<E, I, L, B, F> {
+    impl<E: InternalEndianConfig, I, L, B, F, FO> InternalEndianConfig
+        for Configuration<E, I, L, B, F, FO>
+    {
         const ENDIAN: Endianness = E::ENDIAN;
     }
 
@@ -509,8 +511,8 @@ pub mod internal {
         const INT_ENCODING: IntEncoding;
     }
 
-    impl<E, I: InternalIntEncodingConfig, L, B, F> InternalIntEncodingConfig
-        for Configuration<E, I, L, B, F>
+    impl<E, I: InternalIntEncodingConfig, L, B, F, FO> InternalIntEncodingConfig
+        for Configuration<E, I, L, B, F, FO>
     {
         const INT_ENCODING: IntEncoding = I::INT_ENCODING;
     }
@@ -519,7 +521,9 @@ pub mod internal {
         const LIMIT: Option<usize>;
     }
 
-    impl<E, I, L: InternalLimitConfig, B, F> InternalLimitConfig for Configuration<E, I, L, B, F> {
+    impl<E, I, L: InternalLimitConfig, B, F, FO> InternalLimitConfig
+        for Configuration<E, I, L, B, F, FO>
+    {
         const LIMIT: Option<usize> = L::LIMIT;
     }
 
@@ -527,8 +531,8 @@ pub mod internal {
         const BIT_PACKING: BitPacking;
     }
 
-    impl<E, I, L, B: InternalBitPackingConfig, F> InternalBitPackingConfig
-        for Configuration<E, I, L, B, F>
+    impl<E, I, L, B: InternalBitPackingConfig, F, FO> InternalBitPackingConfig
+        for Configuration<E, I, L, B, F, FO>
     {
         const BIT_PACKING: BitPacking = B::BIT_PACKING;
     }
@@ -537,8 +541,8 @@ pub mod internal {
         const FINGERPRINT_MODE: FingerprintMode;
     }
 
-    impl<E, I, L, B, F: InternalFingerprintConfig> InternalFingerprintConfig
-        for Configuration<E, I, L, B, F>
+    impl<E, I, L, B, F: InternalFingerprintConfig, FO> InternalFingerprintConfig
+        for Configuration<E, I, L, B, F, FO>
     {
         const FINGERPRINT_MODE: FingerprintMode = F::FINGERPRINT_MODE;
     }
@@ -547,7 +551,7 @@ pub mod internal {
         type Mode;
     }
 
-    impl<E, I, L, B, F> InternalFingerprintConfigExt for Configuration<E, I, L, B, F> {
+    impl<E, I, L, B, F, FO> InternalFingerprintConfigExt for Configuration<E, I, L, B, F, FO> {
         type Mode = F;
     }
 
@@ -636,7 +640,7 @@ pub mod internal {
         const CONFIG_HASH: u64;
     }
 
-    impl<E, I, L, B, F> InternalConfigFingerprint for Configuration<E, I, L, B, F>
+    impl<E, I, L, B, F, FO> InternalConfigFingerprint for Configuration<E, I, L, B, F, FO>
     where
         E: InternalEndianConfig,
         I: InternalIntEncodingConfig,
