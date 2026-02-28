@@ -201,6 +201,11 @@ fn bench_complex(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("complex_world_encode");
 
+    group
+        .warm_up_time(Duration::from_secs(15))
+        .measurement_time(Duration::from_secs(10))
+        .sample_size(200);
+
     group.bench_function("bincode-next (traits, varint)", |b| {
         b.iter(|| {
             let res = bincode::encode_to_vec(black_box(&world), config).unwrap();
