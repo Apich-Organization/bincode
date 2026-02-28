@@ -35,11 +35,7 @@ use core::time::Duration;
 
 impl<Context> Decode<Context> for bool {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        match u8::decode(decoder)? {
-            | 0 => Ok(false),
-            | 1 => Ok(true),
-            | x => crate::error::cold_decode_error_invalid_boolean_value(x),
-        }
+        decoder.decode_bool()
     }
 }
 impl_borrow_decode!(bool);
@@ -47,16 +43,7 @@ impl_borrow_decode!(bool);
 impl<Context> Decode<Context> for u8 {
     #[inline]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(1)?;
-        if let Some(buf) = decoder.reader().peek_read(1) {
-            let byte = buf[0];
-            decoder.reader().consume(1);
-            Ok(byte)
-        } else {
-            let mut bytes = [0u8; 1];
-            decoder.reader().read(&mut bytes)?;
-            Ok(bytes[0])
-        }
+        decoder.decode_u8()
     }
 }
 impl_borrow_decode!(u8);
@@ -73,20 +60,7 @@ impl_borrow_decode!(NonZeroU8);
 
 impl<Context> Decode<Context> for u16 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(2)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_u16(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 2];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_u16()
     }
 }
 impl_borrow_decode!(u16);
@@ -103,20 +77,7 @@ impl_borrow_decode!(NonZeroU16);
 
 impl<Context> Decode<Context> for u32 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(4)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_u32(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 4];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_u32()
     }
 }
 impl_borrow_decode!(u32);
@@ -133,20 +94,7 @@ impl_borrow_decode!(NonZeroU32);
 
 impl<Context> Decode<Context> for u64 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(8)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_u64(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 8];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_u64()
     }
 }
 impl_borrow_decode!(u64);
@@ -163,20 +111,7 @@ impl_borrow_decode!(NonZeroU64);
 
 impl<Context> Decode<Context> for u128 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(16)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_u128(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 16];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_u128()
     }
 }
 impl_borrow_decode!(u128);
@@ -193,25 +128,7 @@ impl_borrow_decode!(NonZeroU128);
 
 impl<Context> Decode<Context> for usize {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(8)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_usize(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 8];
-                decoder.reader().read(&mut bytes)?;
-
-                let value = match D::C::ENDIAN {
-                    | Endianness::Little => u64::from_le_bytes(bytes),
-                    | Endianness::Big => u64::from_be_bytes(bytes),
-                };
-
-                value.try_into().map_err(|_| {
-                    crate::error::cold_decode_error_outside_usize_range::<()>(value).unwrap_err()
-                })
-            },
-        }
+        decoder.decode_usize()
     }
 }
 impl_borrow_decode!(usize);
@@ -228,10 +145,7 @@ impl_borrow_decode!(NonZeroUsize);
 
 impl<Context> Decode<Context> for i8 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(1)?;
-        let mut bytes = [0u8; 1];
-        decoder.reader().read(&mut bytes)?;
-        Ok(Self::from_ne_bytes(bytes))
+        decoder.decode_i8()
     }
 }
 impl_borrow_decode!(i8);
@@ -248,20 +162,7 @@ impl_borrow_decode!(NonZeroI8);
 
 impl<Context> Decode<Context> for i16 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(2)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_i16(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 2];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_i16()
     }
 }
 impl_borrow_decode!(i16);
@@ -278,20 +179,7 @@ impl_borrow_decode!(NonZeroI16);
 
 impl<Context> Decode<Context> for i32 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(4)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_i32(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 4];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_i32()
     }
 }
 impl_borrow_decode!(i32);
@@ -308,20 +196,7 @@ impl_borrow_decode!(NonZeroI32);
 
 impl<Context> Decode<Context> for i64 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(8)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_i64(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 8];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_i64()
     }
 }
 impl_borrow_decode!(i64);
@@ -338,20 +213,7 @@ impl_borrow_decode!(NonZeroI64);
 
 impl<Context> Decode<Context> for i128 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(16)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_i128(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 16];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_i128()
     }
 }
 impl_borrow_decode!(i128);
@@ -368,23 +230,7 @@ impl_borrow_decode!(NonZeroI128);
 
 impl<Context> Decode<Context> for isize {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(8)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_isize(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 8];
-                decoder.reader().read(&mut bytes)?;
-                let val = match D::C::ENDIAN {
-                    | Endianness::Little => i64::from_le_bytes(bytes),
-                    | Endianness::Big => i64::from_be_bytes(bytes),
-                };
-                val.try_into().map_err(|_| {
-                    crate::error::cold_decode_error_outside_isize_range::<()>(val).unwrap_err()
-                })
-            },
-        }
+        decoder.decode_isize()
     }
 }
 impl_borrow_decode!(isize);

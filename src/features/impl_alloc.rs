@@ -131,12 +131,7 @@ where
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        // BLOCKEDTODO(https://github.com/rust-lang/rust/issues/83659): we can u8 optimize this with `.as_slice()`
-        crate::enc::encode_slice_len(encoder, self.len())?;
-        for val in self {
-            val.encode(encoder)?;
-        }
-        Ok(())
+        self.as_slice().encode(encoder)
     }
 }
 

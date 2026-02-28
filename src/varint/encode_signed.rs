@@ -4,6 +4,7 @@ use super::varint_encode_u32;
 use super::varint_encode_u64;
 use super::varint_encode_u128;
 use crate::config::Endianness;
+
 use crate::enc::write::Writer;
 use crate::error::EncodeError;
 
@@ -46,15 +47,6 @@ pub fn varint_encode_i128<W: Writer>(
     varint_encode_u128(writer, endian, ((val << 1) ^ (val >> 127)) as u128)
 }
 
-#[inline(always)]
-pub fn varint_encode_isize<W: Writer>(
-    writer: &mut W,
-    endian: Endianness,
-    val: isize,
-) -> Result<(), EncodeError> {
-    // isize is being encoded as a i64
-    varint_encode_i64(writer, endian, val as i64)
-}
 
 #[test]
 fn test_encode_i16() {

@@ -188,15 +188,6 @@ fn varint_encode_u128_cold<W: Writer>(
     }
 }
 
-#[inline(always)]
-pub fn varint_encode_usize<W: Writer>(
-    writer: &mut W,
-    endian: Endianness,
-    val: usize,
-) -> Result<(), EncodeError> {
-    // usize is being encoded as a u64
-    varint_encode_u64(writer, endian, val as u64)
-}
 
 #[test]
 fn test_encode_u16() {

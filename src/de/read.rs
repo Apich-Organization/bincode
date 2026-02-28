@@ -26,6 +26,14 @@ pub trait Reader {
         bytes: &mut [u8],
     ) -> Result<(), DecodeError>;
 
+    /// Read a single byte from the reader.
+    #[inline]
+    fn read_u8(&mut self) -> Result<u8, DecodeError> {
+        let mut byte = [0u8; 1];
+        self.read(&mut byte)?;
+        Ok(byte[0])
+    }
+
     /// If this reader wraps a buffer of any kind, this function lets callers access contents of
     /// the buffer without passing data through a buffer first.
     #[inline]
@@ -137,6 +145,16 @@ impl<'storage> Reader for SliceReader<'storage> {
         n: usize,
     ) {
         self.slice = self.slice.get(n..).unwrap_or_default();
+    }
+
+    #[inline(always)]
+    fn read_u8(&mut self) -> Result<u8, DecodeError> {
+        if self.slice.is_empty() {
+            return crate::error::cold_decode_error_unexpected_end(1);
+        }
+        let byte = unsafe { *self.slice.get_unchecked(0) };
+        self.slice = unsafe { self.slice.get_unchecked(1..) };
+        Ok(byte)
     }
 }
 

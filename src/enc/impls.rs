@@ -2,10 +2,6 @@
 use super::Encode;
 use super::Encoder;
 use super::write::Writer;
-use crate::config::Endianness;
-use crate::config::IntEncoding;
-use crate::config::InternalEndianConfig;
-use crate::config::InternalIntEncodingConfig;
 use crate::error::EncodeError;
 use core::cell::Cell;
 use core::cell::RefCell;
@@ -52,7 +48,7 @@ impl Encode for bool {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        u8::from(*self).encode(encoder)
+        encoder.encode_bool(*self)
     }
 }
 
@@ -61,7 +57,7 @@ impl Encode for u8 {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        encoder.writer().write_u8(*self)
+        encoder.encode_u8(*self)
     }
 }
 
@@ -79,17 +75,7 @@ impl Encode for u16 {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_u16(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_u16(*self)
     }
 }
 
@@ -107,17 +93,7 @@ impl Encode for u32 {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_u32(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_u32(*self)
     }
 }
 
@@ -135,17 +111,7 @@ impl Encode for u64 {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_u64(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_u64(*self)
     }
 }
 
@@ -163,17 +129,7 @@ impl Encode for u128 {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_u128(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_u128(*self)
     }
 }
 
@@ -191,17 +147,7 @@ impl Encode for usize {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_usize(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&(*self as u64).to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&(*self as u64).to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_usize(*self)
     }
 }
 
@@ -219,7 +165,7 @@ impl Encode for i8 {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        encoder.writer().write_u8(*self as u8)
+        encoder.encode_i8(*self)
     }
 }
 
@@ -237,17 +183,7 @@ impl Encode for i16 {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_i16(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_i16(*self)
     }
 }
 
@@ -265,17 +201,7 @@ impl Encode for i32 {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_i32(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_i32(*self)
     }
 }
 
@@ -293,17 +219,7 @@ impl Encode for i64 {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_i64(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_i64(*self)
     }
 }
 
@@ -321,17 +237,7 @@ impl Encode for i128 {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_i128(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_i128(*self)
     }
 }
 
@@ -349,17 +255,7 @@ impl Encode for isize {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_isize(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&(*self as i64).to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&(*self as i64).to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_isize(*self)
     }
 }
 
@@ -377,10 +273,7 @@ impl Encode for f32 {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::ENDIAN {
-            | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-            | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-        }
+        encoder.encode_f32(*self)
     }
 }
 
@@ -389,10 +282,7 @@ impl Encode for f64 {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::ENDIAN {
-            | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-            | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-        }
+        encoder.encode_f64(*self)
     }
 }
 
@@ -434,8 +324,11 @@ where
         super::encode_slice_len(encoder, self.len())?;
 
         let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
-        let is_fixed = matches!(E::C::INT_ENCODING, crate::config::IntEncoding::Fixed);
-        let is_native_endian = match E::C::ENDIAN {
+        let is_fixed = matches!(
+            <E::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING,
+            crate::config::IntEncoding::Fixed
+        );
+        let is_native_endian = match <E::C as crate::config::InternalEndianConfig>::ENDIAN {
             | crate::config::Endianness::Little => cfg!(target_endian = "little"),
             | crate::config::Endianness::Big => cfg!(target_endian = "big"),
         };
@@ -516,7 +409,7 @@ impl Encode for str {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        self.as_bytes().encode(encoder)
+        encoder.encode_str(self)
     }
 }
 
@@ -529,8 +422,11 @@ where
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
         let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
-        let is_fixed = matches!(E::C::INT_ENCODING, crate::config::IntEncoding::Fixed);
-        let is_native_endian = match E::C::ENDIAN {
+        let is_fixed = matches!(
+            <E::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING,
+            crate::config::IntEncoding::Fixed
+        );
+        let is_native_endian = match <E::C as crate::config::InternalEndianConfig>::ENDIAN {
             | crate::config::Endianness::Little => cfg!(target_endian = "little"),
             | crate::config::Endianness::Big => cfg!(target_endian = "big"),
         };
@@ -594,11 +490,11 @@ where
     ) -> Result<(), EncodeError> {
         match self {
             | Ok(val) => {
-                0u8.encode(encoder)?;
+                encoder.encode_variant_index(0)?;
                 val.encode(encoder)
             },
             | Err(err) => {
-                1u8.encode(encoder)?;
+                encoder.encode_variant_index(1)?;
                 err.encode(encoder)
             },
         }
