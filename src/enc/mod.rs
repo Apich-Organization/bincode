@@ -79,6 +79,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     fn config(&self) -> &Self::C;
 
     /// Encode a `u8` value.
+    #[inline(always)]
     fn encode_u8(
         &mut self,
         val: u8,
@@ -91,6 +92,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode a `u16` value.
+    #[inline(always)]
     fn encode_u16(
         &mut self,
         val: u16,
@@ -110,8 +112,8 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
-                            | Endianness::Big => self.writer().write(&val.to_be_bytes()),
-                            | Endianness::Little => self.writer().write(&val.to_le_bytes()),
+                            | Endianness::Big => self.writer().write_u16(val.to_be()),
+                            | Endianness::Little => self.writer().write_u16(val.to_le()),
                         }
                     },
                 }
@@ -121,6 +123,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode a `u32` value.
+    #[inline(always)]
     fn encode_u32(
         &mut self,
         val: u32,
@@ -140,8 +143,8 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
-                            | Endianness::Big => self.writer().write(&val.to_be_bytes()),
-                            | Endianness::Little => self.writer().write(&val.to_le_bytes()),
+                            | Endianness::Big => self.writer().write_u32(val.to_be()),
+                            | Endianness::Little => self.writer().write_u32(val.to_le()),
                         }
                     },
                 }
@@ -151,6 +154,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode a `u64` value.
+    #[inline(always)]
     fn encode_u64(
         &mut self,
         val: u64,
@@ -170,8 +174,8 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
-                            | Endianness::Big => self.writer().write(&val.to_be_bytes()),
-                            | Endianness::Little => self.writer().write(&val.to_le_bytes()),
+                            | Endianness::Big => self.writer().write_u64(val.to_be()),
+                            | Endianness::Little => self.writer().write_u64(val.to_le()),
                         }
                     },
                 }
@@ -181,6 +185,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode a `u128` value.
+    #[inline(always)]
     fn encode_u128(
         &mut self,
         val: u128,
@@ -200,8 +205,8 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
-                            | Endianness::Big => self.writer().write(&val.to_be_bytes()),
-                            | Endianness::Little => self.writer().write(&val.to_le_bytes()),
+                            | Endianness::Big => self.writer().write_u128(val.to_be()),
+                            | Endianness::Little => self.writer().write_u128(val.to_le()),
                         }
                     },
                 }
@@ -211,6 +216,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode a `usize` value.
+    #[inline(always)]
     fn encode_usize(
         &mut self,
         val: usize,
@@ -225,6 +231,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `i8` value.
+    #[inline(always)]
     fn encode_i8(
         &mut self,
         val: i8,
@@ -237,6 +244,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `i16` value.
+    #[inline(always)]
     fn encode_i16(
         &mut self,
         val: i16,
@@ -256,8 +264,8 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
-                            | Endianness::Big => self.writer().write(&val.to_be_bytes()),
-                            | Endianness::Little => self.writer().write(&val.to_le_bytes()),
+                            | Endianness::Big => self.writer().write_u16(val.to_be() as u16),
+                            | Endianness::Little => self.writer().write_u16(val.to_le() as u16),
                         }
                     },
                 }
@@ -267,6 +275,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `i32` value.
+    #[inline(always)]
     fn encode_i32(
         &mut self,
         val: i32,
@@ -286,8 +295,8 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
-                            | Endianness::Big => self.writer().write(&val.to_be_bytes()),
-                            | Endianness::Little => self.writer().write(&val.to_le_bytes()),
+                            | Endianness::Big => self.writer().write_u32(val.to_be() as u32),
+                            | Endianness::Little => self.writer().write_u32(val.to_le() as u32),
                         }
                     },
                 }
@@ -297,6 +306,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `i64` value.
+    #[inline(always)]
     fn encode_i64(
         &mut self,
         val: i64,
@@ -316,8 +326,8 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
-                            | Endianness::Big => self.writer().write(&val.to_be_bytes()),
-                            | Endianness::Little => self.writer().write(&val.to_le_bytes()),
+                            | Endianness::Big => self.writer().write_u64(val.to_be() as u64),
+                            | Endianness::Little => self.writer().write_u64(val.to_le() as u64),
                         }
                     },
                 }
@@ -327,6 +337,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `i128` value.
+    #[inline(always)]
     fn encode_i128(
         &mut self,
         val: i128,
@@ -346,8 +357,8 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
-                            | Endianness::Big => self.writer().write(&val.to_be_bytes()),
-                            | Endianness::Little => self.writer().write(&val.to_le_bytes()),
+                            | Endianness::Big => self.writer().write_u128(val.to_be() as u128),
+                            | Endianness::Little => self.writer().write_u128(val.to_le() as u128),
                         }
                     },
                 }
@@ -357,6 +368,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `isize` value.
+    #[inline(always)]
     fn encode_isize(
         &mut self,
         val: isize,
@@ -371,6 +383,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `f32` value.
+    #[inline(always)]
     fn encode_f32(
         &mut self,
         val: f32,
@@ -380,8 +393,8 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
-                    | Endianness::Big => self.writer().write(&val.to_be_bytes()),
-                    | Endianness::Little => self.writer().write(&val.to_le_bytes()),
+                    | Endianness::Big => self.writer().write_u32(val.to_bits().to_be()),
+                    | Endianness::Little => self.writer().write_u32(val.to_bits().to_le()),
                 }
             },
             | Format::Cbor | Format::CborDeterministic => cbor::encode_f32(self.writer(), val),
@@ -389,6 +402,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode an `f64` value.
+    #[inline(always)]
     fn encode_f64(
         &mut self,
         val: f64,
@@ -398,8 +412,8 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => {
                 match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
-                    | Endianness::Big => self.writer().write(&val.to_be_bytes()),
-                    | Endianness::Little => self.writer().write(&val.to_le_bytes()),
+                    | Endianness::Big => self.writer().write_u64(val.to_bits().to_be()),
+                    | Endianness::Little => self.writer().write_u64(val.to_bits().to_le()),
                 }
             },
             | Format::Cbor | Format::CborDeterministic => cbor::encode_f64(self.writer(), val),
@@ -407,18 +421,20 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode a `bool` value.
+    #[inline(always)]
     fn encode_bool(
         &mut self,
         val: bool,
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.encode_u8(val as u8),
+            | Format::Bincode => self.encode_u8(u8::from(val)),
             | Format::Cbor | Format::CborDeterministic => cbor::encode_bool(self.writer(), val),
         }
     }
 
     /// Encode a string.
+    #[inline(always)]
     fn encode_str(
         &mut self,
         val: &str,
@@ -434,6 +450,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode the length of a slice.
+    #[inline(always)]
     fn encode_slice_len(
         &mut self,
         len: usize,
@@ -448,6 +465,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode the length of an array.
+    #[inline(always)]
     fn encode_array_len(
         &mut self,
         len: usize,
@@ -456,6 +474,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     }
 
     /// Encode the length of a map.
+    #[inline(always)]
     fn encode_map_len(
         &mut self,
         len: usize,
@@ -467,6 +486,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ///
     /// Variant indices are always encoded as a single `u8` for Bincode format,
     /// matching the decode side which uses `u8::decode()`.
+    #[inline(always)]
     fn encode_variant_index(
         &mut self,
         idx: u32,
@@ -549,15 +569,13 @@ where
         T::encode_usize(self, val)
     }
 
-    #[inline]
     fn encode_i8(
         &mut self,
         val: i8,
     ) -> Result<(), EncodeError> {
-        T::encode_i8(self, val)
+        self.encode_u8(val as u8)
     }
 
-    #[inline]
     fn encode_i16(
         &mut self,
         val: i16,

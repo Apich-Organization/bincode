@@ -590,9 +590,6 @@ where
         let hash_builder: S = Default::default();
         let mut map = Self::with_capacity_and_hasher(len, hash_builder);
         for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
-
             let k = K::decode(decoder)?;
             let v = V::decode(decoder)?;
             map.insert(k, v);
@@ -615,9 +612,6 @@ where
         let hash_builder: S = Default::default();
         let mut map = Self::with_capacity_and_hasher(len, hash_builder);
         for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
-
             let k = K::borrow_decode(decoder)?;
             let v = V::borrow_decode(decoder)?;
             map.insert(k, v);
@@ -638,9 +632,6 @@ where
         let hash_builder: S = Default::default();
         let mut map: Self = Self::with_capacity_and_hasher(len, hash_builder);
         for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
             let key = T::decode(decoder)?;
             map.insert(key);
         }
@@ -661,9 +652,6 @@ where
 
         let mut map = Self::with_capacity_and_hasher(len, S::default());
         for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
             let key = T::borrow_decode(decoder)?;
             map.insert(key);
         }

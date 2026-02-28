@@ -30,7 +30,7 @@ pub fn encode_u16<W: Writer>(
         writer.write_u8(val as u8)
     } else {
         writer.write_u8(25)?;
-        writer.write(&val.to_be_bytes())
+        writer.write_u16(val.to_be())
     }
 }
 
@@ -47,10 +47,10 @@ pub fn encode_u32<W: Writer>(
         writer.write_u8(val as u8)
     } else if val <= 0xFFFF {
         writer.write_u8(25)?;
-        writer.write(&(val as u16).to_be_bytes())
+        writer.write_u16((val as u16).to_be())
     } else {
         writer.write_u8(26)?;
-        writer.write(&val.to_be_bytes())
+        writer.write_u32(val.to_be())
     }
 }
 
@@ -67,13 +67,13 @@ pub fn encode_u64<W: Writer>(
         writer.write_u8(val as u8)
     } else if val <= 0xFFFF {
         writer.write_u8(25)?;
-        writer.write(&(val as u16).to_be_bytes())
-    } else if val <= 0xFFFFFFFF {
+        writer.write_u16((val as u16).to_be())
+    } else if val <= 0xFFFF_FFFF {
         writer.write_u8(26)?;
-        writer.write(&(val as u32).to_be_bytes())
+        writer.write_u32((val as u32).to_be())
     } else {
         writer.write_u8(27)?;
-        writer.write(&val.to_be_bytes())
+        writer.write_u64(val.to_be())
     }
 }
 
@@ -115,7 +115,7 @@ pub fn encode_i16<W: Writer>(
             writer.write_u8(val as u8)
         } else {
             writer.write_u8(0x20 | 25)?;
-            writer.write(&val.to_be_bytes())
+            writer.write_u16(val.to_be())
         }
     }
 }
@@ -138,10 +138,10 @@ pub fn encode_i32<W: Writer>(
             writer.write_u8(val as u8)
         } else if val <= 0xFFFF {
             writer.write_u8(0x20 | 25)?;
-            writer.write(&(val as u16).to_be_bytes())
+            writer.write_u16((val as u16).to_be())
         } else {
             writer.write_u8(0x20 | 26)?;
-            writer.write(&val.to_be_bytes())
+            writer.write_u32(val.to_be())
         }
     }
 }
@@ -164,28 +164,28 @@ pub fn encode_i64<W: Writer>(
             writer.write_u8(val as u8)
         } else if val <= 0xFFFF {
             writer.write_u8(0x20 | 25)?;
-            writer.write(&(val as u16).to_be_bytes())
-        } else if val <= 0xFFFFFFFF {
+            writer.write_u16((val as u16).to_be())
+        } else if val <= 0xFFFF_FFFF {
             writer.write_u8(0x20 | 26)?;
-            writer.write(&(val as u32).to_be_bytes())
+            writer.write_u32((val as u32).to_be())
         } else {
             writer.write_u8(0x20 | 27)?;
-            writer.write(&val.to_be_bytes())
+            writer.write_u64(val.to_be())
         }
     }
 }
 
 /// Encode a `u128` value into CBOR.
 ///
-/// Values ≤ u64::MAX use standard CBOR unsigned integer encoding.
-/// Values > u64::MAX use Tag 2 (positive bignum) with a byte string
+/// Values ≤ `u64::MAX` use standard CBOR unsigned integer encoding.
+/// Values > `u64::MAX` use Tag 2 (positive bignum) with a byte string
 /// containing the minimal big-endian representation (RFC 8949 §3.4.3).
 #[inline]
 pub fn encode_u128<W: Writer>(
     writer: &mut W,
     val: u128,
 ) -> Result<(), EncodeError> {
-    if val <= u64::MAX as u128 {
+    if val <= u128::from(u64::MAX) {
         return encode_u64(writer, val as u64);
     }
     // Tag 2 = positive bignum
@@ -203,7 +203,7 @@ pub fn encode_u128<W: Writer>(
 ///
 /// Non-negative values use standard CBOR unsigned encoding (or Tag 2 bignum).
 /// Negative values that fit in i64 use standard CBOR negative integer encoding.
-/// Negative values < i64::MIN use Tag 3 (negative bignum) with a byte string
+/// Negative values < `i64::MIN` use Tag 3 (negative bignum) with a byte string
 /// containing the minimal big-endian representation of `-1 - val` (RFC 8949 §3.4.3).
 #[inline]
 pub fn encode_i128<W: Writer>(
@@ -215,7 +215,7 @@ pub fn encode_i128<W: Writer>(
     }
     // For negative values, CBOR encodes -1 - val as the unsigned magnitude
     let magnitude = (-1i128 - val) as u128;
-    if magnitude <= u64::MAX as u128 {
+    if magnitude <= u128::from(u64::MAX) {
         // Fits in standard CBOR negative integer encoding
         let mag64 = magnitude as u64;
         if mag64 <= 23 {
@@ -225,13 +225,13 @@ pub fn encode_i128<W: Writer>(
             writer.write_u8(mag64 as u8)
         } else if mag64 <= 0xFFFF {
             writer.write_u8(0x20 | 25)?;
-            writer.write(&(mag64 as u16).to_be_bytes())
+            writer.write_u16((mag64 as u16).to_be())
         } else if mag64 <= 0xFFFF_FFFF {
             writer.write_u8(0x20 | 26)?;
-            writer.write(&(mag64 as u32).to_be_bytes())
+            writer.write_u32((mag64 as u32).to_be())
         } else {
             writer.write_u8(0x20 | 27)?;
-            writer.write(&mag64.to_be_bytes())
+            writer.write_u64(mag64.to_be())
         }
     } else {
         // Tag 3 = negative bignum; value is -1 - n where n is the bignum
@@ -257,13 +257,13 @@ fn encode_bytestring_header<W: Writer>(
         writer.write_u8(len as u8)
     } else if len <= 0xFFFF {
         writer.write_u8(0x40 | 25)?;
-        writer.write(&(len as u16).to_be_bytes())
+        writer.write_u16((len as u16).to_be())
     } else if len <= 0xFFFF_FFFF {
         writer.write_u8(0x40 | 26)?;
-        writer.write(&(len as u32).to_be_bytes())
+        writer.write_u32((len as u32).to_be())
     } else {
         writer.write_u8(0x40 | 27)?;
-        writer.write(&(len as u64).to_be_bytes())
+        writer.write_u64((len as u64).to_be())
     }
 }
 
@@ -287,7 +287,7 @@ pub fn encode_f32<W: Writer>(
     val: f32,
 ) -> Result<(), EncodeError> {
     writer.write_u8(0xFA)?;
-    writer.write(&val.to_be_bytes())
+    writer.write_u32(val.to_bits().to_be())
 }
 
 /// Encode an `f64` value into CBOR.
@@ -297,7 +297,7 @@ pub fn encode_f64<W: Writer>(
     val: f64,
 ) -> Result<(), EncodeError> {
     writer.write_u8(0xFB)?;
-    writer.write(&val.to_be_bytes())
+    writer.write_u64(val.to_bits().to_be())
 }
 
 /// Encode a `str` value into CBOR.
@@ -314,13 +314,13 @@ pub fn encode_str<W: Writer>(
         writer.write_u8(len as u8)?;
     } else if len <= 0xFFFF {
         writer.write_u8(0x60 | 25)?;
-        writer.write(&(len as u16).to_be_bytes())?;
-    } else if len <= 0xFFFFFFFF {
+        writer.write_u16((len as u16).to_be())?;
+    } else if len <= 0xFFFF_FFFF {
         writer.write_u8(0x60 | 26)?;
-        writer.write(&(len as u32).to_be_bytes())?;
+        writer.write_u32((len as u32).to_be())?;
     } else {
         writer.write_u8(0x60 | 27)?;
-        writer.write(&(len as u64).to_be_bytes())?;
+        writer.write_u64((len as u64).to_be())?;
     }
     writer.write(val.as_bytes())
 }
@@ -339,13 +339,13 @@ pub fn encode_slice_len<W: Writer>(
         writer.write_u8(len as u8)
     } else if len <= 0xFFFF {
         writer.write_u8(0x80 | 25)?;
-        writer.write(&(len as u16).to_be_bytes())
-    } else if len <= 0xFFFFFFFF {
+        writer.write_u16((len as u16).to_be())
+    } else if len <= 0xFFFF_FFFF {
         writer.write_u8(0x80 | 26)?;
-        writer.write(&(len as u32).to_be_bytes())
+        writer.write_u32((len as u32).to_be())
     } else {
         writer.write_u8(0x80 | 27)?;
-        writer.write(&(len as u64).to_be_bytes())
+        writer.write_u64((len as u64).to_be())
     }
 }
 
@@ -363,12 +363,12 @@ pub fn encode_map_len<W: Writer>(
         writer.write_u8(len as u8)
     } else if len <= 0xFFFF {
         writer.write_u8(0xA0 | 25)?;
-        writer.write(&(len as u16).to_be_bytes())
-    } else if len <= 0xFFFFFFFF {
+        writer.write_u16((len as u16).to_be())
+    } else if len <= 0xFFFF_FFFF {
         writer.write_u8(0xA0 | 26)?;
-        writer.write(&(len as u32).to_be_bytes())
+        writer.write_u32((len as u32).to_be())
     } else {
         writer.write_u8(0xA0 | 27)?;
-        writer.write(&(len as u64).to_be_bytes())
+        writer.write_u64((len as u64).to_be())
     }
 }

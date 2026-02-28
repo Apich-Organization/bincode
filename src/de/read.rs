@@ -34,6 +34,38 @@ pub trait Reader {
         Ok(byte[0])
     }
 
+    /// Read a `u16` from the reader.
+    #[inline]
+    fn read_u16(&mut self) -> Result<u16, DecodeError> {
+        let mut bytes = [0u8; 2];
+        self.read(&mut bytes)?;
+        Ok(u16::from_ne_bytes(bytes))
+    }
+
+    /// Read a `u32` from the reader.
+    #[inline]
+    fn read_u32(&mut self) -> Result<u32, DecodeError> {
+        let mut bytes = [0u8; 4];
+        self.read(&mut bytes)?;
+        Ok(u32::from_ne_bytes(bytes))
+    }
+
+    /// Read a `u64` from the reader.
+    #[inline]
+    fn read_u64(&mut self) -> Result<u64, DecodeError> {
+        let mut bytes = [0u8; 8];
+        self.read(&mut bytes)?;
+        Ok(u64::from_ne_bytes(bytes))
+    }
+
+    /// Read a `u128` from the reader.
+    #[inline]
+    fn read_u128(&mut self) -> Result<u128, DecodeError> {
+        let mut bytes = [0u8; 16];
+        self.read(&mut bytes)?;
+        Ok(u128::from_ne_bytes(bytes))
+    }
+
     /// If this reader wraps a buffer of any kind, this function lets callers access contents of
     /// the buffer without passing data through a buffer first.
     #[inline]
@@ -81,6 +113,26 @@ where
     ) {
         (*self).consume(n);
     }
+
+    #[inline]
+    fn read_u16(&mut self) -> Result<u16, DecodeError> {
+        (**self).read_u16()
+    }
+
+    #[inline]
+    fn read_u32(&mut self) -> Result<u32, DecodeError> {
+        (**self).read_u32()
+    }
+
+    #[inline]
+    fn read_u64(&mut self) -> Result<u64, DecodeError> {
+        (**self).read_u64()
+    }
+
+    #[inline]
+    fn read_u128(&mut self) -> Result<u128, DecodeError> {
+        (**self).read_u128()
+    }
 }
 
 /// A reader for borrowed data. Implementers of this must also implement the [`Reader`\] trait. See the module documentation for more information.
@@ -124,6 +176,16 @@ impl<'storage> Reader for SliceReader<'storage> {
         // `copy_nonoverlapping` is safe because pointers do not overlap and the lengths match.
         // `get_unchecked` is safe because `bytes.len()` is <= the length of `self.slice`.
         unsafe {
+            #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+            {
+                use core::arch::x86_64::_MM_HINT_T0;
+                use core::arch::x86_64::_mm_prefetch;
+                _mm_prefetch(self.slice.as_ptr().cast::<i8>(), _MM_HINT_T0);
+            }
+            #[cfg(target_arch = "aarch64")]
+            {
+                core::arch::asm!("prfm pldl1keep, [{}]", in(reg) self.slice.as_ptr());
+            }
             core::ptr::copy_nonoverlapping(self.slice.as_ptr(), bytes.as_mut_ptr(), bytes.len());
             self.slice = self.slice.get_unchecked(bytes.len()..);
         }
@@ -155,6 +217,98 @@ impl<'storage> Reader for SliceReader<'storage> {
         let byte = unsafe { *self.slice.get_unchecked(0) };
         self.slice = unsafe { self.slice.get_unchecked(1..) };
         Ok(byte)
+    }
+
+    #[inline(always)]
+    fn read_u16(&mut self) -> Result<u16, DecodeError> {
+        if self.slice.len() < 2 {
+            return crate::error::cold_decode_error_unexpected_end(2 - self.slice.len());
+        }
+        #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+        unsafe {
+            use core::arch::x86_64::_MM_HINT_T0;
+            use core::arch::x86_64::_mm_prefetch;
+            _mm_prefetch(
+                self.slice.as_ptr().wrapping_add(64).cast::<i8>(),
+                _MM_HINT_T0,
+            );
+        }
+        #[cfg(target_arch = "aarch64")]
+        unsafe {
+            core::arch::asm!("prfm pldl1keep, [{}]", in(reg) self.slice.as_ptr().wrapping_add(64));
+        }
+        let val = unsafe { core::ptr::read_unaligned(self.slice.as_ptr().cast::<u16>()) };
+        self.slice = unsafe { self.slice.get_unchecked(2..) };
+        Ok(val)
+    }
+
+    #[inline(always)]
+    fn read_u32(&mut self) -> Result<u32, DecodeError> {
+        if self.slice.len() < 4 {
+            return crate::error::cold_decode_error_unexpected_end(4 - self.slice.len());
+        }
+        #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+        unsafe {
+            use core::arch::x86_64::_MM_HINT_T0;
+            use core::arch::x86_64::_mm_prefetch;
+            _mm_prefetch(
+                self.slice.as_ptr().wrapping_add(64).cast::<i8>(),
+                _MM_HINT_T0,
+            );
+        }
+        #[cfg(target_arch = "aarch64")]
+        unsafe {
+            core::arch::asm!("prfm pldl1keep, [{}]", in(reg) self.slice.as_ptr().wrapping_add(64));
+        }
+        let val = unsafe { core::ptr::read_unaligned(self.slice.as_ptr().cast::<u32>()) };
+        self.slice = unsafe { self.slice.get_unchecked(4..) };
+        Ok(val)
+    }
+
+    #[inline(always)]
+    fn read_u64(&mut self) -> Result<u64, DecodeError> {
+        if self.slice.len() < 8 {
+            return crate::error::cold_decode_error_unexpected_end(8 - self.slice.len());
+        }
+        #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+        unsafe {
+            use core::arch::x86_64::_MM_HINT_T0;
+            use core::arch::x86_64::_mm_prefetch;
+            _mm_prefetch(
+                self.slice.as_ptr().wrapping_add(64).cast::<i8>(),
+                _MM_HINT_T0,
+            );
+        }
+        #[cfg(target_arch = "aarch64")]
+        unsafe {
+            core::arch::asm!("prfm pldl1keep, [{}]", in(reg) self.slice.as_ptr().wrapping_add(64));
+        }
+        let val = unsafe { core::ptr::read_unaligned(self.slice.as_ptr().cast::<u64>()) };
+        self.slice = unsafe { self.slice.get_unchecked(8..) };
+        Ok(val)
+    }
+
+    #[inline(always)]
+    fn read_u128(&mut self) -> Result<u128, DecodeError> {
+        if self.slice.len() < 16 {
+            return crate::error::cold_decode_error_unexpected_end(16 - self.slice.len());
+        }
+        #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
+        unsafe {
+            use core::arch::x86_64::_MM_HINT_T0;
+            use core::arch::x86_64::_mm_prefetch;
+            _mm_prefetch(
+                self.slice.as_ptr().wrapping_add(64).cast::<i8>(),
+                _MM_HINT_T0,
+            );
+        }
+        #[cfg(target_arch = "aarch64")]
+        unsafe {
+            core::arch::asm!("prfm pldl1keep, [{}]", in(reg) self.slice.as_ptr().wrapping_add(64));
+        }
+        let val = unsafe { core::ptr::read_unaligned(self.slice.as_ptr().cast::<u128>()) };
+        self.slice = unsafe { self.slice.get_unchecked(16..) };
+        Ok(val)
     }
 }
 

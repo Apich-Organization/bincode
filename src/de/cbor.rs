@@ -13,24 +13,14 @@ fn decode_additional_info<R: Reader>(
     reader: &mut R,
     info: u8,
 ) -> Result<u64, DecodeError> {
+    if info < 24 {
+        return Ok(u64::from(info));
+    }
     match info {
-        | 0..=23 => Ok(info as u64),
-        | 24 => Ok(reader.read_u8()? as u64),
-        | 25 => {
-            let mut bytes = [0u8; 2];
-            reader.read(&mut bytes)?;
-            Ok(u16::from_be_bytes(bytes) as u64)
-        },
-        | 26 => {
-            let mut bytes = [0u8; 4];
-            reader.read(&mut bytes)?;
-            Ok(u32::from_be_bytes(bytes) as u64)
-        },
-        | 27 => {
-            let mut bytes = [0u8; 8];
-            reader.read(&mut bytes)?;
-            Ok(u64::from_be_bytes(bytes))
-        },
+        | 24 => Ok(u64::from(reader.read_u8()?)),
+        | 25 => Ok(u64::from(u16::from_be(reader.read_u16()?))),
+        | 26 => Ok(u64::from(u32::from_be(reader.read_u32()?))),
+        | 27 => Ok(u64::from_be(reader.read_u64()?)),
         | _ => cold_decode_error_unexpected_end(1),
     }
 }
@@ -39,6 +29,9 @@ fn decode_additional_info<R: Reader>(
 #[inline]
 pub fn decode_u8<R: Reader>(reader: &mut R) -> Result<u8, DecodeError> {
     let first = reader.read_u8()?;
+    if first <= 23 {
+        return Ok(first);
+    }
     let major = first >> 5;
     let info = first & 0x1F;
     if major != 0 {
@@ -53,6 +46,9 @@ pub fn decode_u8<R: Reader>(reader: &mut R) -> Result<u8, DecodeError> {
 #[inline]
 pub fn decode_u16<R: Reader>(reader: &mut R) -> Result<u16, DecodeError> {
     let first = reader.read_u8()?;
+    if first <= 23 {
+        return Ok(u16::from(first));
+    }
     let major = first >> 5;
     let info = first & 0x1F;
     if major != 0 {
@@ -67,6 +63,9 @@ pub fn decode_u16<R: Reader>(reader: &mut R) -> Result<u16, DecodeError> {
 #[inline]
 pub fn decode_u32<R: Reader>(reader: &mut R) -> Result<u32, DecodeError> {
     let first = reader.read_u8()?;
+    if first <= 23 {
+        return Ok(u32::from(first));
+    }
     let major = first >> 5;
     let info = first & 0x1F;
     if major != 0 {
@@ -81,6 +80,9 @@ pub fn decode_u32<R: Reader>(reader: &mut R) -> Result<u32, DecodeError> {
 #[inline]
 pub fn decode_u64<R: Reader>(reader: &mut R) -> Result<u64, DecodeError> {
     let first = reader.read_u8()?;
+    if first <= 23 {
+        return Ok(u64::from(first));
+    }
     let major = first >> 5;
     let info = first & 0x1F;
     if major != 0 {
@@ -91,8 +93,8 @@ pub fn decode_u64<R: Reader>(reader: &mut R) -> Result<u64, DecodeError> {
 
 /// Decode a `u128` value from CBOR.
 ///
-/// Handles both standard CBOR unsigned integers (major type 0, values ≤ u64::MAX)
-/// and Tag 2 (positive bignum) for values > u64::MAX (RFC 8949 §3.4.3).
+/// Handles both standard CBOR unsigned integers (major type 0, values ≤ `u64::MAX`)
+/// and Tag 2 (positive bignum) for values > `u64::MAX` (RFC 8949 §3.4.3).
 #[inline]
 pub fn decode_u128<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
     let first = reader.read_u8()?;
@@ -102,7 +104,7 @@ pub fn decode_u128<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
         // Standard unsigned integer (major type 0)
         | 0 => {
             let val = decode_additional_info(reader, info)?;
-            Ok(val as u128)
+            Ok(u128::from(val))
         },
         // Tag (major type 6) — expect Tag 2 (positive bignum)
         | 6 => {
@@ -120,6 +122,12 @@ pub fn decode_u128<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
 #[inline]
 pub fn decode_i8<R: Reader>(reader: &mut R) -> Result<i8, DecodeError> {
     let first = reader.read_u8()?;
+    if first <= 23 {
+        return Ok(first as i8);
+    }
+    if (0x20..=0x37).contains(&first) {
+        return Ok(-1 - (first & 0x1F) as i8);
+    }
     let major = first >> 5;
     let info = first & 0x1F;
     match major {
@@ -142,6 +150,12 @@ pub fn decode_i8<R: Reader>(reader: &mut R) -> Result<i8, DecodeError> {
 #[inline]
 pub fn decode_i16<R: Reader>(reader: &mut R) -> Result<i16, DecodeError> {
     let first = reader.read_u8()?;
+    if first <= 23 {
+        return Ok(i16::from(first));
+    }
+    if (0x20..=0x37).contains(&first) {
+        return Ok(-1 - i16::from(first & 0x1F));
+    }
     let major = first >> 5;
     let info = first & 0x1F;
     match major {
@@ -164,6 +178,12 @@ pub fn decode_i16<R: Reader>(reader: &mut R) -> Result<i16, DecodeError> {
 #[inline]
 pub fn decode_i32<R: Reader>(reader: &mut R) -> Result<i32, DecodeError> {
     let first = reader.read_u8()?;
+    if first <= 23 {
+        return Ok(i32::from(first));
+    }
+    if (0x20..=0x37).contains(&first) {
+        return Ok(-1 - i32::from(first & 0x1F));
+    }
     let major = first >> 5;
     let info = first & 0x1F;
     match major {
@@ -186,6 +206,12 @@ pub fn decode_i32<R: Reader>(reader: &mut R) -> Result<i32, DecodeError> {
 #[inline]
 pub fn decode_i64<R: Reader>(reader: &mut R) -> Result<i64, DecodeError> {
     let first = reader.read_u8()?;
+    if first <= 23 {
+        return Ok(i64::from(first));
+    }
+    if (0x20..=0x37).contains(&first) {
+        return Ok(-1 - i64::from(first & 0x1F));
+    }
     let major = first >> 5;
     let info = first & 0x1F;
     match major {
@@ -212,18 +238,24 @@ pub fn decode_i64<R: Reader>(reader: &mut R) -> Result<i64, DecodeError> {
 #[inline]
 pub fn decode_i128<R: Reader>(reader: &mut R) -> Result<i128, DecodeError> {
     let first = reader.read_u8()?;
+    if first <= 23 {
+        return Ok(i128::from(first));
+    }
+    if (0x20..=0x37).contains(&first) {
+        return Ok(-1 - i128::from(first & 0x1F));
+    }
     let major = first >> 5;
     let info = first & 0x1F;
     match major {
         // Standard unsigned integer (major type 0)
         | 0 => {
             let val = decode_additional_info(reader, info)?;
-            Ok(val as i128)
+            Ok(i128::from(val))
         },
         // Standard negative integer (major type 1): value = -1 - additional
         | 1 => {
             let val = decode_additional_info(reader, info)?;
-            Ok(-1 - (val as i128))
+            Ok(-1 - i128::from(val))
         },
         // Tag (major type 6)
         | 6 => {
@@ -302,9 +334,7 @@ pub fn decode_f32<R: Reader>(reader: &mut R) -> Result<f32, DecodeError> {
     if first != 0xFA {
         return cold_decode_error_unexpected_end(4);
     }
-    let mut bytes = [0u8; 4];
-    reader.read(&mut bytes)?;
-    Ok(f32::from_be_bytes(bytes))
+    Ok(f32::from_bits(u32::from_be(reader.read_u32()?)))
 }
 
 /// Decode an `f64` value from CBOR.
@@ -314,9 +344,7 @@ pub fn decode_f64<R: Reader>(reader: &mut R) -> Result<f64, DecodeError> {
     if first != 0xFB {
         return cold_decode_error_unexpected_end(8);
     }
-    let mut bytes = [0u8; 8];
-    reader.read(&mut bytes)?;
-    Ok(f64::from_be_bytes(bytes))
+    Ok(f64::from_bits(u64::from_be(reader.read_u64()?)))
 }
 
 /// Decode a slice length from CBOR.

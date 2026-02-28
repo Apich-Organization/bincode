@@ -146,9 +146,6 @@ where
 
         let mut map = Self::new();
         for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
-
             let key = K::decode(decoder)?;
             let value = V::decode(decoder)?;
             map.insert(key, value);
@@ -169,9 +166,6 @@ where
 
         let mut map = Self::new();
         for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
-
             let key = K::borrow_decode(decoder)?;
             let value = V::borrow_decode(decoder)?;
             map.insert(key, value);
@@ -208,9 +202,6 @@ where
 
         let mut map = Self::new();
         for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
             let key = T::decode(decoder)?;
             map.insert(key);
         }
@@ -229,9 +220,6 @@ where
 
         let mut map = Self::new();
         for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
             let key = T::borrow_decode(decoder)?;
             map.insert(key);
         }
@@ -506,9 +494,6 @@ where
             }
 
             for _ in i..len {
-                if <D::C as crate::config::InternalLimitConfig>::LIMIT.is_some() {
-                    decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-                }
                 vec.push(T::decode(decoder)?);
             }
             Ok(vec)
@@ -713,9 +698,6 @@ where
             }
 
             for _ in i..len {
-                if <D::C as crate::config::InternalLimitConfig>::LIMIT.is_some() {
-                    decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-                }
                 vec.push(T::borrow_decode(decoder)?);
             }
             Ok(vec)
