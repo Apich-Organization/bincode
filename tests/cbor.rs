@@ -254,6 +254,8 @@ impl Arbitrary for ComplexStruct {
 }
 
 proptest! {
+    #![proptest_config(ProptestConfig { cases: if std::env::var("MIRIFLAGS").is_ok() { 2 } else { 1000 }, .. ProptestConfig::default() })]
+
     #[test]
     fn test_cbor_roundtrip_u64(a in any::<u64>()) {
         let config = config::standard().with_cbor_format();
