@@ -69,6 +69,7 @@ pub enum CborDeterministicMode {
 }
 
 /// Detailed options for CBOR encoding.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct CborOptions {
     /// Deterministic encoding mode.

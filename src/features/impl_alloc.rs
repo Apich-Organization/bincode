@@ -216,10 +216,7 @@ where
             <E::C as crate::config::InternalFormatConfig>::FORMAT,
             Format::CborDeterministic
         ) {
-            crate::enc::cbor::encode_map_deterministic::<E, _, _, _>(
-                encoder,
-                self.iter().map(|(k, v)| (k, v)),
-            )
+            crate::enc::cbor::encode_map_deterministic::<E, _, _, _>(encoder, self.iter())
         } else {
             encoder.encode_map_len(self.len())?;
             for (key, val) in self {
@@ -375,11 +372,11 @@ where
             unsafe {
                 let s1 = core::slice::from_raw_parts(
                     slices.0.as_ptr().cast::<u8>(),
-                    slices.0.len() * core::mem::size_of::<T>(),
+                    core::mem::size_of_val(slices.0),
                 );
                 let s2 = core::slice::from_raw_parts(
                     slices.1.as_ptr().cast::<u8>(),
-                    slices.1.len() * core::mem::size_of::<T>(),
+                    core::mem::size_of_val(slices.1),
                 );
                 encoder.writer().write(s1)?;
                 encoder.writer().write(s2)?;

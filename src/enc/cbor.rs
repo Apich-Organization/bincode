@@ -7,6 +7,10 @@ use crate::enc::write::Writer;
 use crate::error::EncodeError;
 
 /// Helper to encode a CBOR header (major type + value/argument).
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 fn encode_header<W: Writer>(
     writer: &mut W,
@@ -32,6 +36,10 @@ fn encode_header<W: Writer>(
 }
 
 /// Helper to encode a CBOR indefinite length header.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 fn encode_indefinite_header<W: Writer>(
     writer: &mut W,
@@ -41,33 +49,49 @@ fn encode_indefinite_header<W: Writer>(
 }
 
 /// Encode a `u8` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_u8<W: Writer, C: Config>(
     writer: &mut W,
     val: u8,
 ) -> Result<(), EncodeError> {
-    encode_header(writer, 0, val as u64)
+    encode_header(writer, 0, u64::from(val))
 }
 
 /// Encode a `u16` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_u16<W: Writer, C: Config>(
     writer: &mut W,
     val: u16,
 ) -> Result<(), EncodeError> {
-    encode_header(writer, 0, val as u64)
+    encode_header(writer, 0, u64::from(val))
 }
 
 /// Encode a `u32` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_u32<W: Writer, C: Config>(
     writer: &mut W,
     val: u32,
 ) -> Result<(), EncodeError> {
-    encode_header(writer, 0, val as u64)
+    encode_header(writer, 0, u64::from(val))
 }
 
 /// Encode a `u64` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_u64<W: Writer, C: Config>(
     writer: &mut W,
@@ -77,6 +101,10 @@ pub fn encode_u64<W: Writer, C: Config>(
 }
 
 /// Encode an `i8` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_i8<W: Writer, C: Config>(
     writer: &mut W,
@@ -90,6 +118,10 @@ pub fn encode_i8<W: Writer, C: Config>(
 }
 
 /// Encode an `i16` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_i16<W: Writer, C: Config>(
     writer: &mut W,
@@ -103,6 +135,10 @@ pub fn encode_i16<W: Writer, C: Config>(
 }
 
 /// Encode an `i32` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_i32<W: Writer, C: Config>(
     writer: &mut W,
@@ -116,6 +152,10 @@ pub fn encode_i32<W: Writer, C: Config>(
 }
 
 /// Encode an `i64` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_i64<W: Writer, C: Config>(
     writer: &mut W,
@@ -129,6 +169,10 @@ pub fn encode_i64<W: Writer, C: Config>(
 }
 
 /// Encode a `u128` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_u128<W: Writer, C: Config>(
     writer: &mut W,
@@ -146,6 +190,10 @@ pub fn encode_u128<W: Writer, C: Config>(
 }
 
 /// Encode an `i128` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_i128<W: Writer, C: Config>(
     writer: &mut W,
@@ -168,6 +216,10 @@ pub fn encode_i128<W: Writer, C: Config>(
 }
 
 /// Encode a `bool` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_bool<W: Writer, C: Config>(
     writer: &mut W,
@@ -177,16 +229,16 @@ pub fn encode_bool<W: Writer, C: Config>(
 }
 
 /// Losslessly convert f32 to f16 bit pattern.
-fn f32_to_f16(val: f32) -> Option<u16> {
+const fn f32_to_f16(val: f32) -> Option<u16> {
     let bits = val.to_bits();
     let sign = (bits >> 31) & 0x1;
     let exp = (bits >> 23) & 0xFF;
-    let mat = bits & 0x7FFFFF;
+    let mat = bits & 0x7F_FFFF;
 
     if exp == 0xFF {
         if mat == 0 {
             return Some(((sign << 15) as u16) | 0x7C00); // Infinity
-        } else if mat & 0x1FFF == 0 {
+        } else if mat.trailing_zeros() >= 13 {
             return Some(((sign << 15) as u16) | 0x7C00 | (mat >> 13) as u16); // Precise NaN
         }
         return None;
@@ -203,7 +255,7 @@ fn f32_to_f16(val: f32) -> Option<u16> {
         if new_exp < -10 {
             None
         } else {
-            let mat = mat | 0x800000;
+            let mat = mat | 0x80_0000;
             let shift = 13 + (1 - new_exp);
             if mat & ((1 << shift) - 1) == 0 {
                 Some(((sign << 15) as u16) | (mat >> shift) as u16)
@@ -211,7 +263,7 @@ fn f32_to_f16(val: f32) -> Option<u16> {
                 None
             }
         }
-    } else if mat & 0x1FFF == 0 {
+    } else if mat.trailing_zeros() >= 13 {
         Some(((sign << 15) as u16) | ((new_exp as u16) << 10) | (mat >> 13) as u16)
     } else {
         None
@@ -219,7 +271,7 @@ fn f32_to_f16(val: f32) -> Option<u16> {
 }
 
 /// Losslessly convert f64 to f32.
-fn f64_to_f32(val: f64) -> Option<f32> {
+const fn f64_to_f32(val: f64) -> Option<f32> {
     let bits = val.to_bits();
     let sign = (bits >> 63) & 0x1;
     let exp = (bits >> 52) & 0x7FF;
@@ -232,7 +284,7 @@ fn f64_to_f32(val: f64) -> Option<f32> {
             } else {
                 f32::NEG_INFINITY
             });
-        } else if mat & 0x1F_FFFF_FFFF == 0 {
+        } else if mat.trailing_zeros() >= 37 {
             let f32_bits = ((sign << 31) as u32) | (0xFF << 23) | (mat >> 29) as u32;
             return Some(f32::from_bits(f32_bits));
         }
@@ -240,7 +292,8 @@ fn f64_to_f32(val: f64) -> Option<f32> {
     }
 
     let f = val as f32;
-    if f as f64 == val {
+    #[allow(clippy::float_cmp)]
+    if (f as f64) == val {
         Some(f)
     } else {
         None
@@ -248,6 +301,10 @@ fn f64_to_f32(val: f64) -> Option<f32> {
 }
 
 /// Encode an `f32` value into CBOR with preferred serialization.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_f32<W: Writer, C: Config>(
     writer: &mut W,
@@ -262,11 +319,11 @@ pub fn encode_f32<W: Writer, C: Config>(
         return writer.write(&[0xf9, 0x7e, 0x00]); // Canonical NaN (f16)
     }
 
-    if opts.preferred_float {
-        if let Some(f16_bits) = f32_to_f16(val) {
-            writer.write_u8(0xF9)?;
-            return writer.write(&f16_bits.to_be_bytes());
-        }
+    if opts.preferred_float
+        && let Some(f16_bits) = f32_to_f16(val)
+    {
+        writer.write_u8(0xF9)?;
+        return writer.write(&f16_bits.to_be_bytes());
     }
 
     writer.write_u8(0xFA)?;
@@ -274,6 +331,10 @@ pub fn encode_f32<W: Writer, C: Config>(
 }
 
 /// Encode an `f64` value into CBOR with preferred serialization.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_f64<W: Writer, C: Config>(
     writer: &mut W,
@@ -288,10 +349,10 @@ pub fn encode_f64<W: Writer, C: Config>(
         return writer.write(&[0xf9, 0x7e, 0x00]); // Canonical NaN
     }
 
-    if opts.preferred_float {
-        if let Some(f32_val) = f64_to_f32(val) {
-            return encode_f32::<W, C>(writer, f32_val);
-        }
+    if opts.preferred_float
+        && let Some(f32_val) = f64_to_f32(val)
+    {
+        return encode_f32::<W, C>(writer, f32_val);
     }
 
     writer.write_u8(0xFB)?;
@@ -299,6 +360,10 @@ pub fn encode_f64<W: Writer, C: Config>(
 }
 
 /// Encode a `str` value into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_str<W: Writer, C: Config>(
     writer: &mut W,
@@ -309,6 +374,10 @@ pub fn encode_str<W: Writer, C: Config>(
 }
 
 /// Encode a byte slice into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_byte_slice<W: Writer, C: Config>(
     writer: &mut W,
@@ -319,6 +388,10 @@ pub fn encode_byte_slice<W: Writer, C: Config>(
 }
 
 /// Encode a slice length into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_slice_len<W: Writer, C: Config>(
     writer: &mut W,
@@ -332,6 +405,10 @@ pub fn encode_slice_len<W: Writer, C: Config>(
 }
 
 /// Encode a byte slice length into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_byte_slice_len<W: Writer, C: Config>(
     writer: &mut W,
@@ -345,6 +422,10 @@ pub fn encode_byte_slice_len<W: Writer, C: Config>(
 }
 
 /// Encode a map length into CBOR.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 #[inline]
 pub fn encode_map_len<W: Writer, C: Config>(
     writer: &mut W,
@@ -360,6 +441,10 @@ pub fn encode_map_len<W: Writer, C: Config>(
 /// Encode a map with deterministic ordering.
 ///
 /// RFC 8949 §4.2.1: keys must be sorted by the bytewise lexicographic order of their deterministic encodings.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 pub fn encode_map_deterministic<E, K, V, I>(
     encoder: &mut E,
     iter: I,
@@ -402,6 +487,10 @@ where
 /// Encode a slice with deterministic ordering.
 ///
 /// RFC 8949: for sets (arrays with deterministic requirements), elements must be sorted.
+///
+/// # Errors
+///
+/// Returns `EncodeError` if the encoding fails.
 pub fn encode_slice_deterministic<E, T, I>(
     encoder: &mut E,
     iter: I,

@@ -577,10 +577,7 @@ where
             <E::C as crate::config::InternalFormatConfig>::FORMAT,
             Format::CborDeterministic
         ) {
-            crate::enc::cbor::encode_map_deterministic::<E, _, _, _>(
-                encoder,
-                self.iter().map(|(k, v)| (k, v)),
-            )
+            crate::enc::cbor::encode_map_deterministic::<E, _, _, _>(encoder, self.iter())
         } else {
             encoder.encode_map_len(self.len())?;
             for (k, v) in self {

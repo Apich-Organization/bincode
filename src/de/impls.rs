@@ -1,4 +1,5 @@
 #![allow(unsafe_code, clippy::cast_possible_truncation)]
+#![allow(clippy::redundant_else)]
 use super::BorrowDecode;
 use super::BorrowDecoder;
 use super::Decode;

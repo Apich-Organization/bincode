@@ -1,4 +1,5 @@
 //! Decoder-based structs and traits.
+#![allow(clippy::used_underscore_binding)]
 
 mod decoder;
 mod impl_core;
@@ -674,6 +675,10 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode an enum variant index.
+    ///
+    /// # Errors
+    ///
+    /// Returns `DecodeError` if the encoding fails.
     fn decode_variant_index(&mut self) -> Result<u32, DecodeError> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.decode_u8().map(u32::from),
@@ -682,6 +687,10 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode the length of a byte slice (Major Type 2 in CBOR).
+    ///
+    /// # Errors
+    ///
+    /// Returns `DecodeError` if the encoding fails.
     fn decode_byte_slice_len(&mut self) -> Result<usize, DecodeError> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.decode_slice_len(),
@@ -692,6 +701,10 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode the length of a byte slice or an array (Major Type 2 or 4 in CBOR).
+    ///
+    /// # Errors
+    ///
+    /// Returns `DecodeError` if the encoding fails.
     fn decode_byte_slice_or_array_len(&mut self) -> Result<(u8, usize), DecodeError> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.decode_slice_len().map(|len| (0, len)),
@@ -702,6 +715,10 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode the length of a string (Major Type 3 in CBOR).
+    ///
+    /// # Errors
+    ///
+    /// Returns `DecodeError` if the encoding fails.
     fn decode_str_len(&mut self) -> Result<usize, DecodeError> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.decode_slice_len(),
@@ -710,6 +727,10 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode the header for a struct.
+    ///
+    /// # Errors
+    ///
+    /// Returns `DecodeError` if the encoding fails.
     fn decode_struct_header(
         &mut self,
         _len: usize,
@@ -911,7 +932,7 @@ where
 ///
 /// # Errors
 ///
-/// Returns `EncodeError` if the encoding fails.
+/// Returns `DecodeError` if the encoding fails.
 #[inline]
 pub(crate) fn decode_option_variant<D: Decoder>(
     decoder: &mut D,
