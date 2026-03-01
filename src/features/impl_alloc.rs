@@ -141,7 +141,21 @@ where
     V: Decode<Context>,
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
+        let len = decoder.decode_map_len()?;
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut map = Self::new();
+            while decoder.reader().peek_u8() != Some(0xFF) {
+                let key = K::decode(decoder)?;
+                let value = V::decode(decoder)?;
+                map.insert(key, value);
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Ok(map);
+        }
         decoder.claim_container_read::<(K, V)>(len)?;
 
         let mut map = Self::new();
@@ -161,7 +175,21 @@ where
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
+        let len = decoder.decode_map_len()?;
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut map = Self::new();
+            while decoder.reader().peek_u8() != Some(0xFF) {
+                let key = K::borrow_decode(decoder)?;
+                let value = V::borrow_decode(decoder)?;
+                map.insert(key, value);
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Ok(map);
+        }
         decoder.claim_container_read::<(K, V)>(len)?;
 
         let mut map = Self::new();
@@ -183,12 +211,23 @@ where
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(encoder, self.len())?;
-        for (key, val) in self {
-            key.encode(encoder)?;
-            val.encode(encoder)?;
+        use crate::config::Format;
+        if matches!(
+            <E::C as crate::config::InternalFormatConfig>::FORMAT,
+            Format::CborDeterministic
+        ) {
+            crate::enc::cbor::encode_map_deterministic::<E, _, _, _>(
+                encoder,
+                self.iter().map(|(k, v)| (k, v)),
+            )
+        } else {
+            encoder.encode_map_len(self.len())?;
+            for (key, val) in self {
+                key.encode(encoder)?;
+                val.encode(encoder)?;
+            }
+            Ok(())
         }
-        Ok(())
     }
 }
 
@@ -197,7 +236,20 @@ where
     T: Decode<Context> + Ord,
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
+        let len = decoder.decode_slice_len()?;
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut map = Self::new();
+            while decoder.reader().peek_u8() != Some(0xFF) {
+                let key = T::decode(decoder)?;
+                map.insert(key);
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Ok(map);
+        }
         decoder.claim_container_read::<T>(len)?;
 
         let mut map = Self::new();
@@ -215,7 +267,20 @@ where
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
+        let len = decoder.decode_slice_len()?;
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut map = Self::new();
+            while decoder.reader().peek_u8() != Some(0xFF) {
+                let key = T::borrow_decode(decoder)?;
+                map.insert(key);
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Ok(map);
+        }
         decoder.claim_container_read::<T>(len)?;
 
         let mut map = Self::new();
@@ -235,11 +300,19 @@ where
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(encoder, self.len())?;
-        for item in self {
-            item.encode(encoder)?;
+        use crate::config::Format;
+        if matches!(
+            <E::C as crate::config::InternalFormatConfig>::FORMAT,
+            Format::CborDeterministic
+        ) {
+            crate::enc::cbor::encode_slice_deterministic::<E, _, _>(encoder, self.iter())
+        } else {
+            encoder.encode_slice_len(self.len())?;
+            for item in self {
+                item.encode(encoder)?;
+            }
+            Ok(())
         }
-        Ok(())
     }
 }
 
@@ -270,23 +343,47 @@ where
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(encoder, self.len())?;
+        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
         let is_bincode = matches!(
             <E::C as crate::config::InternalFormatConfig>::FORMAT,
             crate::config::Format::Bincode
         );
-        if is_bincode && unty::type_equal::<T, u8>() {
-            let slices: (&[T], &[T]) = self.as_slices();
-            // Safety: T is u8 so turning this into `&[u8]` is okay
-            let slices: (&[u8], &[u8]) = unsafe {
-                (
-                    core::slice::from_raw_parts(slices.0.as_ptr().cast(), slices.0.len()),
-                    core::slice::from_raw_parts(slices.1.as_ptr().cast(), slices.1.len()),
-                )
-            };
+        let is_fixed = matches!(E::C::INT_ENCODING, IntEncoding::Fixed);
+        let is_native_endian = match E::C::ENDIAN {
+            | Endianness::Little => cfg!(target_endian = "little"),
+            | Endianness::Big => cfg!(target_endian = "big"),
+        };
 
-            encoder.writer().write(slices.0)?;
-            encoder.writer().write(slices.1)?;
+        encoder.encode_slice_len(self.len())?;
+        if is_bincode
+            && (is_u8
+                || (is_native_endian
+                    && (unty::type_equal::<T, f32>()
+                        || unty::type_equal::<T, f64>()
+                        || (is_fixed
+                            && (unty::type_equal::<T, u16>()
+                                || unty::type_equal::<T, i16>()
+                                || unty::type_equal::<T, u32>()
+                                || unty::type_equal::<T, i32>()
+                                || unty::type_equal::<T, u64>()
+                                || unty::type_equal::<T, i64>()
+                                || unty::type_equal::<T, u128>()
+                                || unty::type_equal::<T, i128>())))))
+        {
+            let slices: (&[T], &[T]) = self.as_slices();
+            // SAFETY: T is a primitive type (pod), so it's safe to copy its bytes.
+            unsafe {
+                let s1 = core::slice::from_raw_parts(
+                    slices.0.as_ptr().cast::<u8>(),
+                    slices.0.len() * core::mem::size_of::<T>(),
+                );
+                let s2 = core::slice::from_raw_parts(
+                    slices.1.as_ptr().cast::<u8>(),
+                    slices.1.len() * core::mem::size_of::<T>(),
+                );
+                encoder.writer().write(s1)?;
+                encoder.writer().write(s2)?;
+            }
         } else {
             for item in self {
                 item.encode(encoder)?;
@@ -302,11 +399,44 @@ where
 {
     #[allow(clippy::too_many_lines)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
+        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        let (major, len) = if is_u8 {
+            decoder.decode_byte_slice_or_array_len()?
+        } else {
+            (4, decoder.decode_slice_len()?)
+        };
+
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut vec = Self::new();
+            if is_u8 && major == 2 {
+                while decoder.reader().peek_u8() != Some(0xFF) {
+                    let chunk_len = decoder.decode_byte_slice_len()?;
+                    decoder.claim_bytes_read(chunk_len)?;
+                    let start = vec.len();
+                    // SAFETY: T is u8/i8, so it's safe to copy bytes into it.
+                    unsafe {
+                        vec.reserve(chunk_len);
+                        let ptr = vec.as_mut_ptr().add(start).cast::<u8>();
+                        let slice = core::slice::from_raw_parts_mut(ptr, chunk_len);
+                        decoder.reader().read(slice)?;
+                        vec.set_len(start + chunk_len);
+                    }
+                }
+            } else {
+                while decoder.reader().peek_u8() != Some(0xFF) {
+                    vec.push(T::decode(decoder)?);
+                }
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Ok(vec);
+        }
 
         decoder.claim_container_read::<T>(len)?;
 
-        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
         let is_fixed = matches!(D::C::INT_ENCODING, IntEncoding::Fixed);
         let is_native_endian = match D::C::ENDIAN {
             | Endianness::Little => cfg!(target_endian = "little"),
@@ -332,6 +462,7 @@ where
                         || unty::type_equal::<T, i128>()
                         || unty::type_equal::<T, f32>()
                         || unty::type_equal::<T, f64>())))
+            || (!is_bincode && is_u8 && major == 2)
         {
             let mut vec = Self::with_capacity(len);
             unsafe {
@@ -510,7 +641,41 @@ where
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
+        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        let (major, len) = if is_u8 {
+            decoder.decode_byte_slice_or_array_len()?
+        } else {
+            (4, decoder.decode_slice_len()?)
+        };
+
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut vec = Self::new();
+            if is_u8 && major == 2 {
+                while decoder.reader().peek_u8() != Some(0xFF) {
+                    let chunk_len = decoder.decode_byte_slice_len()?;
+                    decoder.claim_bytes_read(chunk_len)?;
+                    let start = vec.len();
+                    // SAFETY: T is u8/i8, so it's safe to copy bytes into it.
+                    unsafe {
+                        vec.reserve(chunk_len);
+                        let ptr = vec.as_mut_ptr().add(start).cast::<u8>();
+                        let slice = core::slice::from_raw_parts_mut(ptr, chunk_len);
+                        decoder.reader().read(slice)?;
+                        vec.set_len(start + chunk_len);
+                    }
+                }
+            } else {
+                while decoder.reader().peek_u8() != Some(0xFF) {
+                    vec.push(T::borrow_decode(decoder)?);
+                }
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Ok(vec);
+        }
 
         decoder.claim_container_read::<T>(len)?;
 
@@ -540,6 +705,7 @@ where
                         || unty::type_equal::<T, i128>()
                         || unty::type_equal::<T, f32>()
                         || unty::type_equal::<T, f64>())))
+            || (!is_bincode && is_u8 && major == 2)
         {
             let mut vec = Self::with_capacity(len);
             unsafe {
@@ -551,7 +717,7 @@ where
             }
             Ok(vec)
         } else {
-            let is_varint = matches!(D::C::INT_ENCODING, IntEncoding::Variable);
+            let is_varint = matches!(D::C::INT_ENCODING, IntEncoding::Variable) && is_bincode;
             let mut vec = Self::with_capacity(len);
             let mut i = 0;
 
@@ -714,20 +880,18 @@ where
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(encoder, self.len())?;
-
         let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        let is_bincode = matches!(
+            <E::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
         let is_fixed = matches!(E::C::INT_ENCODING, IntEncoding::Fixed);
         let is_native_endian = match E::C::ENDIAN {
             | Endianness::Little => cfg!(target_endian = "little"),
             | Endianness::Big => cfg!(target_endian = "big"),
         };
 
-        let is_bincode = matches!(
-            <E::C as crate::config::InternalFormatConfig>::FORMAT,
-            crate::config::Format::Bincode
-        );
-
+        encoder.encode_slice_len(self.len())?;
         if is_bincode
             && (is_u8
                 || (is_native_endian
@@ -745,8 +909,6 @@ where
         {
             let bytes_to_copy = self.len() * core::mem::size_of::<T>();
             // SAFETY: T is a primitive type (pod), so it's safe to copy its bytes.
-            // We've checked that the encoding is Fixed and Endianness matches,
-            // or that it's a 1-byte type (u8/i8).
             unsafe {
                 let slice_ptr = self.as_ptr().cast::<u8>();
                 let slice = core::slice::from_raw_parts(slice_ptr, bytes_to_copy);
@@ -764,7 +926,30 @@ where
 
 impl<Context> Decode<Context> for String {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let bytes = Vec::<u8>::decode(decoder)?;
+        let len = decoder.decode_str_len()?;
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut vec = Vec::new();
+            while decoder.reader().peek_u8() != Some(0xFF) {
+                vec.push(u8::decode(decoder)?);
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Self::from_utf8(vec).map_err(|e| {
+                crate::error::cold_decode_error_utf8::<()>(e.utf8_error()).unwrap_err()
+            });
+        }
+        decoder.claim_container_read::<u8>(len)?;
+        let mut bytes = Vec::with_capacity(len);
+        unsafe {
+            let ptr = bytes.as_mut_ptr();
+            decoder
+                .reader()
+                .read(core::slice::from_raw_parts_mut(ptr, len))?;
+            bytes.set_len(len);
+        }
         Self::from_utf8(bytes)
             .map_err(|e| crate::error::cold_decode_error_utf8::<()>(e.utf8_error()).unwrap_err())
     }
@@ -783,7 +968,7 @@ impl Encode for String {
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        self.as_bytes().encode(encoder)
+        encoder.encode_str(self.as_str())
     }
 }
 

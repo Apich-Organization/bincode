@@ -104,6 +104,12 @@ pub trait Reader {
         _: usize,
     ) {
     }
+
+    /// Returns the next byte without consuming it.
+    #[inline]
+    fn peek_u8(&mut self) -> Option<u8> {
+        self.peek_read(1).map(|b| b[0])
+    }
 }
 
 impl<T> Reader for &mut T
@@ -227,6 +233,11 @@ impl<'storage> Reader for SliceReader<'storage> {
         n: usize,
     ) {
         self.slice = self.slice.get(n..).unwrap_or_default();
+    }
+
+    #[inline]
+    fn peek_u8(&mut self) -> Option<u8> {
+        self.slice.first().copied()
     }
 
     #[inline(always)]

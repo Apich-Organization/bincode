@@ -572,12 +572,23 @@ where
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(encoder, self.len())?;
-        for (k, v) in self {
-            Encode::encode(k, encoder)?;
-            Encode::encode(v, encoder)?;
+        use crate::config::Format;
+        if matches!(
+            <E::C as crate::config::InternalFormatConfig>::FORMAT,
+            Format::CborDeterministic
+        ) {
+            crate::enc::cbor::encode_map_deterministic::<E, _, _, _>(
+                encoder,
+                self.iter().map(|(k, v)| (k, v)),
+            )
+        } else {
+            encoder.encode_map_len(self.len())?;
+            for (k, v) in self {
+                Encode::encode(k, encoder)?;
+                Encode::encode(v, encoder)?;
+            }
+            Ok(())
         }
-        Ok(())
     }
 }
 
@@ -588,7 +599,21 @@ where
     S: std::hash::BuildHasher + Default,
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
+        let len = decoder.decode_map_len()?;
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut map = Self::with_hasher(S::default());
+            while decoder.reader().peek_u8() != Some(0xFF) {
+                let k = K::decode(decoder)?;
+                let v = V::decode(decoder)?;
+                map.insert(k, v);
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Ok(map);
+        }
         decoder.claim_container_read::<(K, V)>(len)?;
 
         let hash_builder: S = Default::default();
@@ -610,7 +635,21 @@ where
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
+        let len = decoder.decode_map_len()?;
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut map = Self::with_hasher(S::default());
+            while decoder.reader().peek_u8() != Some(0xFF) {
+                let k = K::borrow_decode(decoder)?;
+                let v = V::borrow_decode(decoder)?;
+                map.insert(k, v);
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Ok(map);
+        }
         decoder.claim_container_read::<(K, V)>(len)?;
 
         let hash_builder: S = Default::default();
@@ -630,7 +669,20 @@ where
     S: std::hash::BuildHasher + Default,
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
+        let len = decoder.decode_slice_len()?;
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut map = Self::with_hasher(S::default());
+            while decoder.reader().peek_u8() != Some(0xFF) {
+                let key = T::decode(decoder)?;
+                map.insert(key);
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Ok(map);
+        }
         decoder.claim_container_read::<T>(len)?;
 
         let hash_builder: S = Default::default();
@@ -651,7 +703,20 @@ where
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
+        let len = decoder.decode_slice_len()?;
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut map = Self::with_hasher(S::default());
+            while decoder.reader().peek_u8() != Some(0xFF) {
+                let key = T::borrow_decode(decoder)?;
+                map.insert(key);
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Ok(map);
+        }
         decoder.claim_container_read::<T>(len)?;
 
         let mut map = Self::with_capacity_and_hasher(len, S::default());
@@ -671,10 +736,18 @@ where
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(encoder, self.len())?;
-        for item in self {
-            item.encode(encoder)?;
+        use crate::config::Format;
+        if matches!(
+            <E::C as crate::config::InternalFormatConfig>::FORMAT,
+            Format::CborDeterministic
+        ) {
+            crate::enc::cbor::encode_slice_deterministic::<E, _, _>(encoder, self.iter())
+        } else {
+            encoder.encode_slice_len(self.len())?;
+            for item in self {
+                item.encode(encoder)?;
+            }
+            Ok(())
         }
-        Ok(())
     }
 }

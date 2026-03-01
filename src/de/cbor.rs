@@ -8,133 +8,91 @@ use crate::error::cold_decode_error_outside_isize_range;
 use crate::error::cold_decode_error_outside_usize_range;
 use crate::error::cold_decode_error_unexpected_end;
 
-/// Decodes a CBOR "additional info" value (0-27).
-///
-/// # Errors
-///
-/// Returns `EncodeError` if the encoding fails.
+/// Decodes a CBOR header (major type + value/argument + indefinite flag).
 #[inline]
-fn decode_additional_info<R: Reader>(
-    reader: &mut R,
-    info: u8,
-) -> Result<u64, DecodeError> {
+fn decode_header<R: Reader>(reader: &mut R) -> Result<(u8, u64, bool), DecodeError> {
+    let first = reader.read_u8()?;
+    let major = first >> 5;
+    let info = first & 0x1F;
+
     if info < 24 {
-        return Ok(u64::from(info));
-    }
-    match info {
-        | 24 => Ok(u64::from(reader.read_u8()?)),
-        | 25 => Ok(u64::from(u16::from_be(reader.read_u16()?))),
-        | 26 => Ok(u64::from(u32::from_be(reader.read_u32()?))),
-        | 27 => Ok(u64::from_be(reader.read_u64()?)),
-        | _ => cold_decode_error_invalid_cbor_info(info),
+        Ok((major, u64::from(info), false))
+    } else if info < 28 {
+        if major == 7 {
+            // Special case for Major Type 7: simple values and floats.
+            // Don't consume bytes for Info 24-27 here, let the caller handle it.
+            return Ok((major, u64::from(info), false));
+        }
+        let val = match info {
+            | 24 => u64::from(reader.read_u8()?),
+            | 25 => u64::from(u16::from_be(reader.read_u16()?)),
+            | 26 => u64::from(u32::from_be(reader.read_u32()?)),
+            | 27 => u64::from_be(reader.read_u64()?),
+            | _ => unreachable!(),
+        };
+        Ok((major, val, false))
+    } else if info == 31 {
+        // Indefinite length (Major Types 2-5 and 7)
+        if major == 0 || major == 1 || major == 6 {
+            return cold_decode_error_invalid_cbor_info(info);
+        }
+        Ok((major, 0, true))
+    } else {
+        cold_decode_error_invalid_cbor_info(info)
     }
 }
 
 /// Decode a `u8` value from CBOR.
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_u8<R: Reader>(reader: &mut R) -> Result<u8, DecodeError> {
-    let first = reader.read_u8()?;
-    if first <= 23 {
-        return Ok(first);
-    }
-    let major = first >> 5;
-    let info = first & 0x1F;
-    if major != 0 {
+    let (major, val, indefinite) = decode_header(reader)?;
+    if major != 0 || indefinite {
         return cold_decode_error_unexpected_end(0);
     }
-    let val = decode_additional_info(reader, info)?;
     val.try_into()
         .map_err(|_| cold_decode_error_outside_usize_range::<u8>(val).unwrap_err())
 }
 
 /// Decode a `u16` value from CBOR.
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_u16<R: Reader>(reader: &mut R) -> Result<u16, DecodeError> {
-    let first = reader.read_u8()?;
-    if first <= 23 {
-        return Ok(u16::from(first));
-    }
-    let major = first >> 5;
-    let info = first & 0x1F;
-    if major != 0 {
+    let (major, val, indefinite) = decode_header(reader)?;
+    if major != 0 || indefinite {
         return cold_decode_error_unexpected_end(0);
     }
-    let val = decode_additional_info(reader, info)?;
     val.try_into()
         .map_err(|_| cold_decode_error_outside_usize_range::<u16>(val).unwrap_err())
 }
 
 /// Decode a `u32` value from CBOR.
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_u32<R: Reader>(reader: &mut R) -> Result<u32, DecodeError> {
-    let first = reader.read_u8()?;
-    if first <= 23 {
-        return Ok(u32::from(first));
-    }
-    let major = first >> 5;
-    let info = first & 0x1F;
-    if major != 0 {
+    let (major, val, indefinite) = decode_header(reader)?;
+    if major != 0 || indefinite {
         return cold_decode_error_unexpected_end(0);
     }
-    let val = decode_additional_info(reader, info)?;
     val.try_into()
         .map_err(|_| cold_decode_error_outside_usize_range::<u32>(val).unwrap_err())
 }
 
 /// Decode a `u64` value from CBOR.
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_u64<R: Reader>(reader: &mut R) -> Result<u64, DecodeError> {
-    let first = reader.read_u8()?;
-    if first <= 23 {
-        return Ok(u64::from(first));
-    }
-    let major = first >> 5;
-    let info = first & 0x1F;
-    if major != 0 {
+    let (major, val, indefinite) = decode_header(reader)?;
+    if major != 0 || indefinite {
         return cold_decode_error_unexpected_end(0);
     }
-    decode_additional_info(reader, info)
+    Ok(val)
 }
 
 /// Decode a `u128` value from CBOR.
-///
-/// Handles both standard CBOR unsigned integers (major type 0, values ≤ `u64::MAX`)
-/// and Tag 2 (positive bignum) for values > `u64::MAX` (RFC 8949 §3.4.3).
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_u128<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
-    let first = reader.read_u8()?;
-    let major = first >> 5;
-    let info = first & 0x1F;
+    let (major, val, indefinite) = decode_header(reader)?;
     match major {
-        // Standard unsigned integer (major type 0)
-        | 0 => {
-            let val = decode_additional_info(reader, info)?;
-            Ok(u128::from(val))
-        },
-        // Tag (major type 6) — expect Tag 2 (positive bignum)
-        | 6 => {
-            let tag = decode_additional_info(reader, info)?;
-            if tag != 2 {
+        | 0 if !indefinite => Ok(u128::from(val)),
+        | 6 if !indefinite => {
+            if val != 2 {
                 return cold_decode_error_unexpected_end(0);
             }
             decode_bignum_bytes(reader)
@@ -143,30 +101,19 @@ pub fn decode_u128<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
     }
 }
 
-/// Decode an `i8` value from CBOR.
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
+/// Decode an i8 value from CBOR.
 #[inline]
 pub fn decode_i8<R: Reader>(reader: &mut R) -> Result<i8, DecodeError> {
-    let first = reader.read_u8()?;
-    if first <= 23 {
-        return Ok(first as i8);
+    let (major, val, indefinite) = decode_header(reader)?;
+    if indefinite {
+        return cold_decode_error_unexpected_end(0);
     }
-    if (0x20..=0x37).contains(&first) {
-        return Ok(-1 - (first & 0x1F) as i8);
-    }
-    let major = first >> 5;
-    let info = first & 0x1F;
     match major {
         | 0 => {
-            let val = decode_additional_info(reader, info)?;
             val.try_into()
                 .map_err(|_| cold_decode_error_outside_isize_range::<i8>(val as i64).unwrap_err())
         },
         | 1 => {
-            let val = decode_additional_info(reader, info)?;
             let res = -1 - (val as i64);
             res.try_into()
                 .map_err(|_| cold_decode_error_outside_isize_range::<i8>(res).unwrap_err())
@@ -175,30 +122,19 @@ pub fn decode_i8<R: Reader>(reader: &mut R) -> Result<i8, DecodeError> {
     }
 }
 
-/// Decode an `i16` value from CBOR.
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
+/// Decode an i16 value from CBOR.
 #[inline]
 pub fn decode_i16<R: Reader>(reader: &mut R) -> Result<i16, DecodeError> {
-    let first = reader.read_u8()?;
-    if first <= 23 {
-        return Ok(i16::from(first));
+    let (major, val, indefinite) = decode_header(reader)?;
+    if indefinite {
+        return cold_decode_error_unexpected_end(0);
     }
-    if (0x20..=0x37).contains(&first) {
-        return Ok(-1 - i16::from(first & 0x1F));
-    }
-    let major = first >> 5;
-    let info = first & 0x1F;
     match major {
         | 0 => {
-            let val = decode_additional_info(reader, info)?;
             val.try_into()
                 .map_err(|_| cold_decode_error_outside_isize_range::<i16>(val as i64).unwrap_err())
         },
         | 1 => {
-            let val = decode_additional_info(reader, info)?;
             let res = -1 - (val as i64);
             res.try_into()
                 .map_err(|_| cold_decode_error_outside_isize_range::<i16>(res).unwrap_err())
@@ -207,30 +143,19 @@ pub fn decode_i16<R: Reader>(reader: &mut R) -> Result<i16, DecodeError> {
     }
 }
 
-/// Decode an `i32` value from CBOR.
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
+/// Decode an i32 value from CBOR.
 #[inline]
 pub fn decode_i32<R: Reader>(reader: &mut R) -> Result<i32, DecodeError> {
-    let first = reader.read_u8()?;
-    if first <= 23 {
-        return Ok(i32::from(first));
+    let (major, val, indefinite) = decode_header(reader)?;
+    if indefinite {
+        return cold_decode_error_unexpected_end(0);
     }
-    if (0x20..=0x37).contains(&first) {
-        return Ok(-1 - i32::from(first & 0x1F));
-    }
-    let major = first >> 5;
-    let info = first & 0x1F;
     match major {
         | 0 => {
-            let val = decode_additional_info(reader, info)?;
             val.try_into()
                 .map_err(|_| cold_decode_error_outside_isize_range::<i32>(val as i64).unwrap_err())
         },
         | 1 => {
-            let val = decode_additional_info(reader, info)?;
             let res = -1 - (val as i64);
             res.try_into()
                 .map_err(|_| cold_decode_error_outside_isize_range::<i32>(res).unwrap_err())
@@ -239,30 +164,19 @@ pub fn decode_i32<R: Reader>(reader: &mut R) -> Result<i32, DecodeError> {
     }
 }
 
-/// Decode an `i64` value from CBOR.
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
+/// Decode an i64 value from CBOR.
 #[inline]
 pub fn decode_i64<R: Reader>(reader: &mut R) -> Result<i64, DecodeError> {
-    let first = reader.read_u8()?;
-    if first <= 23 {
-        return Ok(i64::from(first));
+    let (major, val, indefinite) = decode_header(reader)?;
+    if indefinite {
+        return cold_decode_error_unexpected_end(0);
     }
-    if (0x20..=0x37).contains(&first) {
-        return Ok(-1 - i64::from(first & 0x1F));
-    }
-    let major = first >> 5;
-    let info = first & 0x1F;
     match major {
         | 0 => {
-            let val = decode_additional_info(reader, info)?;
             val.try_into()
                 .map_err(|_| cold_decode_error_outside_isize_range::<i64>(val as i64).unwrap_err())
         },
         | 1 => {
-            let val = decode_additional_info(reader, info)?;
             if val > (i64::MIN.unsigned_abs() - 1) {
                 return cold_decode_error_outside_isize_range(-1);
             }
@@ -272,57 +186,27 @@ pub fn decode_i64<R: Reader>(reader: &mut R) -> Result<i64, DecodeError> {
     }
 }
 
-/// Decode an `i128` value from CBOR.
-///
-/// Handles standard CBOR integers (major types 0 and 1),
-/// Tag 2 (positive bignum), and Tag 3 (negative bignum) per RFC 8949 §3.4.3.
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
+/// Decode an i128 value from CBOR.
 #[inline]
 pub fn decode_i128<R: Reader>(reader: &mut R) -> Result<i128, DecodeError> {
-    let first = reader.read_u8()?;
-    if first <= 23 {
-        return Ok(i128::from(first));
+    let (major, val, indefinite) = decode_header(reader)?;
+    if indefinite {
+        return cold_decode_error_unexpected_end(0);
     }
-    if (0x20..=0x37).contains(&first) {
-        return Ok(-1 - i128::from(first & 0x1F));
-    }
-    let major = first >> 5;
-    let info = first & 0x1F;
     match major {
-        // Standard unsigned integer (major type 0)
-        | 0 => {
-            let val = decode_additional_info(reader, info)?;
-            Ok(i128::from(val))
-        },
-        // Standard negative integer (major type 1): value = -1 - additional
-        | 1 => {
-            let val = decode_additional_info(reader, info)?;
-            Ok(-1 - i128::from(val))
-        },
-        // Tag (major type 6)
+        | 0 => Ok(i128::from(val)),
+        | 1 => Ok(-1 - i128::from(val)),
         | 6 => {
-            let tag = decode_additional_info(reader, info)?;
-            match tag {
-                // Tag 2 = positive bignum
-                | 2 => {
-                    let val = decode_bignum_bytes(reader)?;
-                    Ok(val as i128)
-                },
-                // Tag 3 = negative bignum: value = -1 - bignum
+            match val {
+                | 2 => Ok(decode_bignum_bytes(reader)? as i128),
                 | 3 => {
                     let magnitude = decode_bignum_bytes(reader)?;
                     if magnitude > (i128::MAX as u128) + 1 {
-                        // magnitude is too large to be represented as a negative i128
                         return cold_decode_error_outside_isize_range(-1);
                     }
                     if magnitude == (i128::MAX as u128) + 1 {
-                        // This is the special case for i128::MIN
                         return Ok(i128::MIN);
                     }
-                    // magnitude <= i128::MAX as u128, so it's safe to cast and compute
                     Ok(-1 - (magnitude as i128))
                 },
                 | _ => cold_decode_error_unexpected_end(0),
@@ -333,106 +217,168 @@ pub fn decode_i128<R: Reader>(reader: &mut R) -> Result<i128, DecodeError> {
 }
 
 /// Decode a CBOR byte string into a u128 (big-endian bignum).
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
 #[inline]
 fn decode_bignum_bytes<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
-    // Read byte string header (major type 2)
-    let first = reader.read_u8()?;
-    let major = first >> 5;
-    let info = first & 0x1F;
-    if major != 2 {
+    let (major, len, indefinite) = decode_header(reader)?;
+    if major != 2 || indefinite {
         return cold_decode_error_unexpected_end(0);
     }
-    let len = decode_additional_info(reader, info)?;
     if len > 16 {
-        // Value too large for u128
         return cold_decode_error_outside_usize_range::<u128>(len);
     }
     let len = len as usize;
     let mut buf = [0u8; 16];
-    // Read into the end of the buffer (big-endian, right-aligned)
     reader.read(&mut buf[16 - len..])?;
     Ok(u128::from_be_bytes(buf))
 }
 
 /// Decode a `bool` value from CBOR.
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_bool<R: Reader>(reader: &mut R) -> Result<bool, DecodeError> {
-    let first = reader.read_u8()?;
-    match first {
-        | 0xF4 => Ok(false),
-        | 0xF5 => Ok(true),
-        | _ => cold_decode_error_invalid_boolean_value(first),
+    let (major, val, indefinite) = decode_header(reader)?;
+    if major != 7 || indefinite {
+        return cold_decode_error_invalid_boolean_value(0);
+    }
+    match val {
+        | 20 => Ok(false),
+        | 21 => Ok(true),
+        | _ => cold_decode_error_invalid_boolean_value(val as u8),
     }
 }
 
-/// Decode an `f32` value from CBOR.
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
+/// Convert f16 bits to f32.
+fn f16_to_f32(bits: u16) -> f32 {
+    let sign = (bits & 0x8000) as u32;
+    let exp = ((bits & 0x7C00) >> 10) as u32;
+    let mat = (bits & 0x03FF) as u32;
+
+    if exp == 0x1F {
+        f32::from_bits((sign << 16) | (0xFF << 23) | (mat << 13))
+    } else if exp == 0 {
+        if mat == 0 {
+            f32::from_bits(sign << 16)
+        } else {
+            // Subnormal f16 to normal f32
+            let mut m = mat;
+            let mut e = 0i32;
+            while (m & 0x400) == 0 {
+                m <<= 1;
+                e -= 1;
+            }
+            e += 1;
+            m &= !0x400;
+            let f32_exp = (127 - 15 + e) as u32;
+            f32::from_bits((sign << 16) | (f32_exp << 23) | (m << 13))
+        }
+    } else {
+        f32::from_bits((sign << 16) | ((exp + 127 - 15) << 23) | (mat << 13))
+    }
+}
+
+/// Decode an `f32` value from CBOR. Supports f16, f32, f64 per RFC preference.
 #[inline]
 pub fn decode_f32<R: Reader>(reader: &mut R) -> Result<f32, DecodeError> {
-    let first = reader.read_u8()?;
-    if first != 0xFA {
+    let (major, info, indefinite) = decode_header(reader)?;
+    if major != 7 || indefinite {
         return cold_decode_error_unexpected_end(4);
     }
-    Ok(f32::from_bits(u32::from_be(reader.read_u32()?)))
+    match info {
+        | 25 => Ok(f16_to_f32(u16::from_be(reader.read_u16()?))),
+        | 26 => Ok(f32::from_bits(u32::from_be(reader.read_u32()?))),
+        | 27 => Ok(f64::from_bits(u64::from_be(reader.read_u64()?)) as f32),
+        | _ => {
+            // Simple values < 24? RFC 8949 says 20: false, 21: true, 22: null, 23: undefined.
+            // These aren't floats.
+            cold_decode_error_unexpected_end(4)
+        },
+    }
 }
 
-/// Decode an `f64` value from CBOR.
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
+/// Decode an `f64` value from CBOR. Supports f16, f32, f64.
 #[inline]
 pub fn decode_f64<R: Reader>(reader: &mut R) -> Result<f64, DecodeError> {
-    let first = reader.read_u8()?;
-    if first != 0xFB {
+    let (major, info, indefinite) = decode_header(reader)?;
+    if major != 7 || indefinite {
         return cold_decode_error_unexpected_end(8);
     }
-    Ok(f64::from_bits(u64::from_be(reader.read_u64()?)))
+    match info {
+        | 25 => Ok(f64::from(f16_to_f32(u16::from_be(reader.read_u16()?)))),
+        | 26 => Ok(f64::from(f32::from_bits(u32::from_be(reader.read_u32()?)))),
+        | 27 => Ok(f64::from_bits(u64::from_be(reader.read_u64()?))),
+        | _ => cold_decode_error_unexpected_end(8),
+    }
 }
 
 /// Decode a slice length from CBOR.
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_slice_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
-    let first = reader.read_u8()?;
-    let major = first >> 5;
-    let info = first & 0x1F;
+    let (major, val, indefinite) = decode_header(reader)?;
     if major != 4 {
         return cold_decode_error_unexpected_end(0);
     }
-    let val = decode_additional_info(reader, info)?;
+    if indefinite {
+        // Special value to indicate indefinite length (Major Type 4)
+        return Ok(usize::MAX);
+    }
     val.try_into()
         .map_err(|_| cold_decode_error_outside_usize_range::<usize>(val).unwrap_err())
 }
 
 /// Decode a map length from CBOR.
-///
-/// # Errors
-///
-/// Returns an error if the operation fails.
 #[inline]
 pub fn decode_map_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
-    let first = reader.read_u8()?;
-    let major = first >> 5;
-    let info = first & 0x1F;
+    let (major, val, indefinite) = decode_header(reader)?;
     if major != 5 {
         return cold_decode_error_unexpected_end(0);
     }
-    let val = decode_additional_info(reader, info)?;
+    if indefinite {
+        return Ok(usize::MAX);
+    }
+    val.try_into()
+        .map_err(|_| cold_decode_error_outside_usize_range::<usize>(val).unwrap_err())
+}
+
+/// Decode a byte slice length from CBOR (Major Type 2).
+#[inline]
+pub fn decode_byte_slice_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
+    let (major, val, indefinite) = decode_header(reader)?;
+    if major != 2 {
+        return cold_decode_error_unexpected_end(0);
+    }
+    if indefinite {
+        return Ok(usize::MAX);
+    }
+    val.try_into()
+        .map_err(|_| cold_decode_error_outside_usize_range::<usize>(val).unwrap_err())
+}
+
+/// Decode a length that can be either a byte slice (Major Type 2) or an array (Major Type 4).
+#[inline]
+pub fn decode_byte_slice_or_array_len<R: Reader>(
+    reader: &mut R
+) -> Result<(u8, usize), DecodeError> {
+    let (major, val, indefinite) = decode_header(reader)?;
+    if major != 2 && major != 4 {
+        return cold_decode_error_unexpected_end(0);
+    }
+    let len = if indefinite {
+        usize::MAX
+    } else {
+        val.try_into()
+            .map_err(|_| cold_decode_error_outside_usize_range::<usize>(val).unwrap_err())?
+    };
+    Ok((major, len))
+}
+
+/// Decode a string length from CBOR (Major Type 3).
+pub fn decode_str_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
+    let (major, val, indefinite) = decode_header(reader)?;
+    if major != 3 {
+        return cold_decode_error_unexpected_end(0);
+    }
+    if indefinite {
+        return Ok(usize::MAX);
+    }
     val.try_into()
         .map_err(|_| cold_decode_error_outside_usize_range::<usize>(val).unwrap_err())
 }

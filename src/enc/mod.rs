@@ -95,7 +95,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.writer().write_u8(val),
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_u8(self.writer(), val),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_u8::<_, Self::C>(self.writer(), val)
+            },
         }
     }
 
@@ -130,7 +132,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_u16(self.writer(), val),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_u16::<_, Self::C>(self.writer(), val)
+            },
         }
     }
 
@@ -165,7 +169,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_u32(self.writer(), val),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_u32::<_, Self::C>(self.writer(), val)
+            },
         }
     }
 
@@ -200,7 +206,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_u64(self.writer(), val),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_u64::<_, Self::C>(self.writer(), val)
+            },
         }
     }
 
@@ -235,7 +243,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_u128(self.writer(), val),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_u128::<_, Self::C>(self.writer(), val)
+            },
         }
     }
 
@@ -253,7 +263,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.encode_u64(val as u64),
             | Format::Cbor | Format::CborDeterministic => {
-                cbor::encode_u64(self.writer(), val as u64)
+                cbor::encode_u64::<_, Self::C>(self.writer(), val as u64)
             },
         }
     }
@@ -271,7 +281,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.writer().write_u8(val as u8),
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_i8(self.writer(), val),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_i8::<_, Self::C>(self.writer(), val)
+            },
         }
     }
 
@@ -306,7 +318,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_i16(self.writer(), val),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_i16::<_, Self::C>(self.writer(), val)
+            },
         }
     }
 
@@ -341,7 +355,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_i32(self.writer(), val),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_i32::<_, Self::C>(self.writer(), val)
+            },
         }
     }
 
@@ -376,7 +392,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_i64(self.writer(), val),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_i64::<_, Self::C>(self.writer(), val)
+            },
         }
     }
 
@@ -411,7 +429,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     },
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_i128(self.writer(), val),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_i128::<_, Self::C>(self.writer(), val)
+            },
         }
     }
 
@@ -429,7 +449,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.encode_i64(val as i64),
             | Format::Cbor | Format::CborDeterministic => {
-                cbor::encode_i64(self.writer(), val as i64)
+                cbor::encode_i64::<_, Self::C>(self.writer(), val as i64)
             },
         }
     }
@@ -453,7 +473,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     | Endianness::Little => self.writer().write_u32(val.to_bits().to_le()),
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_f32(self.writer(), val),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_f32::<_, Self::C>(self.writer(), val)
+            },
         }
     }
 
@@ -476,7 +498,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                     | Endianness::Little => self.writer().write_u64(val.to_bits().to_le()),
                 }
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_f64(self.writer(), val),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_f64::<_, Self::C>(self.writer(), val)
+            },
         }
     }
 
@@ -493,7 +517,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.encode_u8(u8::from(val)),
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_bool(self.writer(), val),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_bool::<_, Self::C>(self.writer(), val)
+            },
         }
     }
 
@@ -513,7 +539,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
                 self.encode_slice_len(val.len())?;
                 self.writer().write(val.as_bytes())
             },
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_str(self.writer(), val),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_str::<_, Self::C>(self.writer(), val)
+            },
         }
     }
 
@@ -531,7 +559,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.encode_u64(len as u64),
             | Format::Cbor | Format::CborDeterministic => {
-                cbor::encode_slice_len(self.writer(), len)
+                cbor::encode_slice_len::<_, Self::C>(self.writer(), len)
             },
         }
     }
@@ -559,7 +587,71 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         &mut self,
         len: usize,
     ) -> Result<(), EncodeError> {
-        self.encode_slice_len(len)
+        use crate::config::Format;
+        match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
+            | Format::Bincode => self.encode_u64(len as u64),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_map_len::<_, Self::C>(self.writer(), len)
+            },
+        }
+    }
+
+    /// Encode a byte slice.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
+    #[inline(always)]
+    fn encode_byte_slice(
+        &mut self,
+        val: &[u8],
+    ) -> Result<(), EncodeError> {
+        use crate::config::Format;
+        match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
+            | Format::Bincode => {
+                self.encode_slice_len(val.len())?;
+                self.writer().write(val)
+            },
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_byte_slice::<_, Self::C>(self.writer(), val)
+            },
+        }
+    }
+
+    /// Encode a struct header.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
+    #[inline(always)]
+    fn encode_struct_header(
+        &mut self,
+        len: usize,
+    ) -> Result<(), EncodeError> {
+        use crate::config::Format;
+        match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
+            | Format::Bincode => Ok(()),
+            | Format::Cbor | Format::CborDeterministic => self.encode_array_len(len),
+        }
+    }
+
+    /// Encode the length of a byte slice.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
+    #[inline(always)]
+    fn encode_byte_slice_len(
+        &mut self,
+        len: usize,
+    ) -> Result<(), EncodeError> {
+        use crate::config::Format;
+        match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
+            | Format::Bincode => self.encode_usize(len),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_byte_slice_len::<_, Self::C>(self.writer(), len as u64)
+            },
+        }
     }
 
     /// Encode an enum variant index.
@@ -578,7 +670,9 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.encode_u8(idx as u8),
-            | Format::Cbor | Format::CborDeterministic => cbor::encode_u32(self.writer(), idx),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::encode_u32::<_, Self::C>(self.writer(), idx)
+            },
         }
     }
 }
@@ -761,6 +855,22 @@ where
         idx: u32,
     ) -> Result<(), EncodeError> {
         T::encode_variant_index(self, idx)
+    }
+
+    #[inline]
+    fn encode_byte_slice(
+        &mut self,
+        val: &[u8],
+    ) -> Result<(), EncodeError> {
+        T::encode_byte_slice(self, val)
+    }
+
+    #[inline]
+    fn encode_struct_header(
+        &mut self,
+        len: usize,
+    ) -> Result<(), EncodeError> {
+        T::encode_struct_header(self, len)
     }
 }
 

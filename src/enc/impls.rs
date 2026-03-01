@@ -321,9 +321,16 @@ where
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
+        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        if is_u8 {
+            // SAFETY: self is [T], and T is u8/i8, so it's safe to cast to [u8]
+            let bytes =
+                unsafe { core::slice::from_raw_parts(self.as_ptr().cast::<u8>(), self.len()) };
+            return encoder.encode_byte_slice(bytes);
+        }
+
         super::encode_slice_len(encoder, self.len())?;
 
-        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
         let is_fixed = matches!(
             <E::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING,
             crate::config::IntEncoding::Fixed
@@ -338,24 +345,22 @@ where
         );
 
         if is_bincode
-            && (is_u8
-                || (is_native_endian
-                    && (unty::type_equal::<T, f32>()
-                        || unty::type_equal::<T, f64>()
-                        || (is_fixed
-                            && (unty::type_equal::<T, u16>()
-                                || unty::type_equal::<T, i16>()
-                                || unty::type_equal::<T, u32>()
-                                || unty::type_equal::<T, i32>()
-                                || unty::type_equal::<T, u64>()
-                                || unty::type_equal::<T, i64>()
-                                || unty::type_equal::<T, u128>()
-                                || unty::type_equal::<T, i128>())))))
+            && (is_native_endian
+                && (unty::type_equal::<T, f32>()
+                    || unty::type_equal::<T, f64>()
+                    || (is_fixed
+                        && (unty::type_equal::<T, u16>()
+                            || unty::type_equal::<T, i16>()
+                            || unty::type_equal::<T, u32>()
+                            || unty::type_equal::<T, i32>()
+                            || unty::type_equal::<T, u64>()
+                            || unty::type_equal::<T, i64>()
+                            || unty::type_equal::<T, u128>()
+                            || unty::type_equal::<T, i128>()))))
         {
             let bytes_to_copy = core::mem::size_of_val(self);
             // SAFETY: T is a primitive type (pod), so it's safe to copy its bytes.
-            // We've checked that the encoding is Fixed and Endianness matches,
-            // or that it's a 1-byte type (u8/i8).
+            // We've checked that the encoding is Fixed and Endianness matches.
             unsafe {
                 let slice_ptr = self.as_ptr().cast::<u8>();
                 let slice = core::slice::from_raw_parts(slice_ptr, bytes_to_copy);
@@ -427,6 +432,17 @@ where
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
         let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        let is_bincode = matches!(
+            <E::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+
+        if is_u8 && !is_bincode {
+            // SAFETY: self is [T; N], T is u8/i8, so it's safe to cast to [u8]
+            let bytes = unsafe { core::slice::from_raw_parts(self.as_ptr().cast::<u8>(), N) };
+            return encoder.encode_byte_slice(bytes);
+        }
+
         let is_fixed = matches!(
             <E::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING,
             crate::config::IntEncoding::Fixed
@@ -435,10 +451,6 @@ where
             | crate::config::Endianness::Little => cfg!(target_endian = "little"),
             | crate::config::Endianness::Big => cfg!(target_endian = "big"),
         };
-        let is_bincode = matches!(
-            <E::C as crate::config::InternalFormatConfig>::FORMAT,
-            crate::config::Format::Bincode
-        );
 
         if is_bincode
             && (is_u8
@@ -465,6 +477,14 @@ where
                 encoder.writer().write(slice)?;
             }
         } else {
+            // Arrays in CBOR are always length-prefixed arrays if not byte strings?
+            // Actually, bincode-next seems to encode [T; N] as just T...N WITHOUT length prefix?
+            // Let's check bincode format spec for [T; N].
+            // Ah, bincode encodes [T; N] as N elements of T without a length prefix.
+            // In CBOR, we should probably encode it as an array if it's not a byte string.
+            if !is_bincode {
+                encoder.encode_array_len(N)?;
+            }
             for item in self {
                 item.encode(encoder)?;
             }

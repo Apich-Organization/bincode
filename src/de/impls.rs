@@ -322,7 +322,7 @@ impl<'a, 'de: 'a, Context> BorrowDecode<'de, Context> for &'a [u8] {
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let len = super::decode_slice_len(decoder)?;
+        let len = decoder.decode_byte_slice_len()?;
         decoder.claim_bytes_read(len)?;
         decoder.borrow_reader().take_bytes(len)
     }
@@ -332,7 +332,9 @@ impl<'a, 'de: 'a, Context> BorrowDecode<'de, Context> for &'a str {
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let slice = <&[u8]>::borrow_decode(decoder)?;
+        let len = decoder.decode_str_len()?;
+        decoder.claim_bytes_read(len)?;
+        let slice = decoder.borrow_reader().take_bytes(len)?;
         core::str::from_utf8(slice)
             .map_err(|inner| crate::error::cold_decode_error_utf8::<()>(inner).unwrap_err())
     }
@@ -343,18 +345,39 @@ where
     T: Decode<Context>,
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
-
         let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+
+        if !is_bincode {
+            if is_u8 {
+                let len = decoder.decode_byte_slice_len()?;
+                if len != N {
+                    return Err(DecodeError::Other("array length mismatch"));
+                }
+                decoder.claim_bytes_read(N)?;
+                let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
+                unsafe {
+                    let slice_ptr = res.as_mut_ptr().cast::<u8>();
+                    let slice = core::slice::from_raw_parts_mut(slice_ptr, N);
+                    decoder.reader().read(slice)?;
+                    return Ok(res.assume_init());
+                }
+            } else {
+                let len = decoder.decode_array_len()?;
+                if len != N && len != usize::MAX {
+                    return Err(DecodeError::Other("array length mismatch"));
+                }
+            }
+        }
+
         let is_fixed = matches!(D::C::INT_ENCODING, IntEncoding::Fixed);
         let is_native_endian = match D::C::ENDIAN {
             | Endianness::Little => cfg!(target_endian = "little"),
             | Endianness::Big => cfg!(target_endian = "big"),
         };
-        let is_bincode = matches!(
-            <D::C as crate::config::InternalFormatConfig>::FORMAT,
-            crate::config::Format::Bincode
-        );
 
         if is_bincode
             && (is_u8
@@ -371,6 +394,7 @@ where
                         || unty::type_equal::<T, f32>()
                         || unty::type_equal::<T, f64>())))
         {
+            decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
             // SAFETY: T is a primitive type (pod), so it's safe to read its bytes directly.
             // We've checked that the encoding is Fixed and Endianness matches,
             // or that it's a 1-byte type (u8/i8).
@@ -383,11 +407,8 @@ where
                 Ok(res.assume_init())
             }
         } else {
-            let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
-                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-                T::decode(decoder)
-            }));
+            let result =
+                super::impl_core::collect_into_array(&mut (0..N).map(|_| T::decode(decoder)));
 
             // result is only None if N does not match the values of `(0..N)`, which it always should
             // So this unwrap should never occur
@@ -404,18 +425,39 @@ where
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
-
         let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+
+        if !is_bincode {
+            if is_u8 {
+                let len = decoder.decode_byte_slice_len()?;
+                if len != N {
+                    return Err(DecodeError::Other("array length mismatch"));
+                }
+                decoder.claim_bytes_read(N)?;
+                let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
+                unsafe {
+                    let slice_ptr = res.as_mut_ptr().cast::<u8>();
+                    let slice = core::slice::from_raw_parts_mut(slice_ptr, N);
+                    decoder.reader().read(slice)?;
+                    return Ok(res.assume_init());
+                }
+            } else {
+                let len = decoder.decode_array_len()?;
+                if len != N && len != usize::MAX {
+                    return Err(DecodeError::Other("array length mismatch"));
+                }
+            }
+        }
+
         let is_fixed = matches!(D::C::INT_ENCODING, IntEncoding::Fixed);
         let is_native_endian = match D::C::ENDIAN {
             | Endianness::Little => cfg!(target_endian = "little"),
             | Endianness::Big => cfg!(target_endian = "big"),
         };
-        let is_bincode = matches!(
-            <D::C as crate::config::InternalFormatConfig>::FORMAT,
-            crate::config::Format::Bincode
-        );
 
         if is_bincode
             && (is_u8
@@ -432,6 +474,7 @@ where
                         || unty::type_equal::<T, f32>()
                         || unty::type_equal::<T, f64>())))
         {
+            decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
             // SAFETY: T is a primitive type (pod), so it's safe to read its bytes directly.
             // We've checked that the encoding is Fixed and Endianness matches,
             // or that it's a 1-byte type (u8/i8).
@@ -444,11 +487,9 @@ where
                 Ok(res.assume_init())
             }
         } else {
-            let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
-                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-                T::borrow_decode(decoder)
-            }));
+            let result = super::impl_core::collect_into_array(
+                &mut (0..N).map(|_| T::borrow_decode(decoder)),
+            );
 
             // result is only None if N does not match the values of `(0..N)`, which it always should
             // So this unwrap should never occur

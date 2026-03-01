@@ -56,6 +56,56 @@ pub struct Configuration<
     _fo: PhantomData<FO>,
 }
 
+/// The modes for CBOR deterministic encoding.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum CborDeterministicMode {
+    /// No deterministic encoding requirements.
+    None = 0,
+    /// Core deterministic encoding (RFC 8949 §4.2.1).
+    Core = 1,
+    /// Length-first deterministic encoding (RFC 8949 §4.2.3).
+    LengthFirst = 2,
+}
+
+/// Detailed options for CBOR encoding.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct CborOptions {
+    /// Deterministic encoding mode.
+    pub deterministic_mode: CborDeterministicMode,
+    /// Preferred serialization for floating-point values (§4.1).
+    pub preferred_float: bool,
+    /// Canonical NaN encoding (0xf97e00).
+    pub canonical_nan: bool,
+    /// Normalize negative zero (-0.0) to positive zero (0.0).
+    pub normalize_neg_zero: bool,
+    /// Allow indefinite-length items.
+    pub allow_indefinite: bool,
+    /// Strict tag validity checking.
+    pub strict_tags: bool,
+}
+
+impl CborOptions {
+    /// Default CBOR options.
+    pub const DEFAULT: Self = Self {
+        deterministic_mode: CborDeterministicMode::None,
+        preferred_float: true,
+        canonical_nan: true,
+        normalize_neg_zero: false,
+        allow_indefinite: true,
+        strict_tags: false,
+    };
+    /// Default options for deterministic CBOR.
+    pub const DETERMINISTIC: Self = Self {
+        deterministic_mode: CborDeterministicMode::Core,
+        preferred_float: true,
+        canonical_nan: true,
+        normalize_neg_zero: false, // RFC 8949 §4.2.1: MUST NOT normalize -0.0
+        allow_indefinite: false,
+        strict_tags: true,
+    };
+}
+
 // When adding more features to configuration, follow these steps:
 // - Create 2 or more structs that can be used as a type (e.g. Limit and NoLimit)
 // - Add an `Internal...Config` to the `internal` module
@@ -231,17 +281,32 @@ impl<E, I, L, B, F, FO> Configuration<E, I, L, B, F, FO> {
         generate()
     }
 
-    /// Sets the format to CBOR.
+    /// Sets the format to CBOR with default options.
     #[must_use]
     pub const fn with_cbor_format(self) -> Configuration<E, I, L, B, F, CborFormat> {
         generate()
     }
 
-    /// Sets the format to CBOR with deterministic encoding.
+    /// Sets the format to CBOR with deterministic encoding (Core mode).
     #[must_use]
     pub const fn with_deterministic_cbor(
         self
     ) -> Configuration<E, I, L, B, F, CborDeterministicFormat> {
+        generate()
+    }
+
+    /// Sets the format to CBOR with custom options.
+    #[must_use]
+    pub const fn with_cbor_options<
+        const DET: u8,
+        const PREF: bool,
+        const NAN: bool,
+        const NZ: bool,
+        const INDEF: bool,
+        const TAGS: bool,
+    >(
+        self
+    ) -> Configuration<E, I, L, B, F, CborConfig<DET, PREF, NAN, NZ, INDEF, TAGS>> {
         generate()
     }
 }
@@ -276,6 +341,10 @@ pub trait Config:
 
     /// Returns the format of this configuration
     fn format(&self) -> Format;
+
+    /// Returns the CBOR options of this configuration.
+    /// Returns default options if the format is not CBOR.
+    fn cbor_options(&self) -> CborOptions;
 }
 
 impl<T> Config for T
@@ -316,6 +385,10 @@ where
 
     fn format(&self) -> Format {
         <T as InternalFormatConfig>::FORMAT
+    }
+
+    fn cbor_options(&self) -> CborOptions {
+        <T as InternalFormatConfig>::CBOR_OPTIONS
     }
 }
 
@@ -410,24 +483,54 @@ impl<const EXPECTED: u64> InternalFingerprintConfig for FingerprintLegacy<EXPECT
 pub struct BincodeFormat;
 
 impl InternalFormatConfig for BincodeFormat {
+    const CBOR_OPTIONS: CborOptions = CborOptions::DEFAULT;
     const FORMAT: Format = Format::Bincode;
 }
 
-/// CBOR format.
+/// CBOR configuration with const generic options.
 #[derive(Copy, Clone, Debug)]
-pub struct CborFormat;
+pub struct CborConfig<
+    const DET: u8,
+    const PREF: bool,
+    const NAN: bool,
+    const NZ: bool,
+    const INDEF: bool,
+    const TAGS: bool,
+>;
 
-impl InternalFormatConfig for CborFormat {
-    const FORMAT: Format = Format::Cbor;
+impl<
+    const DET: u8,
+    const PREF: bool,
+    const NAN: bool,
+    const NZ: bool,
+    const INDEF: bool,
+    const TAGS: bool,
+> InternalFormatConfig for CborConfig<DET, PREF, NAN, NZ, INDEF, TAGS>
+{
+    const CBOR_OPTIONS: CborOptions = CborOptions {
+        deterministic_mode: match DET {
+            | 1 => CborDeterministicMode::Core,
+            | 2 => CborDeterministicMode::LengthFirst,
+            | _ => CborDeterministicMode::None,
+        },
+        preferred_float: PREF,
+        canonical_nan: NAN,
+        normalize_neg_zero: NZ,
+        allow_indefinite: INDEF,
+        strict_tags: TAGS,
+    };
+    const FORMAT: Format = if DET == 0 {
+        Format::Cbor
+    } else {
+        Format::CborDeterministic
+    };
 }
+
+/// CBOR format with default options.
+pub type CborFormat = CborConfig<0, true, true, false, true, false>;
 
 /// CBOR format with deterministic encoding (Canonical CBOR).
-#[derive(Copy, Clone, Debug)]
-pub struct CborDeterministicFormat;
-
-impl InternalFormatConfig for CborDeterministicFormat {
-    const FORMAT: Format = Format::CborDeterministic;
-}
+pub type CborDeterministicFormat = CborConfig<1, true, true, false, false, true>;
 
 /// Endianness of a `Configuration`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -664,11 +767,13 @@ pub mod internal {
 
     pub trait InternalFormatConfig {
         const FORMAT: super::Format;
+        const CBOR_OPTIONS: super::CborOptions;
     }
 
     impl<E, I, L, B, F, FO: InternalFormatConfig> InternalFormatConfig
         for Configuration<E, I, L, B, F, FO>
     {
+        const CBOR_OPTIONS: super::CborOptions = FO::CBOR_OPTIONS;
         const FORMAT: super::Format = FO::FORMAT;
     }
 }

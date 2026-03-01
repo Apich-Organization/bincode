@@ -658,7 +658,6 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     ///
     /// Returns an error if the operation fails.
     fn decode_array_len(&mut self) -> Result<usize, DecodeError> {
-        self.claim_bytes_read(1)?;
         self.decode_slice_len()
     }
 
@@ -668,7 +667,6 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     ///
     /// Returns an error if the operation fails.
     fn decode_map_len(&mut self) -> Result<usize, DecodeError> {
-        self.claim_bytes_read(1)?;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.decode_slice_len(),
             | Format::Cbor | Format::CborDeterministic => cbor::decode_map_len(self.reader()),
@@ -676,15 +674,55 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     }
 
     /// Decode an enum variant index.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails.
     fn decode_variant_index(&mut self) -> Result<u32, DecodeError> {
-        self.claim_bytes_read(1)?;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode => self.decode_u8().map(u32::from),
             | Format::Cbor | Format::CborDeterministic => cbor::decode_u32(self.reader()),
+        }
+    }
+
+    /// Decode the length of a byte slice (Major Type 2 in CBOR).
+    fn decode_byte_slice_len(&mut self) -> Result<usize, DecodeError> {
+        match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
+            | Format::Bincode => self.decode_slice_len(),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::decode_byte_slice_len(self.reader())
+            },
+        }
+    }
+
+    /// Decode the length of a byte slice or an array (Major Type 2 or 4 in CBOR).
+    fn decode_byte_slice_or_array_len(&mut self) -> Result<(u8, usize), DecodeError> {
+        match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
+            | Format::Bincode => self.decode_slice_len().map(|len| (0, len)),
+            | Format::Cbor | Format::CborDeterministic => {
+                cbor::decode_byte_slice_or_array_len(self.reader())
+            },
+        }
+    }
+
+    /// Decode the length of a string (Major Type 3 in CBOR).
+    fn decode_str_len(&mut self) -> Result<usize, DecodeError> {
+        match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
+            | Format::Bincode => self.decode_slice_len(),
+            | Format::Cbor | Format::CborDeterministic => cbor::decode_str_len(self.reader()),
+        }
+    }
+
+    /// Decode the header for a struct.
+    fn decode_struct_header(
+        &mut self,
+        _len: usize,
+    ) -> Result<(), DecodeError> {
+        match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
+            | Format::Bincode => Ok(()),
+            | Format::Cbor | Format::CborDeterministic => {
+                let actual_len = cbor::decode_slice_len(self.reader())?;
+                if actual_len != _len && actual_len != usize::MAX {
+                    return Err(DecodeError::Other("struct length mismatch"));
+                }
+                Ok(())
+            },
         }
     }
 }
@@ -837,6 +875,24 @@ where
     #[inline]
     fn decode_variant_index(&mut self) -> Result<u32, DecodeError> {
         T::decode_variant_index(self)
+    }
+
+    #[inline]
+    fn decode_byte_slice_len(&mut self) -> Result<usize, DecodeError> {
+        T::decode_byte_slice_len(self)
+    }
+
+    #[inline]
+    fn decode_str_len(&mut self) -> Result<usize, DecodeError> {
+        T::decode_str_len(self)
+    }
+
+    #[inline]
+    fn decode_struct_header(
+        &mut self,
+        len: usize,
+    ) -> Result<(), DecodeError> {
+        T::decode_struct_header(self, len)
     }
 }
 

@@ -5,6 +5,27 @@
 
 use crate::error::EncodeError;
 
+#[cfg(feature = "alloc")]
+impl Writer for crate::alloc::vec::Vec<u8> {
+    #[inline]
+    fn write(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(), EncodeError> {
+        self.extend_from_slice(bytes);
+        Ok(())
+    }
+
+    #[inline]
+    fn write_u8(
+        &mut self,
+        value: u8,
+    ) -> Result<(), EncodeError> {
+        self.push(value);
+        Ok(())
+    }
+}
+
 /// Trait that indicates that a struct can be used as a destination to encode data too. This is used by [Encode]
 ///
 /// [Encode]: ../trait.Encode.html
