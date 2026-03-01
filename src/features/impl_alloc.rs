@@ -131,7 +131,15 @@ where
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        self.as_slice().encode(encoder)
+        use crate::config::Format;
+        if matches!(
+            <E::C as crate::config::InternalFormatConfig>::FORMAT,
+            Format::CborDeterministic
+        ) {
+            crate::enc::cbor::encode_slice_deterministic::<E, _, _>(encoder, self.iter())
+        } else {
+            self.as_slice().encode(encoder)
+        }
     }
 }
 

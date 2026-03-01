@@ -356,7 +356,10 @@ where
             if is_u8 {
                 let len = decoder.decode_byte_slice_len()?;
                 if len != N {
-                    return Err(DecodeError::Other("array length mismatch"));
+                    return Err(DecodeError::ArrayLengthMismatch {
+                        required: N,
+                        found: len,
+                    });
                 }
                 decoder.claim_bytes_read(N)?;
                 let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
@@ -369,7 +372,10 @@ where
             } else {
                 let len = decoder.decode_array_len()?;
                 if len != N && len != usize::MAX {
-                    return Err(DecodeError::Other("array length mismatch"));
+                    return Err(DecodeError::ArrayLengthMismatch {
+                        required: N,
+                        found: len,
+                    });
                 }
             }
         }
@@ -436,7 +442,10 @@ where
             if is_u8 {
                 let len = decoder.decode_byte_slice_len()?;
                 if len != N {
-                    return Err(DecodeError::Other("array length mismatch"));
+                    return Err(DecodeError::ArrayLengthMismatch {
+                        required: N,
+                        found: len,
+                    });
                 }
                 decoder.claim_bytes_read(N)?;
                 let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
@@ -449,7 +458,10 @@ where
             } else {
                 let len = decoder.decode_array_len()?;
                 if len != N && len != usize::MAX {
-                    return Err(DecodeError::Other("array length mismatch"));
+                    return Err(DecodeError::ArrayLengthMismatch {
+                        required: N,
+                        found: len,
+                    });
                 }
             }
         }

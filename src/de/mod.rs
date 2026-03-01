@@ -646,10 +646,15 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     ///
     /// Returns an error if the operation fails.
     fn decode_slice_len(&mut self) -> Result<usize, DecodeError> {
-        self.claim_bytes_read(1)?;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.decode_usize(),
-            | Format::Cbor | Format::CborDeterministic => cbor::decode_slice_len(self.reader()),
+            | Format::Bincode => {
+                self.claim_bytes_read(1)?;
+                self.decode_usize()
+            },
+            | Format::Cbor | Format::CborDeterministic => {
+                self.claim_bytes_read(9)?;
+                cbor::decode_slice_len(self.reader())
+            },
         }
     }
 
@@ -669,8 +674,14 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     /// Returns an error if the operation fails.
     fn decode_map_len(&mut self) -> Result<usize, DecodeError> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.decode_slice_len(),
-            | Format::Cbor | Format::CborDeterministic => cbor::decode_map_len(self.reader()),
+            | Format::Bincode => {
+                self.claim_bytes_read(1)?;
+                self.decode_slice_len()
+            },
+            | Format::Cbor | Format::CborDeterministic => {
+                self.claim_bytes_read(9)?;
+                cbor::decode_map_len(self.reader())
+            },
         }
     }
 
@@ -681,8 +692,14 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     /// Returns `DecodeError` if the encoding fails.
     fn decode_variant_index(&mut self) -> Result<u32, DecodeError> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.decode_u8().map(u32::from),
-            | Format::Cbor | Format::CborDeterministic => cbor::decode_u32(self.reader()),
+            | Format::Bincode => {
+                self.claim_bytes_read(1)?;
+                self.decode_u8().map(u32::from)
+            },
+            | Format::Cbor | Format::CborDeterministic => {
+                self.claim_bytes_read(5)?;
+                cbor::decode_u32(self.reader())
+            },
         }
     }
 
@@ -693,8 +710,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     /// Returns `DecodeError` if the encoding fails.
     fn decode_byte_slice_len(&mut self) -> Result<usize, DecodeError> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.decode_slice_len(),
+            | Format::Bincode => {
+                self.claim_bytes_read(1)?;
+                self.decode_slice_len()
+            },
             | Format::Cbor | Format::CborDeterministic => {
+                self.claim_bytes_read(9)?;
                 cbor::decode_byte_slice_len(self.reader())
             },
         }
@@ -707,8 +728,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     /// Returns `DecodeError` if the encoding fails.
     fn decode_byte_slice_or_array_len(&mut self) -> Result<(u8, usize), DecodeError> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.decode_slice_len().map(|len| (0, len)),
+            | Format::Bincode => {
+                self.claim_bytes_read(1)?;
+                self.decode_slice_len().map(|len| (0, len))
+            },
             | Format::Cbor | Format::CborDeterministic => {
+                self.claim_bytes_read(9)?;
                 cbor::decode_byte_slice_or_array_len(self.reader())
             },
         }
@@ -721,8 +746,14 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     /// Returns `DecodeError` if the encoding fails.
     fn decode_str_len(&mut self) -> Result<usize, DecodeError> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.decode_slice_len(),
-            | Format::Cbor | Format::CborDeterministic => cbor::decode_str_len(self.reader()),
+            | Format::Bincode => {
+                self.claim_bytes_read(1)?;
+                self.decode_slice_len()
+            },
+            | Format::Cbor | Format::CborDeterministic => {
+                self.claim_bytes_read(9)?;
+                cbor::decode_str_len(self.reader())
+            },
         }
     }
 
