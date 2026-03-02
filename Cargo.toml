@@ -3,7 +3,7 @@ members = ["derive", "compatibility"]
 
 [package]
 name = "bincode-next"
-version = "3.0.0-rc.2"
+version = "3.0.0-rc.3"
 # Remember to update html_root_url and bincode_derive
 authors = [
     "Xinyu Yang <xinyu.yang@apich.org>",
@@ -55,7 +55,7 @@ static-size = ["bincode_derive-next?/static-size"]
 # And remeber 'sudo chrt -f 99 cargo +nightly bench --bench complex' also.
 
 [dependencies]
-bincode_derive-next = { path = "derive", version = "3.0.0-rc.2", optional = true }
+bincode_derive-next = { path = "derive", version = "3.0.0-rc.3", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
 unty = { version = "0.1.1", package = "unty-next" }
 rapidhash = { version = "4.4", default-features = false }
