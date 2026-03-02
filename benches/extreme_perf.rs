@@ -5,6 +5,7 @@ use criterion::criterion_group;
 use criterion::criterion_main;
 use rand::distr::Distribution;
 use std::hint::black_box;
+use std::time::Duration;
 
 fn bench_vec_u64_small_varint(c: &mut Criterion) {
     let mut rng = rand::rng();
