@@ -990,6 +990,7 @@ pub(crate) fn decode_option_variant<D: Decoder>(
 ///
 /// Returns an error if the operation fails.
 #[inline]
+#[allow(dead_code)]
 pub(crate) fn decode_slice_len<D: Decoder>(decoder: &mut D) -> Result<usize, DecodeError> {
     D::assert_covered();
     decoder.decode_slice_len()
