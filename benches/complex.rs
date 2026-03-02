@@ -8,6 +8,7 @@ use criterion::criterion_main;
 use serde::Deserialize;
 use serde::Serialize;
 use std::hint::black_box;
+use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Encode, Decode, PartialEq, Debug, Clone)]
 struct World {
@@ -119,7 +120,20 @@ fn bench_complex(c: &mut Criterion) {
     // bincode-v1 (Serde)
     let bytes_v1 = bincode_1::serialize(&world).unwrap();
 
+    // CBOR format
+    let config_cbor = config.with_cbor_format();
+    let bytes_cbor = bincode::encode_to_vec(&world, config_cbor).unwrap();
+
+    // Deterministic CBOR format
+    let config_cbor_det = config.with_deterministic_cbor();
+    let bytes_cbor_det = bincode::encode_to_vec(&world, config_cbor_det).unwrap();
+
     let mut group = c.benchmark_group("complex_world_decode");
+
+    group
+        .warm_up_time(Duration::from_secs(20))
+        .measurement_time(Duration::from_secs(40))
+        .sample_size(1000);
 
     group.bench_function("bincode-next (traits, varint)", |b| {
         b.iter(|| {
@@ -167,9 +181,30 @@ fn bench_complex(c: &mut Criterion) {
         })
     });
 
+    group.bench_function("bincode-next (traits, cbor)", |b| {
+        b.iter(|| {
+            let res: (World, usize) =
+                bincode::decode_from_slice(black_box(&bytes_cbor), config_cbor).unwrap();
+            black_box(res);
+        })
+    });
+
+    group.bench_function("bincode-next (traits, cbor-deterministic)", |b| {
+        b.iter(|| {
+            let res: (World, usize) =
+                bincode::decode_from_slice(black_box(&bytes_cbor_det), config_cbor_det).unwrap();
+            black_box(res);
+        })
+    });
+
     group.finish();
 
     let mut group = c.benchmark_group("complex_world_encode");
+
+    group
+        .warm_up_time(Duration::from_secs(20))
+        .measurement_time(Duration::from_secs(40))
+        .sample_size(1000);
 
     group.bench_function("bincode-next (traits, varint)", |b| {
         b.iter(|| {
@@ -206,6 +241,20 @@ fn bench_complex(c: &mut Criterion) {
     group.bench_function("bincode-v1 (serde)", |b| {
         b.iter(|| {
             let res = bincode_1::serialize(black_box(&world)).unwrap();
+            black_box(res);
+        })
+    });
+
+    group.bench_function("bincode-next (traits, cbor)", |b| {
+        b.iter(|| {
+            let res = bincode::encode_to_vec(black_box(&world), config_cbor).unwrap();
+            black_box(res);
+        })
+    });
+
+    group.bench_function("bincode-next (traits, cbor-deterministic)", |b| {
+        b.iter(|| {
+            let res = bincode::encode_to_vec(black_box(&world), config_cbor_det).unwrap();
             black_box(res);
         })
     });

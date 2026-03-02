@@ -41,6 +41,7 @@ use std::time::SystemTime;
 /// # Errors
 ///
 /// Returns a `DecodeError` if the reader fails or the data is invalid.
+#[inline(always)]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub fn decode_from_std_read<D: Decode<()>, C: Config, R: std::io::Read>(
     src: &mut R,
@@ -62,6 +63,7 @@ where
 ///
 /// Returns a `DecodeError` if the reader fails or the data is invalid.
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+#[inline(always)]
 pub fn decode_from_std_read_with_context<Context, D: Decode<Context>, C: Config, R: std::io::Read>(
     src: &mut R,
     config: C,
@@ -111,6 +113,7 @@ impl<R> Reader for std::io::BufReader<R>
 where
     R: std::io::Read,
 {
+    #[inline(always)]
     fn read(
         &mut self,
         bytes: &mut [u8],
@@ -124,7 +127,7 @@ where
         })
     }
 
-    #[inline]
+    #[inline(always)]
     fn peek_read(
         &mut self,
         n: usize,
@@ -132,7 +135,7 @@ where
         self.buffer().get(..n)
     }
 
-    #[inline]
+    #[inline(always)]
     fn consume(
         &mut self,
         n: usize,
@@ -152,6 +155,7 @@ where
 ///
 /// Returns an `EncodeError` if the writer fails.
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+#[inline]
 pub fn encode_into_std_write<E: Encode, C: Config, W: std::io::Write>(
     val: E,
     dst: &mut W,
@@ -189,6 +193,10 @@ impl<'a, W: std::io::Write> IoWriter<'a, W> {
     }
 
     /// Returns the number of bytes written to the underlying writer.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the encoding fails.
     #[must_use]
     pub const fn bytes_written(&self) -> usize {
         self.bytes_written
@@ -199,6 +207,7 @@ impl<'a, W: std::io::Write> IoWriter<'a, W> {
     /// # Errors
     ///
     /// Returns an `EncodeError` if the writer flushing fails.
+    #[inline(always)]
     pub fn flush(&mut self) -> Result<(), EncodeError> {
         if self.buffer_len > 0 {
             self.writer
@@ -242,12 +251,14 @@ impl<W: std::io::Write> Writer for IoWriter<'_, W> {
 }
 
 impl<W: std::io::Write> Drop for IoWriter<'_, W> {
+    #[inline(always)]
     fn drop(&mut self) {
         let _ = self.flush();
     }
 }
 
 impl Encode for &CStr {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -257,6 +268,7 @@ impl Encode for &CStr {
 }
 
 impl Encode for CString {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -266,6 +278,7 @@ impl Encode for CString {
 }
 
 impl<Context> Decode<Context> for CString {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = std::vec::Vec::decode(decoder)?;
         Self::new(vec).map_err(|inner| {
@@ -280,6 +293,7 @@ impl<T> Encode for Mutex<T>
 where
     T: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -296,6 +310,7 @@ impl<Context, T> Decode<Context> for Mutex<T>
 where
     T: Decode<Context>,
 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Self::new(t))
@@ -305,6 +320,7 @@ impl<'de, T, Context> BorrowDecode<'de, Context> for Mutex<T>
 where
     T: BorrowDecode<'de, Context>,
 {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -317,6 +333,7 @@ impl<T> Encode for RwLock<T>
 where
     T: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -333,6 +350,7 @@ impl<Context, T> Decode<Context> for RwLock<T>
 where
     T: Decode<Context>,
 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Self::new(t))
@@ -342,6 +360,7 @@ impl<'de, T, Context> BorrowDecode<'de, Context> for RwLock<T>
 where
     T: BorrowDecode<'de, Context>,
 {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -351,6 +370,7 @@ where
 }
 
 impl Encode for SystemTime {
+    #[inline]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -367,6 +387,7 @@ impl Encode for SystemTime {
 }
 
 impl<Context> Decode<Context> for SystemTime {
+    #[inline]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let duration = Duration::decode(decoder)?;
         Self::UNIX_EPOCH.checked_add(duration).ok_or_else(|| {
@@ -377,6 +398,7 @@ impl<Context> Decode<Context> for SystemTime {
 impl_borrow_decode!(SystemTime);
 
 impl Encode for &'_ Path {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -390,6 +412,7 @@ impl Encode for &'_ Path {
 }
 
 impl<'de, Context> BorrowDecode<'de, Context> for &'de Path {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -399,6 +422,7 @@ impl<'de, Context> BorrowDecode<'de, Context> for &'de Path {
 }
 
 impl Encode for PathBuf {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -408,6 +432,7 @@ impl Encode for PathBuf {
 }
 
 impl<Context> Decode<Context> for PathBuf {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let string = std::string::String::decode(decoder)?;
         Ok(string.into())
@@ -416,6 +441,7 @@ impl<Context> Decode<Context> for PathBuf {
 impl_borrow_decode!(PathBuf);
 
 impl Encode for IpAddr {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -434,6 +460,7 @@ impl Encode for IpAddr {
 }
 
 impl<Context> Decode<Context> for IpAddr {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         match u32::decode(decoder)? {
             | 0 => Ok(Self::V4(Ipv4Addr::decode(decoder)?)),
@@ -451,6 +478,7 @@ impl<Context> Decode<Context> for IpAddr {
 impl_borrow_decode!(IpAddr);
 
 impl Encode for Ipv4Addr {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -460,6 +488,7 @@ impl Encode for Ipv4Addr {
 }
 
 impl<Context> Decode<Context> for Ipv4Addr {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let mut buff = [0u8; 4];
         decoder.reader().read(&mut buff)?;
@@ -469,6 +498,7 @@ impl<Context> Decode<Context> for Ipv4Addr {
 impl_borrow_decode!(Ipv4Addr);
 
 impl Encode for Ipv6Addr {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -478,6 +508,7 @@ impl Encode for Ipv6Addr {
 }
 
 impl<Context> Decode<Context> for Ipv6Addr {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let mut buff = [0u8; 16];
         decoder.reader().read(&mut buff)?;
@@ -487,6 +518,7 @@ impl<Context> Decode<Context> for Ipv6Addr {
 impl_borrow_decode!(Ipv6Addr);
 
 impl Encode for SocketAddr {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -505,6 +537,7 @@ impl Encode for SocketAddr {
 }
 
 impl<Context> Decode<Context> for SocketAddr {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         match u32::decode(decoder)? {
             | 0 => Ok(Self::V4(SocketAddrV4::decode(decoder)?)),
@@ -522,6 +555,7 @@ impl<Context> Decode<Context> for SocketAddr {
 impl_borrow_decode!(SocketAddr);
 
 impl Encode for SocketAddrV4 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -532,6 +566,7 @@ impl Encode for SocketAddrV4 {
 }
 
 impl<Context> Decode<Context> for SocketAddrV4 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let ip = Ipv4Addr::decode(decoder)?;
         let port = u16::decode(decoder)?;
@@ -541,6 +576,7 @@ impl<Context> Decode<Context> for SocketAddrV4 {
 impl_borrow_decode!(SocketAddrV4);
 
 impl Encode for SocketAddrV6 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -551,6 +587,7 @@ impl Encode for SocketAddrV6 {
 }
 
 impl<Context> Decode<Context> for SocketAddrV6 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let ip = Ipv6Addr::decode(decoder)?;
         let port = u16::decode(decoder)?;
@@ -564,16 +601,25 @@ where
     K: Encode,
     V: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(encoder, self.len())?;
-        for (k, v) in self {
-            Encode::encode(k, encoder)?;
-            Encode::encode(v, encoder)?;
+        use crate::config::Format;
+        if matches!(
+            <E::C as crate::config::InternalFormatConfig>::FORMAT,
+            Format::CborDeterministic
+        ) {
+            crate::enc::cbor::encode_map_deterministic::<E, _, _, _>(encoder, self.iter())
+        } else {
+            encoder.encode_map_len(self.len())?;
+            for (k, v) in self {
+                Encode::encode(k, encoder)?;
+                Encode::encode(v, encoder)?;
+            }
+            Ok(())
         }
-        Ok(())
     }
 }
 
@@ -583,16 +629,28 @@ where
     V: Decode<Context>,
     S: std::hash::BuildHasher + Default,
 {
+    #[inline]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
+        let len = decoder.decode_map_len()?;
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut map = Self::with_hasher(S::default());
+            while decoder.reader().peek_u8() != Some(0xFF) {
+                let k = K::decode(decoder)?;
+                let v = V::decode(decoder)?;
+                map.insert(k, v);
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Ok(map);
+        }
         decoder.claim_container_read::<(K, V)>(len)?;
 
         let hash_builder: S = Default::default();
         let mut map = Self::with_capacity_and_hasher(len, hash_builder);
         for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
-
             let k = K::decode(decoder)?;
             let v = V::decode(decoder)?;
             map.insert(k, v);
@@ -606,18 +664,30 @@ where
     V: BorrowDecode<'de, Context>,
     S: std::hash::BuildHasher + Default,
 {
+    #[inline]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
+        let len = decoder.decode_map_len()?;
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut map = Self::with_hasher(S::default());
+            while decoder.reader().peek_u8() != Some(0xFF) {
+                let k = K::borrow_decode(decoder)?;
+                let v = V::borrow_decode(decoder)?;
+                map.insert(k, v);
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Ok(map);
+        }
         decoder.claim_container_read::<(K, V)>(len)?;
 
         let hash_builder: S = Default::default();
         let mut map = Self::with_capacity_and_hasher(len, hash_builder);
         for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
-
             let k = K::borrow_decode(decoder)?;
             let v = V::borrow_decode(decoder)?;
             map.insert(k, v);
@@ -631,16 +701,27 @@ where
     T: Decode<Context> + Eq + Hash,
     S: std::hash::BuildHasher + Default,
 {
+    #[inline]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
+        let len = decoder.decode_slice_len()?;
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut map = Self::with_hasher(S::default());
+            while decoder.reader().peek_u8() != Some(0xFF) {
+                let key = T::decode(decoder)?;
+                map.insert(key);
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Ok(map);
+        }
         decoder.claim_container_read::<T>(len)?;
 
         let hash_builder: S = Default::default();
         let mut map: Self = Self::with_capacity_and_hasher(len, hash_builder);
         for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
             let key = T::decode(decoder)?;
             map.insert(key);
         }
@@ -653,17 +734,28 @@ where
     T: BorrowDecode<'de, Context> + Eq + Hash,
     S: std::hash::BuildHasher + Default,
 {
+    #[inline]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
+        let len = decoder.decode_slice_len()?;
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+        if !is_bincode && len == usize::MAX {
+            let mut map = Self::with_hasher(S::default());
+            while decoder.reader().peek_u8() != Some(0xFF) {
+                let key = T::borrow_decode(decoder)?;
+                map.insert(key);
+            }
+            decoder.reader().read_u8()?; // consume 0xFF
+            return Ok(map);
+        }
         decoder.claim_container_read::<T>(len)?;
 
         let mut map = Self::with_capacity_and_hasher(len, S::default());
         for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
             let key = T::borrow_decode(decoder)?;
             map.insert(key);
         }
@@ -675,14 +767,23 @@ impl<T, S> Encode for HashSet<T, S>
 where
     T: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(encoder, self.len())?;
-        for item in self {
-            item.encode(encoder)?;
+        use crate::config::Format;
+        if matches!(
+            <E::C as crate::config::InternalFormatConfig>::FORMAT,
+            Format::CborDeterministic
+        ) {
+            crate::enc::cbor::encode_slice_deterministic::<E, _, _>(encoder, self.iter())
+        } else {
+            encoder.encode_slice_len(self.len())?;
+            for item in self {
+                item.encode(encoder)?;
+            }
+            Ok(())
         }
-        Ok(())
     }
 }

@@ -2,10 +2,6 @@
 use super::Encode;
 use super::Encoder;
 use super::write::Writer;
-use crate::config::Endianness;
-use crate::config::IntEncoding;
-use crate::config::InternalEndianConfig;
-use crate::config::InternalIntEncodingConfig;
 use crate::error::EncodeError;
 use core::cell::Cell;
 use core::cell::RefCell;
@@ -30,6 +26,7 @@ use core::ops::RangeInclusive;
 use core::time::Duration;
 
 impl Encode for () {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         _: &mut E,
@@ -39,6 +36,7 @@ impl Encode for () {
 }
 
 impl<T> Encode for PhantomData<T> {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         _: &mut E,
@@ -48,24 +46,27 @@ impl<T> Encode for PhantomData<T> {
 }
 
 impl Encode for bool {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        u8::from(*self).encode(encoder)
+        encoder.encode_bool(*self)
     }
 }
 
 impl Encode for u8 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        encoder.writer().write_u8(*self)
+        encoder.encode_u8(*self)
     }
 }
 
 impl Encode for NonZeroU8 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -75,25 +76,17 @@ impl Encode for NonZeroU8 {
 }
 
 impl Encode for u16 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_u16(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_u16(*self)
     }
 }
 
 impl Encode for NonZeroU16 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -103,25 +96,17 @@ impl Encode for NonZeroU16 {
 }
 
 impl Encode for u32 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_u32(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_u32(*self)
     }
 }
 
 impl Encode for NonZeroU32 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -131,25 +116,17 @@ impl Encode for NonZeroU32 {
 }
 
 impl Encode for u64 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_u64(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_u64(*self)
     }
 }
 
 impl Encode for NonZeroU64 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -159,25 +136,17 @@ impl Encode for NonZeroU64 {
 }
 
 impl Encode for u128 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_u128(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_u128(*self)
     }
 }
 
 impl Encode for NonZeroU128 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -187,25 +156,17 @@ impl Encode for NonZeroU128 {
 }
 
 impl Encode for usize {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_usize(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&(*self as u64).to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&(*self as u64).to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_usize(*self)
     }
 }
 
 impl Encode for NonZeroUsize {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -215,15 +176,17 @@ impl Encode for NonZeroUsize {
 }
 
 impl Encode for i8 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        encoder.writer().write_u8(*self as u8)
+        encoder.encode_i8(*self)
     }
 }
 
 impl Encode for NonZeroI8 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -233,25 +196,17 @@ impl Encode for NonZeroI8 {
 }
 
 impl Encode for i16 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_i16(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_i16(*self)
     }
 }
 
 impl Encode for NonZeroI16 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -261,25 +216,17 @@ impl Encode for NonZeroI16 {
 }
 
 impl Encode for i32 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_i32(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_i32(*self)
     }
 }
 
 impl Encode for NonZeroI32 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -289,25 +236,17 @@ impl Encode for NonZeroI32 {
 }
 
 impl Encode for i64 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_i64(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_i64(*self)
     }
 }
 
 impl Encode for NonZeroI64 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -317,25 +256,17 @@ impl Encode for NonZeroI64 {
 }
 
 impl Encode for i128 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_i128(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_i128(*self)
     }
 }
 
 impl Encode for NonZeroI128 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -345,25 +276,17 @@ impl Encode for NonZeroI128 {
 }
 
 impl Encode for isize {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_encode_isize(encoder.writer(), E::C::ENDIAN, *self)
-            },
-            | IntEncoding::Fixed => {
-                match E::C::ENDIAN {
-                    | Endianness::Big => encoder.writer().write(&(*self as i64).to_be_bytes()),
-                    | Endianness::Little => encoder.writer().write(&(*self as i64).to_le_bytes()),
-                }
-            },
-        }
+        encoder.encode_isize(*self)
     }
 }
 
 impl Encode for NonZeroIsize {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -373,30 +296,27 @@ impl Encode for NonZeroIsize {
 }
 
 impl Encode for f32 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::ENDIAN {
-            | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-            | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-        }
+        encoder.encode_f32(*self)
     }
 }
 
 impl Encode for f64 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        match E::C::ENDIAN {
-            | Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
-            | Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
-        }
+        encoder.encode_f64(*self)
     }
 }
 
 impl<T: Encode> Encode for Wrapping<T> {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -406,6 +326,7 @@ impl<T: Encode> Encode for Wrapping<T> {
 }
 
 impl<T: Encode> Encode for Reverse<T> {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -415,6 +336,7 @@ impl<T: Encode> Encode for Reverse<T> {
 }
 
 impl Encode for char {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -427,21 +349,36 @@ impl<T> Encode for [T]
 where
     T: Encode,
 {
+    #[inline]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
+        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        if is_u8 {
+            // SAFETY: self is [T], and T is u8/i8, so it's safe to cast to [u8]
+            let bytes =
+                unsafe { core::slice::from_raw_parts(self.as_ptr().cast::<u8>(), self.len()) };
+            return encoder.encode_byte_slice(bytes);
+        }
+
         super::encode_slice_len(encoder, self.len())?;
 
-        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
-        let is_fixed = matches!(E::C::INT_ENCODING, crate::config::IntEncoding::Fixed);
-        let is_native_endian = match E::C::ENDIAN {
+        let is_fixed = matches!(
+            <E::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING,
+            crate::config::IntEncoding::Fixed
+        );
+        let is_native_endian = match <E::C as crate::config::InternalEndianConfig>::ENDIAN {
             | crate::config::Endianness::Little => cfg!(target_endian = "little"),
             | crate::config::Endianness::Big => cfg!(target_endian = "big"),
         };
+        let is_bincode = matches!(
+            <E::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
 
-        if is_u8
-            || (is_native_endian
+        if is_bincode
+            && (is_native_endian
                 && (unty::type_equal::<T, f32>()
                     || unty::type_equal::<T, f64>()
                     || (is_fixed
@@ -456,8 +393,7 @@ where
         {
             let bytes_to_copy = core::mem::size_of_val(self);
             // SAFETY: T is a primitive type (pod), so it's safe to copy its bytes.
-            // We've checked that the encoding is Fixed and Endianness matches,
-            // or that it's a 1-byte type (u8/i8).
+            // We've checked that the encoding is Fixed and Endianness matches.
             unsafe {
                 let slice_ptr = self.as_ptr().cast::<u8>();
                 let slice = core::slice::from_raw_parts(slice_ptr, bytes_to_copy);
@@ -482,6 +418,7 @@ const MAX_ONE_B: u32 = 0x80;
 const MAX_TWO_B: u32 = 0x800;
 const MAX_THREE_B: u32 = 0x10000;
 
+#[inline(always)]
 fn encode_utf8(
     writer: &mut impl Writer,
     c: char,
@@ -512,11 +449,12 @@ fn encode_utf8(
 }
 
 impl Encode for str {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
-        self.as_bytes().encode(encoder)
+        encoder.encode_str(self)
     }
 }
 
@@ -524,30 +462,46 @@ impl<T, const N: usize> Encode for [T; N]
 where
     T: Encode,
 {
+    #[inline]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
         let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
-        let is_fixed = matches!(E::C::INT_ENCODING, crate::config::IntEncoding::Fixed);
-        let is_native_endian = match E::C::ENDIAN {
+        let is_bincode = matches!(
+            <E::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode
+        );
+
+        if is_u8 && !is_bincode {
+            // SAFETY: self is [T; N], T is u8/i8, so it's safe to cast to [u8]
+            let bytes = unsafe { core::slice::from_raw_parts(self.as_ptr().cast::<u8>(), N) };
+            return encoder.encode_byte_slice(bytes);
+        }
+
+        let is_fixed = matches!(
+            <E::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING,
+            crate::config::IntEncoding::Fixed
+        );
+        let is_native_endian = match <E::C as crate::config::InternalEndianConfig>::ENDIAN {
             | crate::config::Endianness::Little => cfg!(target_endian = "little"),
             | crate::config::Endianness::Big => cfg!(target_endian = "big"),
         };
 
-        if is_u8
-            || (is_native_endian
-                && (unty::type_equal::<T, f32>()
-                    || unty::type_equal::<T, f64>()
-                    || (is_fixed
-                        && (unty::type_equal::<T, u16>()
-                            || unty::type_equal::<T, i16>()
-                            || unty::type_equal::<T, u32>()
-                            || unty::type_equal::<T, i32>()
-                            || unty::type_equal::<T, u64>()
-                            || unty::type_equal::<T, i64>()
-                            || unty::type_equal::<T, u128>()
-                            || unty::type_equal::<T, i128>()))))
+        if is_bincode
+            && (is_u8
+                || (is_native_endian
+                    && (unty::type_equal::<T, f32>()
+                        || unty::type_equal::<T, f64>()
+                        || (is_fixed
+                            && (unty::type_equal::<T, u16>()
+                                || unty::type_equal::<T, i16>()
+                                || unty::type_equal::<T, u32>()
+                                || unty::type_equal::<T, i32>()
+                                || unty::type_equal::<T, u64>()
+                                || unty::type_equal::<T, i64>()
+                                || unty::type_equal::<T, u128>()
+                                || unty::type_equal::<T, i128>())))))
         {
             let bytes_to_copy = N * core::mem::size_of::<T>();
             // SAFETY: T is a primitive type (pod), so it's safe to copy its bytes.
@@ -559,6 +513,14 @@ where
                 encoder.writer().write(slice)?;
             }
         } else {
+            // Arrays in CBOR are always length-prefixed arrays if not byte strings?
+            // Actually, bincode-next seems to encode [T; N] as just T...N WITHOUT length prefix?
+            // Let's check bincode format spec for [T; N].
+            // Ah, bincode encodes [T; N] as N elements of T without a length prefix.
+            // In CBOR, we should probably encode it as an array if it's not a byte string.
+            if !is_bincode {
+                encoder.encode_array_len(N)?;
+            }
             for item in self {
                 item.encode(encoder)?;
             }
@@ -571,6 +533,7 @@ impl<T> Encode for Option<T>
 where
     T: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -588,17 +551,18 @@ where
     T: Encode,
     U: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
         match self {
             | Ok(val) => {
-                0u8.encode(encoder)?;
+                encoder.encode_variant_index(0)?;
                 val.encode(encoder)
             },
             | Err(err) => {
-                1u8.encode(encoder)?;
+                encoder.encode_variant_index(1)?;
                 err.encode(encoder)
             },
         }
@@ -609,6 +573,7 @@ impl<T> Encode for Cell<T>
 where
     T: Encode + Copy,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -621,6 +586,7 @@ impl<T> Encode for RefCell<T>
 where
     T: Encode + ?Sized,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -637,6 +603,7 @@ where
 }
 
 impl Encode for Duration {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -651,6 +618,7 @@ impl<T> Encode for Range<T>
 where
     T: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -665,6 +633,7 @@ impl<T> Encode for RangeInclusive<T>
 where
     T: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -679,6 +648,7 @@ impl<T> Encode for Bound<T>
 where
     T: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -704,6 +674,7 @@ impl<T> Encode for &T
 where
     T: Encode + ?Sized,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,

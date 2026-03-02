@@ -148,7 +148,9 @@ use enc::write::Writer;
     feature = "alloc",
     feature = "std",
     feature = "derive",
-    feature = "serde"
+    feature = "serde",
+    feature = "zero-copy",
+    feature = "static-size"
 ))]
 pub use features::*;
 
@@ -161,18 +163,11 @@ pub use rapidhash;
 pub mod config;
 /// Fingerprinting support for schema verification.
 pub mod fingerprint;
-/// Relative pointer system for zero-copy nested structures
-#[cfg(feature = "zero-copy")]
-pub mod relative_ptr;
+
 #[macro_use]
 pub mod de;
 pub mod enc;
 pub mod error;
-
-#[cfg(feature = "static-size")]
-pub mod bounded;
-#[cfg(feature = "static-size")]
-pub mod static_size;
 
 #[cfg(feature = "static-size")]
 pub use static_size::StaticSize;

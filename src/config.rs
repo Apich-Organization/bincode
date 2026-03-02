@@ -46,12 +46,65 @@ pub struct Configuration<
     L = NoLimit,
     B = SkipBitPacking,
     F = FingerprintDisabled,
+    FO = BincodeFormat,
 > {
     _e: PhantomData<E>,
     _i: PhantomData<I>,
     _l: PhantomData<L>,
     _b: PhantomData<B>,
     _f: PhantomData<F>,
+    _fo: PhantomData<FO>,
+}
+
+/// The modes for CBOR deterministic encoding.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum CborDeterministicMode {
+    /// No deterministic encoding requirements.
+    None = 0,
+    /// Core deterministic encoding (RFC 8949 §4.2.1).
+    Core = 1,
+    /// Length-first deterministic encoding (RFC 8949 §4.2.3).
+    LengthFirst = 2,
+}
+
+/// Detailed options for CBOR encoding.
+#[allow(clippy::struct_excessive_bools)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct CborOptions {
+    /// Deterministic encoding mode.
+    pub deterministic_mode: CborDeterministicMode,
+    /// Preferred serialization for floating-point values (§4.1).
+    pub preferred_float: bool,
+    /// Canonical NaN encoding (0xf97e00).
+    pub canonical_nan: bool,
+    /// Normalize negative zero (-0.0) to positive zero (0.0).
+    pub normalize_neg_zero: bool,
+    /// Allow indefinite-length items.
+    pub allow_indefinite: bool,
+    /// Strict tag validity checking.
+    pub strict_tags: bool,
+}
+
+impl CborOptions {
+    /// Default CBOR options.
+    pub const DEFAULT: Self = Self {
+        deterministic_mode: CborDeterministicMode::None,
+        preferred_float: true,
+        canonical_nan: true,
+        normalize_neg_zero: false,
+        allow_indefinite: true,
+        strict_tags: false,
+    };
+    /// Default options for deterministic CBOR.
+    pub const DETERMINISTIC: Self = Self {
+        deterministic_mode: CborDeterministicMode::Core,
+        preferred_float: true,
+        canonical_nan: true,
+        normalize_neg_zero: false, // RFC 8949 §4.2.1: MUST NOT normalize -0.0
+        allow_indefinite: false,
+        strict_tags: true,
+    };
 }
 
 // When adding more features to configuration, follow these steps:
@@ -77,36 +130,38 @@ pub const fn standard() -> Configuration {
 /// - Fixed int length encoding
 #[must_use]
 pub const fn legacy()
--> Configuration<LittleEndian, Fixint, NoLimit, SkipBitPacking, FingerprintDisabled> {
+-> Configuration<LittleEndian, Fixint, NoLimit, SkipBitPacking, FingerprintDisabled, BincodeFormat>
+{
     generate()
 }
 
-impl<E, I, L, B, F> Default for Configuration<E, I, L, B, F> {
+impl<E, I, L, B, F, FO> Default for Configuration<E, I, L, B, F, FO> {
     fn default() -> Self {
         generate()
     }
 }
 
-const fn generate<E, I, L, B, F>() -> Configuration<E, I, L, B, F> {
+const fn generate<E, I, L, B, F, FO>() -> Configuration<E, I, L, B, F, FO> {
     Configuration {
         _e: PhantomData,
         _i: PhantomData,
         _l: PhantomData,
         _b: PhantomData,
         _f: PhantomData,
+        _fo: PhantomData,
     }
 }
 
-impl<E, I, L, B, F> Configuration<E, I, L, B, F> {
+impl<E, I, L, B, F, FO> Configuration<E, I, L, B, F, FO> {
     /// Makes bincode encode all integer types in big endian.
     #[must_use]
-    pub const fn with_big_endian(self) -> Configuration<BigEndian, I, L, B, F> {
+    pub const fn with_big_endian(self) -> Configuration<BigEndian, I, L, B, F, FO> {
         generate()
     }
 
     /// Makes bincode encode all integer types in little endian.
     #[must_use]
-    pub const fn with_little_endian(self) -> Configuration<LittleEndian, I, L, B, F> {
+    pub const fn with_little_endian(self) -> Configuration<LittleEndian, I, L, B, F, FO> {
         generate()
     }
 
@@ -167,7 +222,7 @@ impl<E, I, L, B, F> Configuration<E, I, L, B, F> {
     /// Note that u256 and the like are unsupported by this format; if and when they are added to the
     /// language, they may be supported via the extension point given by the 255 byte.
     #[must_use]
-    pub const fn with_variable_int_encoding(self) -> Configuration<E, Varint, L, B, F> {
+    pub const fn with_variable_int_encoding(self) -> Configuration<E, Varint, L, B, F, FO> {
         generate()
     }
 
@@ -177,37 +232,37 @@ impl<E, I, L, B, F> Configuration<E, I, L, B, F> {
     /// * Enum discriminants are encoded as u32
     /// * Lengths and usize are encoded as u64
     #[must_use]
-    pub const fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, L, B, F> {
+    pub const fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, L, B, F, FO> {
         generate()
     }
 
     /// Sets the byte limit to `limit`.
     #[must_use]
-    pub const fn with_limit<const N: usize>(self) -> Configuration<E, I, Limit<N>, B, F> {
+    pub const fn with_limit<const N: usize>(self) -> Configuration<E, I, Limit<N>, B, F, FO> {
         generate()
     }
 
     /// Clear the byte limit.
     #[must_use]
-    pub const fn with_no_limit(self) -> Configuration<E, I, NoLimit, B, F> {
+    pub const fn with_no_limit(self) -> Configuration<E, I, NoLimit, B, F, FO> {
         generate()
     }
 
     /// Enables bit-packing for types that support it.
     #[must_use]
-    pub const fn with_bit_packing(self) -> Configuration<E, I, L, AllowBitPacking, F> {
+    pub const fn with_bit_packing(self) -> Configuration<E, I, L, AllowBitPacking, F, FO> {
         generate()
     }
 
     /// Disables bit-packing.
     #[must_use]
-    pub const fn with_no_bit_packing(self) -> Configuration<E, I, L, SkipBitPacking, F> {
+    pub const fn with_no_bit_packing(self) -> Configuration<E, I, L, SkipBitPacking, F, FO> {
         generate()
     }
 
     /// Enables fingerprinting with the default deterministic seed (0).
     #[must_use]
-    pub const fn with_fingerprint(self) -> Configuration<E, I, L, B, FingerprintEnabled<0>> {
+    pub const fn with_fingerprint(self) -> Configuration<E, I, L, B, FingerprintEnabled<0>, FO> {
         generate()
     }
 
@@ -215,7 +270,7 @@ impl<E, I, L, B, F> Configuration<E, I, L, B, F> {
     #[must_use]
     pub const fn with_fingerprint_and_seed<const SEED: u64>(
         self
-    ) -> Configuration<E, I, L, B, FingerprintEnabled<SEED>> {
+    ) -> Configuration<E, I, L, B, FingerprintEnabled<SEED>, FO> {
         generate()
     }
 
@@ -223,7 +278,36 @@ impl<E, I, L, B, F> Configuration<E, I, L, B, F> {
     #[must_use]
     pub const fn with_legacy_fingerprint<const EXPECTED: u64>(
         self
-    ) -> Configuration<E, I, L, B, FingerprintLegacy<EXPECTED>> {
+    ) -> Configuration<E, I, L, B, FingerprintLegacy<EXPECTED>, FO> {
+        generate()
+    }
+
+    /// Sets the format to CBOR with default options.
+    #[must_use]
+    pub const fn with_cbor_format(self) -> Configuration<E, I, L, B, F, CborFormat> {
+        generate()
+    }
+
+    /// Sets the format to CBOR with deterministic encoding (Core mode).
+    #[must_use]
+    pub const fn with_deterministic_cbor(
+        self
+    ) -> Configuration<E, I, L, B, F, CborDeterministicFormat> {
+        generate()
+    }
+
+    /// Sets the format to CBOR with custom options.
+    #[must_use]
+    pub const fn with_cbor_options<
+        const DET: u8,
+        const PREF: bool,
+        const NAN: bool,
+        const NZ: bool,
+        const INDEF: bool,
+        const TAGS: bool,
+    >(
+        self
+    ) -> Configuration<E, I, L, B, F, CborConfig<DET, PREF, NAN, NZ, INDEF, TAGS>> {
         generate()
     }
 }
@@ -235,6 +319,7 @@ pub trait Config:
     + InternalLimitConfig
     + InternalBitPackingConfig
     + InternalFingerprintConfig
+    + InternalFormatConfig
     + InternalConfigFingerprint
     + InternalFingerprintConfigExt
     + Copy
@@ -254,6 +339,13 @@ pub trait Config:
 
     /// Returns the fingerprint mode of this configuration
     fn fingerprint_mode(&self) -> FingerprintMode;
+
+    /// Returns the format of this configuration
+    fn format(&self) -> Format;
+
+    /// Returns the CBOR options of this configuration.
+    /// Returns default options if the format is not CBOR.
+    fn cbor_options(&self) -> CborOptions;
 }
 
 impl<T> Config for T
@@ -263,6 +355,7 @@ where
         + InternalLimitConfig
         + InternalBitPackingConfig
         + InternalFingerprintConfig
+        + InternalFormatConfig
         + InternalConfigFingerprint
         + InternalFingerprintConfigExt
         + Copy
@@ -289,6 +382,14 @@ where
 
     fn fingerprint_mode(&self) -> FingerprintMode {
         <T as InternalFingerprintConfig>::FINGERPRINT_MODE
+    }
+
+    fn format(&self) -> Format {
+        <T as InternalFormatConfig>::FORMAT
+    }
+
+    fn cbor_options(&self) -> CborOptions {
+        <T as InternalFormatConfig>::CBOR_OPTIONS
     }
 }
 
@@ -378,6 +479,60 @@ impl<const EXPECTED: u64> InternalFingerprintConfig for FingerprintLegacy<EXPECT
     const FINGERPRINT_MODE: FingerprintMode = FingerprintMode::Legacy { expected: EXPECTED };
 }
 
+/// The default bincode format.
+#[derive(Copy, Clone, Debug)]
+pub struct BincodeFormat;
+
+impl InternalFormatConfig for BincodeFormat {
+    const CBOR_OPTIONS: CborOptions = CborOptions::DEFAULT;
+    const FORMAT: Format = Format::Bincode;
+}
+
+/// CBOR configuration with const generic options.
+#[derive(Copy, Clone, Debug)]
+pub struct CborConfig<
+    const DET: u8,
+    const PREF: bool,
+    const NAN: bool,
+    const NZ: bool,
+    const INDEF: bool,
+    const TAGS: bool,
+>;
+
+impl<
+    const DET: u8,
+    const PREF: bool,
+    const NAN: bool,
+    const NZ: bool,
+    const INDEF: bool,
+    const TAGS: bool,
+> InternalFormatConfig for CborConfig<DET, PREF, NAN, NZ, INDEF, TAGS>
+{
+    const CBOR_OPTIONS: CborOptions = CborOptions {
+        deterministic_mode: match DET {
+            | 1 => CborDeterministicMode::Core,
+            | 2 => CborDeterministicMode::LengthFirst,
+            | _ => CborDeterministicMode::None,
+        },
+        preferred_float: PREF,
+        canonical_nan: NAN,
+        normalize_neg_zero: NZ,
+        allow_indefinite: INDEF,
+        strict_tags: TAGS,
+    };
+    const FORMAT: Format = if DET == 0 {
+        Format::Cbor
+    } else {
+        Format::CborDeterministic
+    };
+}
+
+/// CBOR format with default options.
+pub type CborFormat = CborConfig<0, true, true, false, true, false>;
+
+/// CBOR format with deterministic encoding (Canonical CBOR).
+pub type CborDeterministicFormat = CborConfig<1, true, true, false, false, true>;
+
 /// Endianness of a `Configuration`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -426,6 +581,18 @@ pub enum FingerprintMode {
     },
 }
 
+/// Format of a `Configuration`.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Format {
+    /// Bincode (default).
+    Bincode,
+    /// CBOR.
+    Cbor,
+    /// CBOR with deterministic encoding.
+    CborDeterministic,
+}
+
 #[doc(hidden)]
 pub mod internal {
     use super::BitPacking;
@@ -438,7 +605,9 @@ pub mod internal {
         const ENDIAN: Endianness;
     }
 
-    impl<E: InternalEndianConfig, I, L, B, F> InternalEndianConfig for Configuration<E, I, L, B, F> {
+    impl<E: InternalEndianConfig, I, L, B, F, FO> InternalEndianConfig
+        for Configuration<E, I, L, B, F, FO>
+    {
         const ENDIAN: Endianness = E::ENDIAN;
     }
 
@@ -446,8 +615,8 @@ pub mod internal {
         const INT_ENCODING: IntEncoding;
     }
 
-    impl<E, I: InternalIntEncodingConfig, L, B, F> InternalIntEncodingConfig
-        for Configuration<E, I, L, B, F>
+    impl<E, I: InternalIntEncodingConfig, L, B, F, FO> InternalIntEncodingConfig
+        for Configuration<E, I, L, B, F, FO>
     {
         const INT_ENCODING: IntEncoding = I::INT_ENCODING;
     }
@@ -456,7 +625,9 @@ pub mod internal {
         const LIMIT: Option<usize>;
     }
 
-    impl<E, I, L: InternalLimitConfig, B, F> InternalLimitConfig for Configuration<E, I, L, B, F> {
+    impl<E, I, L: InternalLimitConfig, B, F, FO> InternalLimitConfig
+        for Configuration<E, I, L, B, F, FO>
+    {
         const LIMIT: Option<usize> = L::LIMIT;
     }
 
@@ -464,8 +635,8 @@ pub mod internal {
         const BIT_PACKING: BitPacking;
     }
 
-    impl<E, I, L, B: InternalBitPackingConfig, F> InternalBitPackingConfig
-        for Configuration<E, I, L, B, F>
+    impl<E, I, L, B: InternalBitPackingConfig, F, FO> InternalBitPackingConfig
+        for Configuration<E, I, L, B, F, FO>
     {
         const BIT_PACKING: BitPacking = B::BIT_PACKING;
     }
@@ -474,8 +645,8 @@ pub mod internal {
         const FINGERPRINT_MODE: FingerprintMode;
     }
 
-    impl<E, I, L, B, F: InternalFingerprintConfig> InternalFingerprintConfig
-        for Configuration<E, I, L, B, F>
+    impl<E, I, L, B, F: InternalFingerprintConfig, FO> InternalFingerprintConfig
+        for Configuration<E, I, L, B, F, FO>
     {
         const FINGERPRINT_MODE: FingerprintMode = F::FINGERPRINT_MODE;
     }
@@ -484,7 +655,7 @@ pub mod internal {
         type Mode;
     }
 
-    impl<E, I, L, B, F> InternalFingerprintConfigExt for Configuration<E, I, L, B, F> {
+    impl<E, I, L, B, F, FO> InternalFingerprintConfigExt for Configuration<E, I, L, B, F, FO> {
         type Mode = F;
     }
 
@@ -573,7 +744,7 @@ pub mod internal {
         const CONFIG_HASH: u64;
     }
 
-    impl<E, I, L, B, F> InternalConfigFingerprint for Configuration<E, I, L, B, F>
+    impl<E, I, L, B, F, FO> InternalConfigFingerprint for Configuration<E, I, L, B, F, FO>
     where
         E: InternalEndianConfig,
         I: InternalIntEncodingConfig,
@@ -593,5 +764,17 @@ pub mod internal {
             ],
             &rapidhash::v3::RapidSecrets::seed_cpp(0),
         );
+    }
+
+    pub trait InternalFormatConfig {
+        const FORMAT: super::Format;
+        const CBOR_OPTIONS: super::CborOptions;
+    }
+
+    impl<E, I, L, B, F, FO: InternalFormatConfig> InternalFormatConfig
+        for Configuration<E, I, L, B, F, FO>
+    {
+        const CBOR_OPTIONS: super::CborOptions = FO::CBOR_OPTIONS;
+        const FORMAT: super::Format = FO::FORMAT;
     }
 }

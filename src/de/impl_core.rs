@@ -18,6 +18,7 @@ struct Guard<'a, T, const N: usize> {
 }
 
 impl<T, const N: usize> Drop for Guard<'_, T, N> {
+    #[inline(always)]
     fn drop(&mut self) {
         debug_assert!(self.initialized <= N);
 
@@ -41,6 +42,7 @@ impl<T, const N: usize> Drop for Guard<'_, T, N> {
 /// If `iter.next()` panicks, all items already yielded by the iterator are
 /// dropped.
 #[allow(clippy::while_let_on_iterator)]
+#[inline]
 pub fn collect_into_array<E, I, T, const N: usize>(iter: &mut I) -> Option<Result<[T; N], E>>
 where
     I: Iterator<Item = Result<T, E>>,

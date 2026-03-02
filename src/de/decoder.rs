@@ -38,6 +38,7 @@ pub struct DecoderImpl<R, C: Config, Context> {
 
 impl<R: Reader, C: Config, Context> DecoderImpl<R, C, Context> {
     /// Construct a new Decoder
+    #[inline(always)]
     pub const fn new(
         reader: R,
         config: C,
@@ -59,6 +60,7 @@ impl<'de, R: BorrowReader<'de>, C: Config, Context> BorrowDecoder<'de>
 {
     type BR = R;
 
+    #[inline(always)]
     fn borrow_reader(&mut self) -> &mut Self::BR {
         &mut self.reader
     }
@@ -69,15 +71,17 @@ impl<R: Reader, C: Config, Context> Decoder for DecoderImpl<R, C, Context> {
     type Context = Context;
     type R = R;
 
+    #[inline(always)]
     fn reader(&mut self) -> &mut Self::R {
         &mut self.reader
     }
 
+    #[inline(always)]
     fn config(&self) -> &Self::C {
         &self.config
     }
 
-    #[inline]
+    #[inline(always)]
     fn claim_bytes_read(
         &mut self,
         n: usize,
@@ -100,7 +104,7 @@ impl<R: Reader, C: Config, Context> Decoder for DecoderImpl<R, C, Context> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     fn unclaim_bytes_read(
         &mut self,
         n: usize,
@@ -112,6 +116,7 @@ impl<R: Reader, C: Config, Context> Decoder for DecoderImpl<R, C, Context> {
         }
     }
 
+    #[inline(always)]
     fn context(&mut self) -> &mut Self::Context {
         &mut self.context
     }
@@ -129,18 +134,22 @@ impl<Context, D: Decoder + ?Sized> Decoder for WithContext<'_, D, Context> {
     type Context = Context;
     type R = D::R;
 
+    #[inline(always)]
     fn context(&mut self) -> &mut Self::Context {
         &mut self.context
     }
 
+    #[inline(always)]
     fn reader(&mut self) -> &mut Self::R {
         self.decoder.reader()
     }
 
+    #[inline(always)]
     fn config(&self) -> &Self::C {
         self.decoder.config()
     }
 
+    #[inline(always)]
     fn claim_bytes_read(
         &mut self,
         n: usize,
@@ -149,6 +158,7 @@ impl<Context, D: Decoder + ?Sized> Decoder for WithContext<'_, D, Context> {
         self.decoder.claim_bytes_read(n)
     }
 
+    #[inline(always)]
     fn unclaim_bytes_read(
         &mut self,
         n: usize,
@@ -160,6 +170,7 @@ impl<Context, D: Decoder + ?Sized> Decoder for WithContext<'_, D, Context> {
 impl<'de, C, D: BorrowDecoder<'de>> BorrowDecoder<'de> for WithContext<'_, D, C> {
     type BR = D::BR;
 
+    #[inline(always)]
     fn borrow_reader(&mut self) -> &mut Self::BR {
         self.decoder.borrow_reader()
     }

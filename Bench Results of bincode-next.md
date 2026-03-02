@@ -1,6 +1,6 @@
 # Bench Results of bincode-next
 
-This is the Bench Results of bincode-next.
+This is the Bench Results of bincode-next version v3.0.0-rc.3.
 
 ## Bench Environment
 
@@ -38,78 +38,113 @@ sudo cargo +nightly bench --bench complex
 
 ```plaintext
 complex_world_decode/bincode-next (traits, varint)
-                        time:   [16.819 µs 16.878 µs 16.950 µs]
-                        change: [−14.387% −12.575% −10.995%] (p = 0.00 < 0.05)
+                        time:   [18.134 µs 18.164 µs 18.202 µs]
+                        change: [−21.212% −20.203% −19.285%] (p = 0.00 < 0.05)
                         Performance has improved.
-Found 15 outliers among 100 measurements (15.00%)
-  3 (3.00%) low mild
-  4 (4.00%) high mild
-  8 (8.00%) high severe
+Found 17 outliers among 200 measurements (8.50%)
+  10 (5.00%) high mild
+  7 (3.50%) high severe
 complex_world_decode/bincode-next (traits, fixed)
-                        time:   [21.782 µs 21.872 µs 22.009 µs]
-                        change: [−10.289% −9.7849% −9.2180%] (p = 0.00 < 0.05)
-                        Performance has improved.
-Found 6 outliers among 100 measurements (6.00%)
-  1 (1.00%) high mild
-  5 (5.00%) high severe
+                        time:   [23.742 µs 23.934 µs 24.196 µs]
+                        change: [−0.4148% +0.2069% +1.0006%] (p = 0.63 > 0.05)
+                        No change in performance detected.
+Found 3 outliers among 200 measurements (1.50%)
+  2 (1.00%) high mild
+  1 (0.50%) high severe
 complex_world_decode/bincode-v2 (serde, varint)
-                        time:   [25.637 µs 25.727 µs 25.820 µs]
-                        change: [−4.9126% −4.5062% −4.1169%] (p = 0.00 < 0.05)
+                        time:   [24.013 µs 24.081 µs 24.206 µs]
+                        change: [−11.795% −11.331% −10.859%] (p = 0.00 < 0.05)
                         Performance has improved.
-Found 1 outliers among 100 measurements (1.00%)
-  1 (1.00%) high mild
+Found 18 outliers among 200 measurements (9.00%)
+  9 (4.50%) high mild
+  9 (4.50%) high severe
 complex_world_decode/bincode-v2 (serde, fixed)
-                        time:   [21.920 µs 21.973 µs 22.037 µs]
-                        change: [−4.1017% −3.6962% −3.2912%] (p = 0.00 < 0.05)
+                        time:   [21.589 µs 21.618 µs 21.649 µs]
+                        change: [−7.1741% −6.7406% −6.4144%] (p = 0.00 < 0.05)
                         Performance has improved.
-Found 1 outliers among 100 measurements (1.00%)
-  1 (1.00%) high severe
+Found 14 outliers among 200 measurements (7.00%)
+  1 (0.50%) low mild
+  6 (3.00%) high mild
+  7 (3.50%) high severe
 complex_world_decode/bincode-v1 (serde)
-                        time:   [22.048 µs 22.074 µs 22.105 µs]
-                        change: [−16.582% −15.877% −15.149%] (p = 0.00 < 0.05)
+                        time:   [21.203 µs 21.221 µs 21.240 µs]
+                        change: [−9.6211% −9.3929% −9.1674%] (p = 0.00 < 0.05)
                         Performance has improved.
-Found 12 outliers among 100 measurements (12.00%)
-  5 (5.00%) high mild
-  7 (7.00%) high severe
+Found 9 outliers among 200 measurements (4.50%)
+  9 (4.50%) high mild
+complex_world_decode/bincode-next (traits, cbor)
+                        time:   [30.922 µs 30.968 µs 31.020 µs]
+                        change: [−17.080% −16.847% −16.552%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 26 outliers among 200 measurements (13.00%)
+  7 (3.50%) high mild
+  19 (9.50%) high severe
+complex_world_decode/bincode-next (traits, cbor-deterministic)
+                        time:   [30.994 µs 31.012 µs 31.032 µs]
+                        change: [−18.162% −18.012% −17.868%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 9 outliers among 200 measurements (4.50%)
+  6 (3.00%) high mild
+  3 (1.50%) high severe
 
 complex_world_encode/bincode-next (traits, varint)
-                        time:   [3.3416 µs 3.3467 µs 3.3526 µs]
-                        change: [−9.4844% −8.9459% −8.2847%] (p = 0.00 < 0.05)
+                        time:   [3.2481 µs 3.2569 µs 3.2717 µs]
+                        change: [−7.6022% −6.9316% −6.2161%] (p = 0.00 < 0.05)
                         Performance has improved.
-Found 11 outliers among 100 measurements (11.00%)
-  8 (8.00%) high mild
-  3 (3.00%) high severe
+Found 19 outliers among 200 measurements (9.50%)
+  3 (1.50%) low mild
+  10 (5.00%) high mild
+  6 (3.00%) high severe
 complex_world_encode/bincode-next (traits, fixed)
-                        time:   [2.9236 µs 2.9350 µs 2.9527 µs]
-                        change: [−7.0516% −6.4181% −5.8909%] (p = 0.00 < 0.05)
+                        time:   [2.6159 µs 2.6166 µs 2.6175 µs]
+                        change: [−10.316% −10.120% −9.9103%] (p = 0.00 < 0.05)
                         Performance has improved.
-Found 2 outliers among 100 measurements (2.00%)
-  1 (1.00%) high mild
-  1 (1.00%) high severe
+Found 13 outliers among 200 measurements (6.50%)
+  1 (0.50%) low mild
+  1 (0.50%) high mild
+  11 (5.50%) high severe
 complex_world_encode/bincode-v2 (serde, varint)
-                        time:   [4.2454 µs 4.2489 µs 4.2525 µs]
-                        change: [−9.7050% −9.2041% −8.8004%] (p = 0.00 < 0.05)
+                        time:   [4.0729 µs 4.0750 µs 4.0770 µs]
+                        change: [−10.632% −10.529% −10.419%] (p = 0.00 < 0.05)
                         Performance has improved.
-Found 13 outliers among 100 measurements (13.00%)
-  1 (1.00%) low severe
-  4 (4.00%) low mild
-  5 (5.00%) high mild
-  3 (3.00%) high severe
+Found 8 outliers among 200 measurements (4.00%)
+  1 (0.50%) low severe
+  2 (1.00%) low mild
+  3 (1.50%) high mild
+  2 (1.00%) high severe
 complex_world_encode/bincode-v2 (serde, fixed)
-                        time:   [3.3257 µs 3.3295 µs 3.3337 µs]
-                        change: [−4.6908% −4.2786% −3.9410%] (p = 0.00 < 0.05)
+                        time:   [2.9654 µs 2.9712 µs 2.9812 µs]
+                        change: [−11.952% −11.701% −11.434%] (p = 0.00 < 0.05)
                         Performance has improved.
-Found 6 outliers among 100 measurements (6.00%)
-  2 (2.00%) low mild
-  1 (1.00%) high mild
-  3 (3.00%) high severe
+Found 4 outliers among 200 measurements (2.00%)
+  1 (0.50%) low severe
+  1 (0.50%) high mild
+  2 (1.00%) high severe
 complex_world_encode/bincode-v1 (serde)
-                        time:   [3.0716 µs 3.0767 µs 3.0823 µs]
-                        change: [−6.0147% −5.6804% −5.3628%] (p = 0.00 < 0.05)
+                        time:   [2.7045 µs 2.7100 µs 2.7159 µs]
+                        change: [−12.996% −12.736% −12.499%] (p = 0.00 < 0.05)
                         Performance has improved.
-Found 7 outliers among 100 measurements (7.00%)
-  4 (4.00%) high mild
-  3 (3.00%) high severe
+Found 15 outliers among 200 measurements (7.50%)
+  5 (2.50%) high mild
+  10 (5.00%) high severe
+complex_world_encode/bincode-next (traits, cbor)
+                        time:   [7.5405 µs 7.5472 µs 7.5544 µs]
+                        change: [−21.559% −21.355% −21.160%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 6 outliers among 200 measurements (3.00%)
+  3 (1.50%) low mild
+  1 (0.50%) high mild
+  2 (1.00%) high severe
+complex_world_encode/bincode-next (traits, cbor-deterministic)
+                        time:   [7.7904 µs 7.7958 µs 7.8014 µs]
+                        change: [−20.897% −20.677% −20.504%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 14 outliers among 200 measurements (7.00%)
+  1 (0.50%) low severe
+  1 (0.50%) low mild
+  9 (4.50%) high mild
+  3 (1.50%) high severe
+
 ```
 
 ### **Performance Comparison: Decoding**
