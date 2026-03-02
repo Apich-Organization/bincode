@@ -202,16 +202,6 @@ impl<'storage> Reader for SliceReader<'storage> {
         // `copy_nonoverlapping` is safe because pointers do not overlap and the lengths match.
         // `get_unchecked` is safe because `bytes.len()` is <= the length of `self.slice`.
         unsafe {
-            #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
-            {
-                use core::arch::x86_64::_MM_HINT_T0;
-                use core::arch::x86_64::_mm_prefetch;
-                _mm_prefetch(self.slice.as_ptr().cast::<i8>(), _MM_HINT_T0);
-            }
-            #[cfg(target_arch = "aarch64")]
-            {
-                core::arch::asm!("prfm pldl1keep, [{}]", in(reg) self.slice.as_ptr());
-            }
             core::ptr::copy_nonoverlapping(self.slice.as_ptr(), bytes.as_mut_ptr(), bytes.len());
             self.slice = self.slice.get_unchecked(bytes.len()..);
         }
@@ -219,7 +209,7 @@ impl<'storage> Reader for SliceReader<'storage> {
         Ok(())
     }
 
-    #[inline]
+    #[inline(always)]
     fn peek_read(
         &mut self,
         n: usize,
@@ -227,12 +217,16 @@ impl<'storage> Reader for SliceReader<'storage> {
         self.slice.get(..n)
     }
 
-    #[inline]
+    #[inline(always)]
     fn consume(
         &mut self,
         n: usize,
     ) {
-        self.slice = self.slice.get(n..).unwrap_or_default();
+        if n >= self.slice.len() {
+            self.slice = &[];
+        } else {
+            self.slice = unsafe { self.slice.get_unchecked(n..) };
+        }
     }
 
     #[inline]
@@ -255,19 +249,6 @@ impl<'storage> Reader for SliceReader<'storage> {
         if self.slice.len() < 2 {
             return crate::error::cold_decode_error_unexpected_end(2 - self.slice.len());
         }
-        #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
-        unsafe {
-            use core::arch::x86_64::_MM_HINT_T0;
-            use core::arch::x86_64::_mm_prefetch;
-            _mm_prefetch(
-                self.slice.as_ptr().wrapping_add(64).cast::<i8>(),
-                _MM_HINT_T0,
-            );
-        }
-        #[cfg(target_arch = "aarch64")]
-        unsafe {
-            core::arch::asm!("prfm pldl1keep, [{}]", in(reg) self.slice.as_ptr().wrapping_add(64));
-        }
         let val = unsafe { core::ptr::read_unaligned(self.slice.as_ptr().cast::<u16>()) };
         self.slice = unsafe { self.slice.get_unchecked(2..) };
         Ok(val)
@@ -277,19 +258,6 @@ impl<'storage> Reader for SliceReader<'storage> {
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
         if self.slice.len() < 4 {
             return crate::error::cold_decode_error_unexpected_end(4 - self.slice.len());
-        }
-        #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
-        unsafe {
-            use core::arch::x86_64::_MM_HINT_T0;
-            use core::arch::x86_64::_mm_prefetch;
-            _mm_prefetch(
-                self.slice.as_ptr().wrapping_add(64).cast::<i8>(),
-                _MM_HINT_T0,
-            );
-        }
-        #[cfg(target_arch = "aarch64")]
-        unsafe {
-            core::arch::asm!("prfm pldl1keep, [{}]", in(reg) self.slice.as_ptr().wrapping_add(64));
         }
         let val = unsafe { core::ptr::read_unaligned(self.slice.as_ptr().cast::<u32>()) };
         self.slice = unsafe { self.slice.get_unchecked(4..) };
@@ -301,19 +269,6 @@ impl<'storage> Reader for SliceReader<'storage> {
         if self.slice.len() < 8 {
             return crate::error::cold_decode_error_unexpected_end(8 - self.slice.len());
         }
-        #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
-        unsafe {
-            use core::arch::x86_64::_MM_HINT_T0;
-            use core::arch::x86_64::_mm_prefetch;
-            _mm_prefetch(
-                self.slice.as_ptr().wrapping_add(64).cast::<i8>(),
-                _MM_HINT_T0,
-            );
-        }
-        #[cfg(target_arch = "aarch64")]
-        unsafe {
-            core::arch::asm!("prfm pldl1keep, [{}]", in(reg) self.slice.as_ptr().wrapping_add(64));
-        }
         let val = unsafe { core::ptr::read_unaligned(self.slice.as_ptr().cast::<u64>()) };
         self.slice = unsafe { self.slice.get_unchecked(8..) };
         Ok(val)
@@ -323,19 +278,6 @@ impl<'storage> Reader for SliceReader<'storage> {
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
         if self.slice.len() < 16 {
             return crate::error::cold_decode_error_unexpected_end(16 - self.slice.len());
-        }
-        #[cfg(all(target_arch = "x86_64", target_feature = "sse2"))]
-        unsafe {
-            use core::arch::x86_64::_MM_HINT_T0;
-            use core::arch::x86_64::_mm_prefetch;
-            _mm_prefetch(
-                self.slice.as_ptr().wrapping_add(64).cast::<i8>(),
-                _MM_HINT_T0,
-            );
-        }
-        #[cfg(target_arch = "aarch64")]
-        unsafe {
-            core::arch::asm!("prfm pldl1keep, [{}]", in(reg) self.slice.as_ptr().wrapping_add(64));
         }
         let val = unsafe { core::ptr::read_unaligned(self.slice.as_ptr().cast::<u128>()) };
         self.slice = unsafe { self.slice.get_unchecked(16..) };
