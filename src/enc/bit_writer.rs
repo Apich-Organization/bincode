@@ -45,7 +45,7 @@ impl<'a, W: Writer> BitWriter<'a, W> {
     /// # Errors
     ///
     /// Returns `EncodeError` if the underlying writer fails to write the data.
-    #[inline]
+    #[inline(always)]
     pub fn write_bits_lsb(
         &mut self,
         mut val: u64,
@@ -76,7 +76,7 @@ impl<'a, W: Writer> BitWriter<'a, W> {
     /// # Errors
     ///
     /// Returns `EncodeError` if the underlying writer fails to write the data.
-    #[inline]
+    #[inline(always)]
     pub fn write_bits_msb(
         &mut self,
         val: u64,
@@ -109,7 +109,7 @@ impl<'a, W: Writer> BitWriter<'a, W> {
     /// # Errors
     ///
     /// Returns `EncodeError` if the underlying writer fails to write the data.
-    #[inline]
+    #[inline(always)]
     pub fn flush(&mut self) -> Result<(), EncodeError> {
         if self.bit_count > 0 {
             self.writer.write(&[self.current_byte])?;

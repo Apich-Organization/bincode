@@ -7,7 +7,7 @@ use crate::error::EncodeError;
 
 #[cfg(feature = "alloc")]
 impl Writer for crate::alloc::vec::Vec<u8> {
-    #[inline]
+    #[inline(always)]
     fn write(
         &mut self,
         bytes: &[u8],
@@ -16,7 +16,7 @@ impl Writer for crate::alloc::vec::Vec<u8> {
         Ok(())
     }
 
-    #[inline]
+    #[inline(always)]
     fn write_u8(
         &mut self,
         value: u8,
@@ -107,7 +107,7 @@ pub trait Writer {
 }
 
 impl<T: Writer> Writer for &mut T {
-    #[inline]
+    #[inline(always)]
     fn write(
         &mut self,
         bytes: &[u8],
@@ -115,7 +115,7 @@ impl<T: Writer> Writer for &mut T {
         (**self).write(bytes)
     }
 
-    #[inline]
+    #[inline(always)]
     fn write_u8(
         &mut self,
         value: u8,
@@ -123,7 +123,7 @@ impl<T: Writer> Writer for &mut T {
         (**self).write_u8(value)
     }
 
-    #[inline]
+    #[inline(always)]
     fn write_u16(
         &mut self,
         value: u16,
@@ -131,7 +131,7 @@ impl<T: Writer> Writer for &mut T {
         (**self).write_u16(value)
     }
 
-    #[inline]
+    #[inline(always)]
     fn write_u32(
         &mut self,
         value: u32,
@@ -139,7 +139,7 @@ impl<T: Writer> Writer for &mut T {
         (**self).write_u32(value)
     }
 
-    #[inline]
+    #[inline(always)]
     fn write_u64(
         &mut self,
         value: u64,
@@ -147,7 +147,7 @@ impl<T: Writer> Writer for &mut T {
         (**self).write_u64(value)
     }
 
-    #[inline]
+    #[inline(always)]
     fn write_u128(
         &mut self,
         value: u128,

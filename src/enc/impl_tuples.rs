@@ -6,6 +6,7 @@ impl<A> Encode for (A,)
 where
     A: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -20,6 +21,7 @@ where
     A: Encode,
     B: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -36,6 +38,7 @@ where
     B: Encode,
     C: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -54,6 +57,7 @@ where
     C: Encode,
     D: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -74,6 +78,7 @@ where
     D: Encode,
     E: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -96,6 +101,7 @@ where
     E: Encode,
     F: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -120,6 +126,7 @@ where
     F: Encode,
     G: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -146,6 +153,7 @@ where
     G: Encode,
     H: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -174,6 +182,7 @@ where
     H: Encode,
     I: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -204,6 +213,7 @@ where
     I: Encode,
     J: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -236,6 +246,7 @@ where
     J: Encode,
     K: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -270,6 +281,7 @@ where
     K: Encode,
     L: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -306,6 +318,7 @@ where
     L: Encode,
     M: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -344,6 +357,7 @@ where
     M: Encode,
     N: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -385,6 +399,7 @@ where
     N: Encode,
     O: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,
@@ -428,6 +443,7 @@ where
     O: Encode,
     P: Encode,
 {
+    #[inline(always)]
     fn encode<_E: Encoder>(
         &self,
         encoder: &mut _E,

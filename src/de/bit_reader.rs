@@ -136,7 +136,7 @@ macro_rules! impl_unpackable_int {
     ($($ty:ty),*) => {
         $(
             impl Unpackable for $ty {
-                #[inline]
+                #[inline(always)]
                 fn unpack(val: u64) -> Self {
                     val as $ty
                 }

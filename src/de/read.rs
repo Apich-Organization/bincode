@@ -31,7 +31,7 @@ pub trait Reader {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    #[inline]
+    #[inline(always)]
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
         let mut byte = [0u8; 1];
         self.read(&mut byte)?;
@@ -43,7 +43,7 @@ pub trait Reader {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    #[inline]
+    #[inline(always)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
         let mut bytes = [0u8; 2];
         self.read(&mut bytes)?;
@@ -55,7 +55,7 @@ pub trait Reader {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    #[inline]
+    #[inline(always)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
         let mut bytes = [0u8; 4];
         self.read(&mut bytes)?;
@@ -67,7 +67,7 @@ pub trait Reader {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    #[inline]
+    #[inline(always)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
         let mut bytes = [0u8; 8];
         self.read(&mut bytes)?;
@@ -79,7 +79,7 @@ pub trait Reader {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    #[inline]
+    #[inline(always)]
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
         let mut bytes = [0u8; 16];
         self.read(&mut bytes)?;
@@ -88,7 +88,7 @@ pub trait Reader {
 
     /// If this reader wraps a buffer of any kind, this function lets callers access contents of
     /// the buffer without passing data through a buffer first.
-    #[inline]
+    #[inline(always)]
     fn peek_read(
         &mut self,
         _: usize,
@@ -98,7 +98,7 @@ pub trait Reader {
 
     /// If an implementation of `peek_read` is provided, an implementation of this function
     /// must be provided so that subsequent reads or peek-reads do not return the same bytes
-    #[inline]
+    #[inline(always)]
     fn consume(
         &mut self,
         _: usize,
@@ -106,7 +106,7 @@ pub trait Reader {
     }
 
     /// Returns the next byte without consuming it.
-    #[inline]
+    #[inline(always)]
     fn peek_u8(&mut self) -> Option<u8> {
         self.peek_read(1).map(|b| b[0])
     }
@@ -116,7 +116,7 @@ impl<T> Reader for &mut T
 where
     T: Reader,
 {
-    #[inline]
+    #[inline(always)]
     fn read(
         &mut self,
         bytes: &mut [u8],
@@ -124,7 +124,7 @@ where
         (**self).read(bytes)
     }
 
-    #[inline]
+    #[inline(always)]
     fn peek_read(
         &mut self,
         n: usize,
@@ -132,7 +132,7 @@ where
         (**self).peek_read(n)
     }
 
-    #[inline]
+    #[inline(always)]
     fn consume(
         &mut self,
         n: usize,
@@ -140,22 +140,22 @@ where
         (*self).consume(n);
     }
 
-    #[inline]
+    #[inline(always)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
         (**self).read_u16()
     }
 
-    #[inline]
+    #[inline(always)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
         (**self).read_u32()
     }
 
-    #[inline]
+    #[inline(always)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
         (**self).read_u64()
     }
 
-    #[inline]
+    #[inline(always)]
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
         (**self).read_u128()
     }
@@ -229,7 +229,7 @@ impl<'storage> Reader for SliceReader<'storage> {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     fn peek_u8(&mut self) -> Option<u8> {
         self.slice.first().copied()
     }

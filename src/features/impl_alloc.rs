@@ -82,6 +82,7 @@ impl enc::write::Writer for VecWriter {
 /// # Errors
 ///
 /// Returns an `EncodeError` if the value cannot be encoded.
+#[inline(always)]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn encode_to_vec<E: enc::Encode, C: Config>(
     val: E,
@@ -108,6 +109,7 @@ impl<Context, T> Decode<Context> for BinaryHeap<T>
 where
     T: Decode<Context> + Ord,
 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Vec::<T>::decode(decoder)?.into())
     }
@@ -116,6 +118,7 @@ impl<'de, T, Context> BorrowDecode<'de, Context> for BinaryHeap<T>
 where
     T: BorrowDecode<'de, Context> + Ord,
 {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -127,6 +130,7 @@ impl<T> Encode for BinaryHeap<T>
 where
     T: Encode + Ord,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -148,6 +152,7 @@ where
     K: Decode<Context> + Ord,
     V: Decode<Context>,
 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = decoder.decode_map_len()?;
         let is_bincode = matches!(
@@ -180,6 +185,7 @@ where
     K: BorrowDecode<'de, Context> + Ord,
     V: BorrowDecode<'de, Context>,
 {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -215,6 +221,7 @@ where
     K: Encode + Ord,
     V: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -240,6 +247,7 @@ impl<Context, T> Decode<Context> for BTreeSet<T>
 where
     T: Decode<Context> + Ord,
 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = decoder.decode_slice_len()?;
         let is_bincode = matches!(
@@ -269,6 +277,7 @@ impl<'de, T, Context> BorrowDecode<'de, Context> for BTreeSet<T>
 where
     T: BorrowDecode<'de, Context> + Ord,
 {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -301,6 +310,7 @@ impl<T> Encode for BTreeSet<T>
 where
     T: Encode + Ord,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -325,6 +335,7 @@ impl<Context, T> Decode<Context> for VecDeque<T>
 where
     T: Decode<Context>,
 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Vec::<T>::decode(decoder)?.into())
     }
@@ -333,6 +344,7 @@ impl<'de, T, Context> BorrowDecode<'de, Context> for VecDeque<T>
 where
     T: BorrowDecode<'de, Context>,
 {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -344,6 +356,7 @@ impl<T> Encode for VecDeque<T>
 where
     T: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -402,6 +415,7 @@ impl<Context, T> Decode<Context> for Vec<T>
 where
     T: Decode<Context>,
 {
+    #[inline]
     #[allow(clippy::too_many_lines)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
@@ -642,6 +656,7 @@ impl<'de, T, Context> BorrowDecode<'de, Context> for Vec<T>
 where
     T: BorrowDecode<'de, Context>,
 {
+    #[inline]
     #[allow(clippy::too_many_lines)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
@@ -881,6 +896,7 @@ impl<T> Encode for Vec<T>
 where
     T: Encode,
 {
+    #[inline]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -930,6 +946,7 @@ where
 
 
 impl<Context> Decode<Context> for String {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = decoder.decode_str_len()?;
         let is_bincode = matches!(
@@ -962,6 +979,7 @@ impl<Context> Decode<Context> for String {
 impl_borrow_decode!(String);
 
 impl<Context> Decode<Context> for Box<str> {
+    #[inline(always)]
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         String::decode(decoder).map(String::into_boxed_str)
     }
@@ -969,6 +987,7 @@ impl<Context> Decode<Context> for Box<str> {
 impl_borrow_decode!(Box<str>);
 
 impl Encode for String {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -981,6 +1000,7 @@ impl<Context, T> Decode<Context> for Box<T>
 where
     T: Decode<Context>,
 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Self::new(t))
@@ -990,6 +1010,7 @@ impl<'de, T, Context> BorrowDecode<'de, Context> for Box<T>
 where
     T: BorrowDecode<'de, Context>,
 {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -1002,6 +1023,7 @@ impl<T> Encode for Box<T>
 where
     T: Encode + ?Sized,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -1014,6 +1036,7 @@ impl<Context, T> Decode<Context> for Box<[T]>
 where
     T: Decode<Context> + 'static,
 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
         Ok(vec.into_boxed_slice())
@@ -1024,6 +1047,7 @@ impl<'de, T, Context> BorrowDecode<'de, Context> for Box<[T]>
 where
     T: BorrowDecode<'de, Context> + 'de,
 {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -1037,6 +1061,7 @@ where
     T: ToOwned + ?Sized,
     <T as ToOwned>::Owned: Decode<Context>,
 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = <T as ToOwned>::Owned::decode(decoder)?;
         Ok(Cow::Owned(t))
@@ -1047,6 +1072,7 @@ where
     T: ToOwned + ?Sized,
     &'cow T: BorrowDecode<'cow, Context>,
 {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'cow, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -1060,6 +1086,7 @@ where
     T: ToOwned + ?Sized,
     for<'a> &'a T: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -1085,6 +1112,7 @@ impl<Context, T> Decode<Context> for Rc<T>
 where
     T: Decode<Context>,
 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Self::new(t))
@@ -1092,6 +1120,7 @@ where
 }
 
 impl<Context> Decode<Context> for Rc<str> {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let string = String::decode(decoder)?;
         Ok(string.into())
@@ -1102,6 +1131,7 @@ impl<'de, T, Context> BorrowDecode<'de, Context> for Rc<T>
 where
     T: BorrowDecode<'de, Context>,
 {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -1111,6 +1141,7 @@ where
 }
 
 impl<'de, Context> BorrowDecode<'de, Context> for Rc<str> {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -1123,6 +1154,7 @@ impl<T> Encode for Rc<T>
 where
     T: Encode + ?Sized,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -1135,6 +1167,7 @@ impl<Context, T> Decode<Context> for Rc<[T]>
 where
     T: Decode<Context> + 'static,
 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
         Ok(vec.into())
@@ -1145,6 +1178,7 @@ impl<'de, T, Context> BorrowDecode<'de, Context> for Rc<[T]>
 where
     T: BorrowDecode<'de, Context> + 'de,
 {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -1158,6 +1192,7 @@ impl<Context, T> Decode<Context> for Arc<T>
 where
     T: Decode<Context>,
 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Self::new(t))
@@ -1166,6 +1201,7 @@ where
 
 #[cfg(target_has_atomic = "ptr")]
 impl<Context> Decode<Context> for Arc<str> {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let string = String::decode(decoder)?;
         Ok(string.into())
@@ -1177,6 +1213,7 @@ impl<'de, T, Context> BorrowDecode<'de, Context> for Arc<T>
 where
     T: BorrowDecode<'de, Context>,
 {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -1187,6 +1224,7 @@ where
 
 #[cfg(target_has_atomic = "ptr")]
 impl<'de, Context> BorrowDecode<'de, Context> for Arc<str> {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
@@ -1200,6 +1238,7 @@ impl<T> Encode for Arc<T>
 where
     T: Encode + ?Sized,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -1213,6 +1252,7 @@ impl<Context, T> Decode<Context> for Arc<[T]>
 where
     T: Decode<Context> + 'static,
 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
         Ok(vec.into())
@@ -1224,6 +1264,7 @@ impl<'de, T, Context> BorrowDecode<'de, Context> for Arc<[T]>
 where
     T: BorrowDecode<'de, Context> + 'de,
 {
+    #[inline(always)]
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {

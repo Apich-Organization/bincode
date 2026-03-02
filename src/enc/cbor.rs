@@ -11,7 +11,7 @@ use crate::error::EncodeError;
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 fn encode_header<W: Writer>(
     writer: &mut W,
     major: u8,
@@ -40,7 +40,7 @@ fn encode_header<W: Writer>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 fn encode_indefinite_header<W: Writer>(
     writer: &mut W,
     major: u8,
@@ -53,7 +53,7 @@ fn encode_indefinite_header<W: Writer>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_u8<W: Writer, C: Config>(
     writer: &mut W,
     val: u8,
@@ -66,7 +66,7 @@ pub fn encode_u8<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_u16<W: Writer, C: Config>(
     writer: &mut W,
     val: u16,
@@ -79,7 +79,7 @@ pub fn encode_u16<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_u32<W: Writer, C: Config>(
     writer: &mut W,
     val: u32,
@@ -92,7 +92,7 @@ pub fn encode_u32<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_u64<W: Writer, C: Config>(
     writer: &mut W,
     val: u64,
@@ -105,7 +105,7 @@ pub fn encode_u64<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_i8<W: Writer, C: Config>(
     writer: &mut W,
     val: i8,
@@ -122,7 +122,7 @@ pub fn encode_i8<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_i16<W: Writer, C: Config>(
     writer: &mut W,
     val: i16,
@@ -139,7 +139,7 @@ pub fn encode_i16<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_i32<W: Writer, C: Config>(
     writer: &mut W,
     val: i32,
@@ -156,7 +156,7 @@ pub fn encode_i32<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_i64<W: Writer, C: Config>(
     writer: &mut W,
     val: i64,
@@ -173,7 +173,7 @@ pub fn encode_i64<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_u128<W: Writer, C: Config>(
     writer: &mut W,
     val: u128,
@@ -194,7 +194,7 @@ pub fn encode_u128<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_i128<W: Writer, C: Config>(
     writer: &mut W,
     val: i128,
@@ -220,7 +220,7 @@ pub fn encode_i128<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_bool<W: Writer, C: Config>(
     writer: &mut W,
     val: bool,
@@ -229,6 +229,7 @@ pub fn encode_bool<W: Writer, C: Config>(
 }
 
 /// Losslessly convert f32 to f16 bit pattern.
+#[inline(always)]
 const fn f32_to_f16(val: f32) -> Option<u16> {
     let bits = val.to_bits();
     let sign = (bits >> 31) & 0x1;
@@ -271,6 +272,7 @@ const fn f32_to_f16(val: f32) -> Option<u16> {
 }
 
 /// Losslessly convert f64 to f32.
+#[inline(always)]
 const fn f64_to_f32(val: f64) -> Option<f32> {
     let bits = val.to_bits();
     let sign = (bits >> 63) & 0x1;
@@ -305,7 +307,7 @@ const fn f64_to_f32(val: f64) -> Option<f32> {
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_f32<W: Writer, C: Config>(
     writer: &mut W,
     mut val: f32,
@@ -335,7 +337,7 @@ pub fn encode_f32<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_f64<W: Writer, C: Config>(
     writer: &mut W,
     mut val: f64,
@@ -364,7 +366,7 @@ pub fn encode_f64<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_str<W: Writer, C: Config>(
     writer: &mut W,
     val: &str,
@@ -378,7 +380,7 @@ pub fn encode_str<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_byte_slice<W: Writer, C: Config>(
     writer: &mut W,
     val: &[u8],
@@ -392,7 +394,7 @@ pub fn encode_byte_slice<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_slice_len<W: Writer, C: Config>(
     writer: &mut W,
     len: usize,
@@ -409,7 +411,7 @@ pub fn encode_slice_len<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_byte_slice_len<W: Writer, C: Config>(
     writer: &mut W,
     len: u64,
@@ -426,7 +428,7 @@ pub fn encode_byte_slice_len<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub fn encode_map_len<W: Writer, C: Config>(
     writer: &mut W,
     len: usize,
@@ -445,6 +447,7 @@ pub fn encode_map_len<W: Writer, C: Config>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
+#[inline]
 pub fn encode_map_deterministic<E, K, V, I>(
     encoder: &mut E,
     iter: I,
@@ -491,6 +494,7 @@ where
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
+#[inline]
 pub fn encode_slice_deterministic<E, T, I>(
     encoder: &mut E,
     iter: I,

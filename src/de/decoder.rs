@@ -38,6 +38,7 @@ pub struct DecoderImpl<R, C: Config, Context> {
 
 impl<R: Reader, C: Config, Context> DecoderImpl<R, C, Context> {
     /// Construct a new Decoder
+    #[inline(always)]
     pub const fn new(
         reader: R,
         config: C,
@@ -80,7 +81,7 @@ impl<R: Reader, C: Config, Context> Decoder for DecoderImpl<R, C, Context> {
         &self.config
     }
 
-    #[inline]
+    #[inline(always)]
     fn claim_bytes_read(
         &mut self,
         n: usize,

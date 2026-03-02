@@ -35,6 +35,7 @@ use core::ops::RangeInclusive;
 use core::time::Duration;
 
 impl<Context> Decode<Context> for bool {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.decode_bool()
     }
@@ -42,7 +43,7 @@ impl<Context> Decode<Context> for bool {
 impl_borrow_decode!(bool);
 
 impl<Context> Decode<Context> for u8 {
-    #[inline]
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.decode_u8()
     }
@@ -60,6 +61,7 @@ impl<Context> Decode<Context> for NonZeroU8 {
 impl_borrow_decode!(NonZeroU8);
 
 impl<Context> Decode<Context> for u16 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.decode_u16()
     }
@@ -77,6 +79,7 @@ impl<Context> Decode<Context> for NonZeroU16 {
 impl_borrow_decode!(NonZeroU16);
 
 impl<Context> Decode<Context> for u32 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.decode_u32()
     }
@@ -94,6 +97,7 @@ impl<Context> Decode<Context> for NonZeroU32 {
 impl_borrow_decode!(NonZeroU32);
 
 impl<Context> Decode<Context> for u64 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.decode_u64()
     }
@@ -145,6 +149,7 @@ impl<Context> Decode<Context> for NonZeroUsize {
 impl_borrow_decode!(NonZeroUsize);
 
 impl<Context> Decode<Context> for i8 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.decode_i8()
     }
@@ -162,6 +167,7 @@ impl<Context> Decode<Context> for NonZeroI8 {
 impl_borrow_decode!(NonZeroI8);
 
 impl<Context> Decode<Context> for i16 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.decode_i16()
     }
@@ -179,6 +185,7 @@ impl<Context> Decode<Context> for NonZeroI16 {
 impl_borrow_decode!(NonZeroI16);
 
 impl<Context> Decode<Context> for i32 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.decode_i32()
     }
@@ -196,6 +203,7 @@ impl<Context> Decode<Context> for NonZeroI32 {
 impl_borrow_decode!(NonZeroI32);
 
 impl<Context> Decode<Context> for i64 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.decode_i64()
     }
@@ -247,6 +255,7 @@ impl<Context> Decode<Context> for NonZeroIsize {
 impl_borrow_decode!(NonZeroIsize);
 
 impl<Context> Decode<Context> for f32 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.decode_f32()
     }
@@ -254,6 +263,7 @@ impl<Context> Decode<Context> for f32 {
 impl_borrow_decode!(f32);
 
 impl<Context> Decode<Context> for f64 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.decode_f64()
     }

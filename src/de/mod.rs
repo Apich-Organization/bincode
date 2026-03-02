@@ -136,6 +136,7 @@ pub trait BorrowDecode<'de, Context>: Sized {
 macro_rules! impl_borrow_decode {
     ($ty:ty $(, $param:tt)*) => {
         impl<'de $(, $param)*, __Context> $crate::BorrowDecode<'de, __Context> for $ty {
+            #[inline(always)]
             fn borrow_decode<D: $crate::de::BorrowDecoder<'de, Context = __Context>>(
                 decoder: &mut D,
             ) -> core::result::Result<Self, $crate::error::DecodeError> {
@@ -150,6 +151,7 @@ macro_rules! impl_borrow_decode {
 macro_rules! impl_borrow_decode_with_context {
     ($ty:ty, $context:ty $(, $param:tt)*) => {
         impl<'de $(, $param)*> $crate::BorrowDecode<'de, $context> for $ty {
+            #[inline(always)]
             fn borrow_decode<D: $crate::de::BorrowDecoder<'de, Context = $context>>(
                 decoder: &mut D,
             ) -> core::result::Result<Self, $crate::error::DecodeError> {
@@ -174,7 +176,7 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     fn context(&mut self) -> &mut Self::Context;
 
     /// Wraps decoder with a context
-    #[inline]
+    #[inline(always)]
     fn with_context<C>(
         &mut self,
         context: C,
@@ -208,7 +210,7 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     /// # Errors
     ///
     /// Returns `DecodeError::LimitExceeded` if the limit is exceeded or if `len * size_of::<T>()` overflows.
-    #[inline]
+    #[inline(always)]
     fn claim_container_read<T>(
         &mut self,
         len: usize,
@@ -802,17 +804,17 @@ where
     type Context = T::Context;
     type R = T::R;
 
-    #[inline]
+    #[inline(always)]
     fn reader(&mut self) -> &mut Self::R {
         T::reader(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn config(&self) -> &Self::C {
         T::config(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn claim_bytes_read(
         &mut self,
         n: usize,
@@ -820,7 +822,7 @@ where
         T::claim_bytes_read(self, n)
     }
 
-    #[inline]
+    #[inline(always)]
     fn unclaim_bytes_read(
         &mut self,
         n: usize,
@@ -828,82 +830,82 @@ where
         T::unclaim_bytes_read(self, n);
     }
 
-    #[inline]
+    #[inline(always)]
     fn context(&mut self) -> &mut Self::Context {
         T::context(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_u8(&mut self) -> Result<u8, DecodeError> {
         T::decode_u8(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_u16(&mut self) -> Result<u16, DecodeError> {
         T::decode_u16(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_u32(&mut self) -> Result<u32, DecodeError> {
         T::decode_u32(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_u64(&mut self) -> Result<u64, DecodeError> {
         T::decode_u64(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_u128(&mut self) -> Result<u128, DecodeError> {
         T::decode_u128(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_usize(&mut self) -> Result<usize, DecodeError> {
         T::decode_usize(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_i8(&mut self) -> Result<i8, DecodeError> {
         T::decode_i8(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_i16(&mut self) -> Result<i16, DecodeError> {
         T::decode_i16(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_i32(&mut self) -> Result<i32, DecodeError> {
         T::decode_i32(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_i64(&mut self) -> Result<i64, DecodeError> {
         T::decode_i64(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_i128(&mut self) -> Result<i128, DecodeError> {
         T::decode_i128(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_isize(&mut self) -> Result<isize, DecodeError> {
         T::decode_isize(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_f32(&mut self) -> Result<f32, DecodeError> {
         T::decode_f32(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_f64(&mut self) -> Result<f64, DecodeError> {
         T::decode_f64(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn decode_bool(&mut self) -> Result<bool, DecodeError> {
         T::decode_bool(self)
     }
@@ -953,6 +955,7 @@ where
 {
     type BR = T::BR;
 
+    #[inline(always)]
     fn borrow_reader(&mut self) -> &mut Self::BR {
         T::borrow_reader(self)
     }
@@ -963,7 +966,7 @@ where
 /// # Errors
 ///
 /// Returns `DecodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub(crate) fn decode_option_variant<D: Decoder>(
     decoder: &mut D,
     type_name: &'static str,
@@ -988,7 +991,7 @@ pub(crate) fn decode_option_variant<D: Decoder>(
 /// # Errors
 ///
 /// Returns an error if the operation fails.
-#[inline]
+#[inline(always)]
 #[allow(dead_code)]
 pub(crate) fn decode_slice_len<D: Decoder>(decoder: &mut D) -> Result<usize, DecodeError> {
     D::assert_covered();

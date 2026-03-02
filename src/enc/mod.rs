@@ -689,17 +689,17 @@ where
     type C = T::C;
     type W = T::W;
 
-    #[inline]
+    #[inline(always)]
     fn writer(&mut self) -> &mut Self::W {
         T::writer(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn config(&self) -> &Self::C {
         T::config(self)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_u8(
         &mut self,
         val: u8,
@@ -707,7 +707,7 @@ where
         T::encode_u8(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_u16(
         &mut self,
         val: u16,
@@ -715,7 +715,7 @@ where
         T::encode_u16(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_u32(
         &mut self,
         val: u32,
@@ -723,7 +723,7 @@ where
         T::encode_u32(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_u64(
         &mut self,
         val: u64,
@@ -731,7 +731,7 @@ where
         T::encode_u64(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_u128(
         &mut self,
         val: u128,
@@ -739,7 +739,7 @@ where
         T::encode_u128(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_usize(
         &mut self,
         val: usize,
@@ -747,6 +747,7 @@ where
         T::encode_usize(self, val)
     }
 
+    #[inline(always)]
     fn encode_i8(
         &mut self,
         val: i8,
@@ -754,6 +755,7 @@ where
         self.encode_u8(val as u8)
     }
 
+    #[inline(always)]
     fn encode_i16(
         &mut self,
         val: i16,
@@ -761,7 +763,7 @@ where
         T::encode_i16(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_i32(
         &mut self,
         val: i32,
@@ -769,7 +771,7 @@ where
         T::encode_i32(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_i64(
         &mut self,
         val: i64,
@@ -777,7 +779,7 @@ where
         T::encode_i64(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_i128(
         &mut self,
         val: i128,
@@ -785,7 +787,7 @@ where
         T::encode_i128(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_isize(
         &mut self,
         val: isize,
@@ -793,7 +795,7 @@ where
         T::encode_isize(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_f32(
         &mut self,
         val: f32,
@@ -801,7 +803,7 @@ where
         T::encode_f32(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_f64(
         &mut self,
         val: f64,
@@ -809,7 +811,7 @@ where
         T::encode_f64(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_bool(
         &mut self,
         val: bool,
@@ -817,7 +819,7 @@ where
         T::encode_bool(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_str(
         &mut self,
         val: &str,
@@ -825,7 +827,7 @@ where
         T::encode_str(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_slice_len(
         &mut self,
         len: usize,
@@ -833,7 +835,7 @@ where
         T::encode_slice_len(self, len)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_array_len(
         &mut self,
         len: usize,
@@ -841,7 +843,7 @@ where
         T::encode_array_len(self, len)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_map_len(
         &mut self,
         len: usize,
@@ -849,7 +851,7 @@ where
         T::encode_map_len(self, len)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_variant_index(
         &mut self,
         idx: u32,
@@ -857,7 +859,7 @@ where
         T::encode_variant_index(self, idx)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_byte_slice(
         &mut self,
         val: &[u8],
@@ -865,7 +867,7 @@ where
         T::encode_byte_slice(self, val)
     }
 
-    #[inline]
+    #[inline(always)]
     fn encode_struct_header(
         &mut self,
         len: usize,
@@ -879,7 +881,7 @@ where
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub(crate) fn encode_option_variant<E: Encoder, T>(
     encoder: &mut E,
     value: Option<&T>,
@@ -896,7 +898,7 @@ pub(crate) fn encode_option_variant<E: Encoder, T>(
 /// # Errors
 ///
 /// Returns `EncodeError` if the encoding fails.
-#[inline]
+#[inline(always)]
 pub(crate) fn encode_slice_len<E: Encoder>(
     encoder: &mut E,
     len: usize,

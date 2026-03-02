@@ -26,6 +26,7 @@ use core::ops::RangeInclusive;
 use core::time::Duration;
 
 impl Encode for () {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         _: &mut E,
@@ -35,6 +36,7 @@ impl Encode for () {
 }
 
 impl<T> Encode for PhantomData<T> {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         _: &mut E,
@@ -44,6 +46,7 @@ impl<T> Encode for PhantomData<T> {
 }
 
 impl Encode for bool {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -53,6 +56,7 @@ impl Encode for bool {
 }
 
 impl Encode for u8 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -62,6 +66,7 @@ impl Encode for u8 {
 }
 
 impl Encode for NonZeroU8 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -71,6 +76,7 @@ impl Encode for NonZeroU8 {
 }
 
 impl Encode for u16 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -80,6 +86,7 @@ impl Encode for u16 {
 }
 
 impl Encode for NonZeroU16 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -89,6 +96,7 @@ impl Encode for NonZeroU16 {
 }
 
 impl Encode for u32 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -98,6 +106,7 @@ impl Encode for u32 {
 }
 
 impl Encode for NonZeroU32 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -107,6 +116,7 @@ impl Encode for NonZeroU32 {
 }
 
 impl Encode for u64 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -116,6 +126,7 @@ impl Encode for u64 {
 }
 
 impl Encode for NonZeroU64 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -125,6 +136,7 @@ impl Encode for NonZeroU64 {
 }
 
 impl Encode for u128 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -134,6 +146,7 @@ impl Encode for u128 {
 }
 
 impl Encode for NonZeroU128 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -143,6 +156,7 @@ impl Encode for NonZeroU128 {
 }
 
 impl Encode for usize {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -152,6 +166,7 @@ impl Encode for usize {
 }
 
 impl Encode for NonZeroUsize {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -161,6 +176,7 @@ impl Encode for NonZeroUsize {
 }
 
 impl Encode for i8 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -170,6 +186,7 @@ impl Encode for i8 {
 }
 
 impl Encode for NonZeroI8 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -179,6 +196,7 @@ impl Encode for NonZeroI8 {
 }
 
 impl Encode for i16 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -188,6 +206,7 @@ impl Encode for i16 {
 }
 
 impl Encode for NonZeroI16 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -197,6 +216,7 @@ impl Encode for NonZeroI16 {
 }
 
 impl Encode for i32 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -206,6 +226,7 @@ impl Encode for i32 {
 }
 
 impl Encode for NonZeroI32 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -215,6 +236,7 @@ impl Encode for NonZeroI32 {
 }
 
 impl Encode for i64 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -224,6 +246,7 @@ impl Encode for i64 {
 }
 
 impl Encode for NonZeroI64 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -233,6 +256,7 @@ impl Encode for NonZeroI64 {
 }
 
 impl Encode for i128 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -242,6 +266,7 @@ impl Encode for i128 {
 }
 
 impl Encode for NonZeroI128 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -251,6 +276,7 @@ impl Encode for NonZeroI128 {
 }
 
 impl Encode for isize {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -260,6 +286,7 @@ impl Encode for isize {
 }
 
 impl Encode for NonZeroIsize {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -269,6 +296,7 @@ impl Encode for NonZeroIsize {
 }
 
 impl Encode for f32 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -278,6 +306,7 @@ impl Encode for f32 {
 }
 
 impl Encode for f64 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -287,6 +316,7 @@ impl Encode for f64 {
 }
 
 impl<T: Encode> Encode for Wrapping<T> {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -296,6 +326,7 @@ impl<T: Encode> Encode for Wrapping<T> {
 }
 
 impl<T: Encode> Encode for Reverse<T> {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -305,6 +336,7 @@ impl<T: Encode> Encode for Reverse<T> {
 }
 
 impl Encode for char {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -317,6 +349,7 @@ impl<T> Encode for [T]
 where
     T: Encode,
 {
+    #[inline]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -385,6 +418,7 @@ const MAX_ONE_B: u32 = 0x80;
 const MAX_TWO_B: u32 = 0x800;
 const MAX_THREE_B: u32 = 0x10000;
 
+#[inline(always)]
 fn encode_utf8(
     writer: &mut impl Writer,
     c: char,
@@ -415,6 +449,7 @@ fn encode_utf8(
 }
 
 impl Encode for str {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -427,6 +462,7 @@ impl<T, const N: usize> Encode for [T; N]
 where
     T: Encode,
 {
+    #[inline]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -497,6 +533,7 @@ impl<T> Encode for Option<T>
 where
     T: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -514,6 +551,7 @@ where
     T: Encode,
     U: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -535,6 +573,7 @@ impl<T> Encode for Cell<T>
 where
     T: Encode + Copy,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -547,6 +586,7 @@ impl<T> Encode for RefCell<T>
 where
     T: Encode + ?Sized,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -563,6 +603,7 @@ where
 }
 
 impl Encode for Duration {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -577,6 +618,7 @@ impl<T> Encode for Range<T>
 where
     T: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -591,6 +633,7 @@ impl<T> Encode for RangeInclusive<T>
 where
     T: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -605,6 +648,7 @@ impl<T> Encode for Bound<T>
 where
     T: Encode,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
@@ -630,6 +674,7 @@ impl<T> Encode for &T
 where
     T: Encode + ?Sized,
 {
+    #[inline(always)]
     fn encode<E: Encoder>(
         &self,
         encoder: &mut E,
