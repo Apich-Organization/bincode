@@ -18,6 +18,11 @@ fn bench_vec_u64_small_varint(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("vec_u64_small_varint_decode");
 
+    group
+        .warm_up_time(Duration::from_secs(20))
+        .measurement_time(Duration::from_secs(40))
+        .sample_size(1000);
+
     group.bench_function("bincode-next (current)", |b| {
         b.iter(|| {
             let res: (Vec<u64>, usize) =
@@ -48,6 +53,11 @@ fn bench_vec_u64_large_varint(c: &mut Criterion) {
     let bytes_v2 = bincode_v2::encode_to_vec(&input, bincode_v2::config::standard()).unwrap();
 
     let mut group = c.benchmark_group("vec_u64_large_varint_decode");
+
+    group
+        .warm_up_time(Duration::from_secs(20))
+        .measurement_time(Duration::from_secs(40))
+        .sample_size(1000);
 
     group.bench_function("bincode-next (current)", |b| {
         b.iter(|| {
@@ -83,6 +93,11 @@ fn bench_vec_u64_fixint_native(c: &mut Criterion) {
     .unwrap();
 
     let mut group = c.benchmark_group("vec_u64_fixint_native_decode");
+
+    group
+        .warm_up_time(Duration::from_secs(20))
+        .measurement_time(Duration::from_secs(40))
+        .sample_size(1000);
 
     group.bench_function("bincode-next (current)", |b| {
         b.iter(|| {
@@ -124,6 +139,11 @@ fn bench_vec_u8_bulk(c: &mut Criterion) {
     let bytes_v2 = bincode_v2::encode_to_vec(&input, bincode_v2::config::standard()).unwrap();
 
     let mut group = c.benchmark_group("vec_u8_bulk_decode");
+
+    group
+        .warm_up_time(Duration::from_secs(20))
+        .measurement_time(Duration::from_secs(40))
+        .sample_size(1000);
 
     group.bench_function("bincode-next (current)", |b| {
         b.iter(|| {

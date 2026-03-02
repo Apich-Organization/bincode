@@ -132,8 +132,8 @@ fn bench_complex(c: &mut Criterion) {
 
     group
         .warm_up_time(Duration::from_secs(20))
-        .measurement_time(Duration::from_secs(10))
-        .sample_size(200);
+        .measurement_time(Duration::from_secs(40))
+        .sample_size(1000);
 
     group.bench_function("bincode-next (traits, varint)", |b| {
         b.iter(|| {
@@ -203,8 +203,8 @@ fn bench_complex(c: &mut Criterion) {
 
     group
         .warm_up_time(Duration::from_secs(20))
-        .measurement_time(Duration::from_secs(10))
-        .sample_size(200);
+        .measurement_time(Duration::from_secs(40))
+        .sample_size(1000);
 
     group.bench_function("bincode-next (traits, varint)", |b| {
         b.iter(|| {
