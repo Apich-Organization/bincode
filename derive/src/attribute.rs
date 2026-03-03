@@ -226,6 +226,14 @@ impl FromAttribute for FieldAttributes {
 pub struct ReprAttributes {
     pub is_c: bool,
     pub is_transparent: bool,
+    pub is_u8: bool,
+    pub is_u16: bool,
+    pub is_u32: bool,
+    pub is_u64: bool,
+    pub is_i8: bool,
+    pub is_i16: bool,
+    pub is_i32: bool,
+    pub is_i64: bool,
 }
 
 impl FromAttribute for ReprAttributes {
@@ -244,6 +252,38 @@ impl FromAttribute for ReprAttributes {
                 },
                 | ParsedAttribute::Tag(i) if i.to_string() == "transparent" => {
                     result.is_transparent = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "u8" => {
+                    result.is_u8 = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "u16" => {
+                    result.is_u16 = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "u32" => {
+                    result.is_u32 = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "u64" => {
+                    result.is_u64 = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "i8" => {
+                    result.is_i8 = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "i16" => {
+                    result.is_i16 = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "i32" => {
+                    result.is_i32 = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "i64" => {
+                    result.is_i64 = true;
                     found = true;
                 },
                 | _ => {},

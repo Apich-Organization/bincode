@@ -48,7 +48,7 @@ impl DeriveBitPacked {
             .with_arg("encoder", "&mut __E")
             .with_return_type(format!("core::result::Result<(), {}::error::EncodeError>", crate_name))
             .body(|fn_body| {
-                if let Some(ref fields) = self.fields {
+                if let Some(ref fields) = self.fields.as_ref() {
                     let mut groups: Vec<(bool, Vec<_>)> = Vec::new();
                     for field in fields.names() {
                         let attrs = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
@@ -151,7 +151,7 @@ impl DeriveBitPacked {
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_body| {
-                if let Some(ref fields) = self.fields {
+                if let Some(ref fields) = self.fields.as_ref() {
                     let mut groups: Vec<(bool, Vec<_>)> = Vec::new();
                     for field in fields.names() {
                         fn_body.push_parsed(format!("let mut __{};", field))?;
@@ -266,7 +266,7 @@ impl DeriveBitPacked {
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_body| {
-                if let Some(ref fields) = self.fields {
+                if let Some(ref fields) = self.fields.as_ref() {
                     let mut groups: Vec<(bool, Vec<_>)> = Vec::new();
                     for field in fields.names() {
                         fn_body.push_parsed(format!("let mut __{};", field))?;
