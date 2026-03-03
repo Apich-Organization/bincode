@@ -607,11 +607,19 @@ where
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
-        if matches!(
-            <E::C as crate::config::InternalFormatConfig>::FORMAT,
-            Format::CborDeterministic
-        ) {
+        let format = <E::C as crate::config::InternalFormatConfig>::FORMAT;
+        if format == Format::CborDeterministic {
             crate::enc::cbor::encode_map_deterministic::<E, _, _, _>(encoder, self.iter())
+        } else if format == Format::BincodeDeterministic {
+            #[cfg(feature = "alloc")]
+            return crate::enc::deterministic::encode_map_deterministic::<E, _, _, _>(
+                encoder,
+                self.iter().map(|(k, v)| (k, v)),
+            );
+            #[cfg(not(feature = "alloc"))]
+            return crate::error::cold_encode_error_other(
+                "Deterministic encoding requires the 'alloc' feature",
+            );
         } else {
             encoder.encode_map_len(self.len())?;
             for (k, v) in self {
@@ -634,7 +642,11 @@ where
         let len = decoder.decode_map_len()?;
         let is_bincode = matches!(
             <D::C as crate::config::InternalFormatConfig>::FORMAT,
-            crate::config::Format::Bincode
+            crate::config::Format::Bincode | crate::config::Format::BincodeDeterministic
+        );
+        let is_deterministic = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::BincodeDeterministic
         );
         if !is_bincode && len == usize::MAX {
             let mut map = Self::with_hasher(S::default());
@@ -653,7 +665,13 @@ where
         for _ in 0..len {
             let k = K::decode(decoder)?;
             let v = V::decode(decoder)?;
-            map.insert(k, v);
+            if is_deterministic {
+                if map.insert(k, v).is_some() {
+                    return crate::error::cold_decode_error_duplicate_map_key();
+                }
+            } else {
+                map.insert(k, v);
+            }
         }
         Ok(map)
     }
@@ -671,7 +689,11 @@ where
         let len = decoder.decode_map_len()?;
         let is_bincode = matches!(
             <D::C as crate::config::InternalFormatConfig>::FORMAT,
-            crate::config::Format::Bincode
+            crate::config::Format::Bincode | crate::config::Format::BincodeDeterministic
+        );
+        let is_deterministic = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::BincodeDeterministic
         );
         if !is_bincode && len == usize::MAX {
             let mut map = Self::with_hasher(S::default());
@@ -690,7 +712,13 @@ where
         for _ in 0..len {
             let k = K::borrow_decode(decoder)?;
             let v = V::borrow_decode(decoder)?;
-            map.insert(k, v);
+            if is_deterministic {
+                if map.insert(k, v).is_some() {
+                    return crate::error::cold_decode_error_duplicate_map_key();
+                }
+            } else {
+                map.insert(k, v);
+            }
         }
         Ok(map)
     }
@@ -706,7 +734,11 @@ where
         let len = decoder.decode_slice_len()?;
         let is_bincode = matches!(
             <D::C as crate::config::InternalFormatConfig>::FORMAT,
-            crate::config::Format::Bincode
+            crate::config::Format::Bincode | crate::config::Format::BincodeDeterministic
+        );
+        let is_deterministic = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::BincodeDeterministic
         );
         if !is_bincode && len == usize::MAX {
             let mut map = Self::with_hasher(S::default());
@@ -723,7 +755,13 @@ where
         let mut map: Self = Self::with_capacity_and_hasher(len, hash_builder);
         for _ in 0..len {
             let key = T::decode(decoder)?;
-            map.insert(key);
+            if is_deterministic {
+                if !map.insert(key) {
+                    return crate::error::cold_decode_error_duplicate_map_key();
+                }
+            } else {
+                map.insert(key);
+            }
         }
         Ok(map)
     }
@@ -741,7 +779,11 @@ where
         let len = decoder.decode_slice_len()?;
         let is_bincode = matches!(
             <D::C as crate::config::InternalFormatConfig>::FORMAT,
-            crate::config::Format::Bincode
+            crate::config::Format::Bincode | crate::config::Format::BincodeDeterministic
+        );
+        let is_deterministic = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::BincodeDeterministic
         );
         if !is_bincode && len == usize::MAX {
             let mut map = Self::with_hasher(S::default());
@@ -757,7 +799,13 @@ where
         let mut map = Self::with_capacity_and_hasher(len, S::default());
         for _ in 0..len {
             let key = T::borrow_decode(decoder)?;
-            map.insert(key);
+            if is_deterministic {
+                if !map.insert(key) {
+                    return crate::error::cold_decode_error_duplicate_map_key();
+                }
+            } else {
+                map.insert(key);
+            }
         }
         Ok(map)
     }
@@ -773,11 +821,19 @@ where
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
-        if matches!(
-            <E::C as crate::config::InternalFormatConfig>::FORMAT,
-            Format::CborDeterministic
-        ) {
+        let format = <E::C as crate::config::InternalFormatConfig>::FORMAT;
+        if format == Format::CborDeterministic {
             crate::enc::cbor::encode_slice_deterministic::<E, _, _>(encoder, self.iter())
+        } else if format == Format::BincodeDeterministic {
+            #[cfg(feature = "alloc")]
+            return crate::enc::deterministic::encode_slice_deterministic::<E, _, _>(
+                encoder,
+                self.iter(),
+            );
+            #[cfg(not(feature = "alloc"))]
+            return crate::error::cold_encode_error_other(
+                "Deterministic encoding requires the 'alloc' feature",
+            );
         } else {
             encoder.encode_slice_len(self.len())?;
             for item in self {

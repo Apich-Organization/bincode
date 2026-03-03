@@ -359,7 +359,7 @@ where
         let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
         let is_bincode = matches!(
             <D::C as crate::config::InternalFormatConfig>::FORMAT,
-            crate::config::Format::Bincode
+            crate::config::Format::Bincode | crate::config::Format::BincodeDeterministic
         );
 
         if !is_bincode {
@@ -445,7 +445,7 @@ where
         let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
         let is_bincode = matches!(
             <D::C as crate::config::InternalFormatConfig>::FORMAT,
-            crate::config::Format::Bincode
+            crate::config::Format::Bincode | crate::config::Format::BincodeDeterministic
         );
 
         if !is_bincode {

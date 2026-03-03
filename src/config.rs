@@ -305,6 +305,14 @@ impl<E, I, L, B, O, F, FO> Configuration<E, I, L, B, O, F, FO> {
         generate()
     }
 
+    /// Sets the format to Bincode with deterministic encoding.
+    #[must_use]
+    pub const fn with_deterministic_bincode(
+        self
+    ) -> Configuration<E, I, L, B, O, F, BincodeDeterministicFormat> {
+        generate()
+    }
+
     /// Sets the format to CBOR with custom options.
     #[must_use]
     pub const fn with_cbor_options<
@@ -522,6 +530,15 @@ impl InternalFormatConfig for BincodeFormat {
     const FORMAT: Format = Format::Bincode;
 }
 
+/// Bincode format with deterministic encoding.
+#[derive(Copy, Clone, Debug)]
+pub struct BincodeDeterministicFormat;
+
+impl InternalFormatConfig for BincodeDeterministicFormat {
+    const CBOR_OPTIONS: CborOptions = CborOptions::DEFAULT;
+    const FORMAT: Format = Format::BincodeDeterministic;
+}
+
 /// CBOR configuration with const generic options.
 #[derive(Copy, Clone, Debug)]
 pub struct CborConfig<
@@ -631,6 +648,8 @@ pub enum FingerprintMode {
 pub enum Format {
     /// Bincode (default).
     Bincode,
+    /// Bincode with deterministic encoding.
+    BincodeDeterministic,
     /// CBOR.
     Cbor,
     /// CBOR with deterministic encoding.

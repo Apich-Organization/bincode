@@ -1,5 +1,6 @@
 //! Encoder-based structs and traits.
 
+pub(crate) mod deterministic;
 mod encoder;
 mod impl_tuples;
 mod impls;
@@ -94,7 +95,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.writer().write_u8(val),
+            | Format::Bincode | Format::BincodeDeterministic => self.writer().write_u8(val),
             | Format::Cbor | Format::CborDeterministic => {
                 cbor::encode_u8::<_, Self::C>(self.writer(), val)
             },
@@ -115,7 +116,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         use crate::config::Format;
         use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => {
+            | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
                         crate::varint::varint_encode_u16(
@@ -152,7 +153,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         use crate::config::Format;
         use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => {
+            | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
                         crate::varint::varint_encode_u32(
@@ -189,7 +190,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         use crate::config::Format;
         use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => {
+            | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
                         crate::varint::varint_encode_u64(
@@ -226,7 +227,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         use crate::config::Format;
         use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => {
+            | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
                         crate::varint::varint_encode_u128(
@@ -261,7 +262,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.encode_u64(val as u64),
+            | Format::Bincode | Format::BincodeDeterministic => self.encode_u64(val as u64),
             | Format::Cbor | Format::CborDeterministic => {
                 cbor::encode_u64::<_, Self::C>(self.writer(), val as u64)
             },
@@ -280,7 +281,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.writer().write_u8(val as u8),
+            | Format::Bincode | Format::BincodeDeterministic => self.writer().write_u8(val as u8),
             | Format::Cbor | Format::CborDeterministic => {
                 cbor::encode_i8::<_, Self::C>(self.writer(), val)
             },
@@ -301,7 +302,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         use crate::config::Format;
         use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => {
+            | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
                         crate::varint::varint_encode_i16(
@@ -338,7 +339,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         use crate::config::Format;
         use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => {
+            | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
                         crate::varint::varint_encode_i32(
@@ -375,7 +376,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         use crate::config::Format;
         use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => {
+            | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
                         crate::varint::varint_encode_i64(
@@ -412,7 +413,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         use crate::config::Format;
         use crate::config::IntEncoding;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => {
+            | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
                     | IntEncoding::Variable => {
                         crate::varint::varint_encode_i128(
@@ -447,7 +448,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.encode_i64(val as i64),
+            | Format::Bincode | Format::BincodeDeterministic => self.encode_i64(val as i64),
             | Format::Cbor | Format::CborDeterministic => {
                 cbor::encode_i64::<_, Self::C>(self.writer(), val as i64)
             },
@@ -467,7 +468,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         use crate::config::Endianness;
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => {
+            | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
                     | Endianness::Big => self.writer().write_u32(val.to_bits().to_be()),
                     | Endianness::Little => self.writer().write_u32(val.to_bits().to_le()),
@@ -492,7 +493,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         use crate::config::Endianness;
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => {
+            | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
                     | Endianness::Big => self.writer().write_u64(val.to_bits().to_be()),
                     | Endianness::Little => self.writer().write_u64(val.to_bits().to_le()),
@@ -516,7 +517,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.encode_u8(u8::from(val)),
+            | Format::Bincode | Format::BincodeDeterministic => self.encode_u8(u8::from(val)),
             | Format::Cbor | Format::CborDeterministic => {
                 cbor::encode_bool::<_, Self::C>(self.writer(), val)
             },
@@ -535,7 +536,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => {
+            | Format::Bincode | Format::BincodeDeterministic => {
                 self.encode_slice_len(val.len())?;
                 self.writer().write(val.as_bytes())
             },
@@ -557,7 +558,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.encode_u64(len as u64),
+            | Format::Bincode | Format::BincodeDeterministic => self.encode_u64(len as u64),
             | Format::Cbor | Format::CborDeterministic => {
                 cbor::encode_slice_len::<_, Self::C>(self.writer(), len)
             },
@@ -589,7 +590,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.encode_u64(len as u64),
+            | Format::Bincode | Format::BincodeDeterministic => self.encode_u64(len as u64),
             | Format::Cbor | Format::CborDeterministic => {
                 cbor::encode_map_len::<_, Self::C>(self.writer(), len)
             },
@@ -608,7 +609,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => {
+            | Format::Bincode | Format::BincodeDeterministic => {
                 self.encode_slice_len(val.len())?;
                 self.writer().write(val)
             },
@@ -630,7 +631,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => Ok(()),
+            | Format::Bincode | Format::BincodeDeterministic => Ok(()),
             | Format::Cbor | Format::CborDeterministic => self.encode_array_len(len),
         }
     }
@@ -647,7 +648,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.encode_usize(len),
+            | Format::Bincode | Format::BincodeDeterministic => self.encode_usize(len),
             | Format::Cbor | Format::CborDeterministic => {
                 cbor::encode_byte_slice_len::<_, Self::C>(self.writer(), len as u64)
             },
@@ -669,7 +670,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode => self.encode_u8(idx as u8),
+            | Format::Bincode | Format::BincodeDeterministic => self.encode_u8(idx as u8),
             | Format::Cbor | Format::CborDeterministic => {
                 cbor::encode_u32::<_, Self::C>(self.writer(), idx)
             },

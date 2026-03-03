@@ -275,6 +275,12 @@ bincode_error! {
         /// The hash that was found in the encoded data
         actual: u64,
     },
+
+    /// The decoder tried to decode a map, but a duplicate key was found.
+    DuplicateMapKey,
+
+    /// The decoder tried to decode a map, but the keys were not in the correct order.
+    InvalidMapOrder,
 }
 }
 
