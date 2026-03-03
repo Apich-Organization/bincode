@@ -104,6 +104,25 @@ impl<'a, W: Writer> BitWriter<'a, W> {
         Ok(())
     }
 
+    /// Writes `num_bits` from `val` into the stream, using the bit ordering from the configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError` if the underlying writer fails to write the data.
+    #[inline(always)]
+    pub fn write_bits<C: crate::config::Config>(
+        &mut self,
+        val: u64,
+        num_bits: u8,
+        config: &C,
+    ) -> Result<(), EncodeError> {
+        use crate::config::BitOrdering;
+        match config.bit_ordering() {
+            | BitOrdering::Lsb => self.write_bits_lsb(val, num_bits),
+            | BitOrdering::Msb => self.write_bits_msb(val, num_bits),
+        }
+    }
+
     /// Flushes any remaining bits to the underlying writer, padding with 0s.
     ///
     /// # Errors

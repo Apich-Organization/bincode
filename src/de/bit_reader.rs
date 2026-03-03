@@ -111,6 +111,24 @@ impl<'a, R: Reader> BitReader<'a, R> {
         Ok(result)
     }
 
+    /// Reads `num_bits` from the stream, using the bit ordering from the configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns `DecodeError` if the underlying reader fails to provide enough bytes.
+    #[inline(always)]
+    pub fn read_bits<C: crate::config::Config>(
+        &mut self,
+        num_bits: u8,
+        config: &C,
+    ) -> Result<u64, DecodeError> {
+        use crate::config::BitOrdering;
+        match config.bit_ordering() {
+            | BitOrdering::Lsb => self.read_bits_lsb(num_bits),
+            | BitOrdering::Msb => self.read_bits_msb(num_bits),
+        }
+    }
+
     /// Discards any remaining unread bits in the current byte, effectively returning to byte alignment.
     #[inline(always)]
     pub const fn align_to_byte(&mut self) {

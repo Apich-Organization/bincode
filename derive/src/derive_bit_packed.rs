@@ -27,8 +27,7 @@ impl DeriveBitPacked {
             .attributes
             .bit_packing
             .as_ref()
-            .map(|(s, _)| s.as_str())
-            .unwrap_or("msb");
+            .map(|(s, _)| s.as_str());
         generator
             .impl_for(format!("{}::Encode", crate_name))
             .modify_generic_constraints(|generics, where_constraints| {
@@ -66,6 +65,7 @@ impl DeriveBitPacked {
                         if is_packed {
                             fn_body.push_parsed(format!("if {}::config::Config::bit_packing_enabled(encoder.config())", crate_name))?;
                             fn_body.group(Delimiter::Brace, |b| {
+                                b.push_parsed("let __config = *encoder.config();")?;
                                 b.push_parsed(format!("let mut bit_writer = {}::enc::bit_writer::BitWriter::new({}::enc::Encoder::writer(encoder));", crate_name, crate_name))?;
                                 for field in group.iter() {
                                     let attrs = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
@@ -76,7 +76,11 @@ impl DeriveBitPacked {
                                         b_err.push_parsed(format!("return {}::error::cold_encode_error_other(\"Value exceeds bit-packed width\");", crate_name))?;
                                         Ok(())
                                     })?;
-                                    b.push_parsed(format!("bit_writer.write_bits_{}((self.{}) as u64, {})?;", bit_packing, field, bits))?;
+                                    if let Some(order) = bit_packing {
+                                        b.push_parsed(format!("bit_writer.write_bits_{}((self.{}) as u64, {})?;", order, field, bits))?;
+                                    } else {
+                                        b.push_parsed(format!("bit_writer.write_bits((self.{}) as u64, {}, &__config)?;", field, bits))?;
+                                    }
                                 }
                                 b.push_parsed("bit_writer.flush()?;")?;
                                 Ok(())
@@ -120,8 +124,7 @@ impl DeriveBitPacked {
             .attributes
             .bit_packing
             .as_ref()
-            .map(|(s, _)| s.as_str())
-            .unwrap_or("msb");
+            .map(|(s, _)| s.as_str());
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
             decode_context.as_str()
         } else {
@@ -170,11 +173,16 @@ impl DeriveBitPacked {
                         if is_packed {
                             fn_body.push_parsed(format!("if {}::config::Config::bit_packing_enabled(decoder.config())", crate_name))?;
                             fn_body.group(Delimiter::Brace, |b| {
+                                b.push_parsed("let __config = *decoder.config();")?;
                                 b.push_parsed(format!("let mut bit_reader = {}::de::bit_reader::BitReader::new({}::de::Decoder::reader(decoder));", crate_name, crate_name))?;
                                 for field in group.iter() {
                                     let attrs = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
                                     let bits = attrs.bits.unwrap();
-                                    b.push_parsed(format!("__{0} = <_ as {1}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits_{3}({2})?);", field, crate_name, bits, bit_packing))?;
+                                    if let Some(order) = bit_packing {
+                                        b.push_parsed(format!("__{0} = <_ as {1}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits_{3}({2})?);", field, crate_name, bits, order))?;
+                                    } else {
+                                        b.push_parsed(format!("__{0} = <_ as {1}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits({2}, &__config)?);", field, crate_name, bits))?;
+                                    }
                                     b.push_parsed(format!("{{ fn check_width<const B: u8, T: {0}::utils::BitPackedCheck<B>>(_: &T) {{ let _ = <T as {0}::utils::BitPackedCheck<B>>::CHECK; }} check_width::<{1}, _>(&__{2}); }}", crate_name, bits, field))?;
                                 }
                                 Ok(())
@@ -231,8 +239,8 @@ impl DeriveBitPacked {
             .attributes
             .bit_packing
             .as_ref()
-            .map(|(s, _)| s.as_str())
-            .unwrap_or("msb");
+            .map(|(s, _)| s.as_str());
+
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
             decode_context.as_str()
         } else {
@@ -285,11 +293,16 @@ impl DeriveBitPacked {
                         if is_packed {
                             fn_body.push_parsed(format!("if {}::config::Config::bit_packing_enabled(decoder.config())", crate_name))?;
                             fn_body.group(Delimiter::Brace, |b| {
+                                b.push_parsed("let __config = *decoder.config();")?;
                                 b.push_parsed(format!("let mut bit_reader = {}::de::bit_reader::BitReader::new({}::de::Decoder::reader(decoder));", crate_name, crate_name))?;
                                 for field in group.iter() {
                                     let attrs = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
                                     let bits = attrs.bits.unwrap();
-                                    b.push_parsed(format!("__{0} = <_ as {1}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits_{3}({2})?);", field, crate_name, bits, bit_packing))?;
+                                                        if let Some(order) = bit_packing {
+                                                            b.push_parsed(format!("__{0} = <_ as {1}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits_{3}({2})?);", field, crate_name, bits, order))?;
+                                                        } else {
+                                                            b.push_parsed(format!("__{0} = <_ as {1}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits({2}, &__config)?);", field, crate_name, bits))?;
+                                                        }
                                     b.push_parsed(format!("{{ fn check_width<const B: u8, T: {0}::utils::BitPackedCheck<B>>(_: &T) {{ let _ = <T as {0}::utils::BitPackedCheck<B>>::CHECK; }} check_width::<{1}, _>(&__{2}); }}", crate_name, bits, field))?;
                                 }
                                 Ok(())
@@ -372,8 +385,7 @@ impl DeriveBitPackedEnum {
             .attributes
             .bit_packing
             .as_ref()
-            .map(|(s, _)| s.as_str())
-            .unwrap_or("msb");
+            .map(|(s, _)| s.as_str());
         let variant_bits = if self.variants.len() <= 1 {
             0
         } else {
@@ -450,11 +462,16 @@ impl DeriveBitPackedEnum {
                                 for (is_packed, group) in groups {
                                     if is_packed {
                                         b_packed.group(Delimiter::Brace, |b| {
+                                            b.push_parsed("let __config = *encoder.config();")?;
                                             b.push_parsed(format!("let mut bit_writer = {}::enc::bit_writer::BitWriter::from_state({}::enc::Encoder::writer(encoder), __bit_state.0, __bit_state.1);", crate_name, crate_name))?;
                                             for item in group {
                                                 match item {
                                                     EncItem::VariantIndex(idx, bits) => {
-                                                                                                                b.push_parsed(format!("bit_writer.write_bits_{}({} as u64, {})?;", bit_packing, idx, bits))?;
+                                                        if let Some(order) = bit_packing {
+                                                            b.push_parsed(format!("bit_writer.write_bits_{}({} as u64, {})?;", order, idx, bits))?;
+                                                        } else {
+                                                            b.push_parsed(format!("bit_writer.write_bits({} as u64, {}, &__config)?;", idx, bits))?;
+                                                        }
                                                     }
                                                     EncItem::Field { name, bits, with_serde: _ } => {
                                                         let bits_val = bits.unwrap();
@@ -464,7 +481,11 @@ impl DeriveBitPackedEnum {
                                                             b_err.push_parsed(format!("return {}::error::cold_encode_error_other(\"Value exceeds bit-packed width\");", crate_name))?;
                                                             Ok(())
                                                         })?;
-                                                                                                                b.push_parsed(format!("bit_writer.write_bits_{}((*({})) as u64, {})?;", bit_packing, name, bits_val))?;
+                                                        if let Some(order) = bit_packing {
+                                                            b.push_parsed(format!("bit_writer.write_bits_{}((*({})) as u64, {})?;", order, name, bits_val))?;
+                                                        } else {
+                                                            b.push_parsed(format!("bit_writer.write_bits((*({})) as u64, {}, &__config)?;", name, bits_val))?;
+                                                        }
                                                     }
                                                 }
                                             }
@@ -584,8 +605,7 @@ impl DeriveBitPackedEnum {
             .attributes
             .bit_packing
             .as_ref()
-            .map(|(s, _)| s.as_str())
-            .unwrap_or("msb");
+            .map(|(s, _)| s.as_str());
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
             decode_context.as_str()
         } else {
@@ -630,8 +650,13 @@ impl DeriveBitPackedEnum {
                         if variant_bits > 0 {
                             b_packed.push_parsed("let variant_index = ")?;
                             b_packed.group(Delimiter::Brace, |b| {
+                                b.push_parsed("let __config = *decoder.config();")?;
                                 b.push_parsed(format!("let mut bit_reader = {}::de::bit_reader::BitReader::from_state({}::de::Decoder::reader(decoder), __bit_state.0, __bit_state.1);", crate_name, crate_name))?;
-                                b.push_parsed(format!("let variant_index = <u32 as {0}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits_{2}({1})?);", crate_name, variant_bits, bit_packing))?;
+                                if let Some(order) = bit_packing {
+                                    b.push_parsed(format!("let variant_index = <u32 as {0}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits_{2}({1})?);", crate_name, variant_bits, order))?;
+                                } else {
+                                    b.push_parsed(format!("let variant_index = <u32 as {0}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits({1}, &__config)?);", crate_name, variant_bits))?;
+                                }
                                 b.push_parsed("__bit_state = bit_reader.get_state();")?;
                                 b.push_parsed("core::result::Result::Ok(variant_index)")?;
                                 Ok(())
@@ -664,12 +689,17 @@ impl DeriveBitPackedEnum {
                                         for (is_packed, group) in groups {
                                             if is_packed {
                                                 arm_body.group(Delimiter::Brace, |b| {
+                                                    b.push_parsed("let __config = *decoder.config();")?;
                                                     b.push_parsed(format!("let mut bit_reader = {}::de::bit_reader::BitReader::from_state({}::de::Decoder::reader(decoder), __bit_state.0, __bit_state.1);", crate_name, crate_name))?;
                                                     for field in group {
                                                         let attrs = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
                                                         let bits = attrs.bits.unwrap();
                                                         let name = field.to_string_with_prefix("field_");
-                                                        b.push_parsed(format!("__{0} = <_ as {1}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits_{3}({2})?);", name, crate_name, bits, bit_packing))?;
+                                                        if let Some(order) = bit_packing {
+                                                            b.push_parsed(format!("__{0} = <_ as {1}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits_{3}({2})?);", name, crate_name, bits, order))?;
+                                                        } else {
+                                                            b.push_parsed(format!("__{0} = <_ as {1}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits({2}, &__config)?);", name, crate_name, bits))?;
+                                                        }
                                                         b.push_parsed(format!("{{ fn check_width<const B: u8, T: {0}::utils::BitPackedCheck<B>>(_: &T) {{ let _ = <T as {0}::utils::BitPackedCheck<B>>::CHECK; }} check_width::<{1}, _>(&__{2}); }}", crate_name, bits, name))?;
                                                     }
                                                     b.push_parsed("__bit_state = bit_reader.get_state();")?;
@@ -794,8 +824,7 @@ impl DeriveBitPackedEnum {
             .attributes
             .bit_packing
             .as_ref()
-            .map(|(s, _)| s.as_str())
-            .unwrap_or("msb");
+            .map(|(s, _)| s.as_str());
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
             decode_context.as_str()
         } else {
@@ -844,8 +873,13 @@ impl DeriveBitPackedEnum {
                         if variant_bits > 0 {
                             b_packed.push_parsed("let variant_index = ")?;
                             b_packed.group(Delimiter::Brace, |b| {
+                                b.push_parsed("let __config = *decoder.config();")?;
                                 b.push_parsed(format!("let mut bit_reader = {}::de::bit_reader::BitReader::from_state({}::de::Decoder::reader(decoder), __bit_state.0, __bit_state.1);", crate_name, crate_name))?;
-                                b.push_parsed(format!("let variant_index = <u32 as {0}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits_{2}({1})?);", crate_name, variant_bits, bit_packing))?;
+                                if let Some(order) = bit_packing {
+                                    b.push_parsed(format!("let variant_index = <u32 as {0}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits_{2}({1})?);", crate_name, variant_bits, order))?;
+                                } else {
+                                    b.push_parsed(format!("let variant_index = <u32 as {0}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits({1}, &__config)?);", crate_name, variant_bits))?;
+                                }
                                 b.push_parsed("__bit_state = bit_reader.get_state();")?;
                                 b.push_parsed("core::result::Result::Ok(variant_index)")?;
                                 Ok(())
@@ -878,12 +912,17 @@ impl DeriveBitPackedEnum {
                                         for (is_packed, group) in groups {
                                             if is_packed {
                                                 arm_body.group(Delimiter::Brace, |b| {
+                                                    b.push_parsed("let __config = *decoder.config();")?;
                                                     b.push_parsed(format!("let mut bit_reader = {}::de::bit_reader::BitReader::from_state({}::de::Decoder::reader(decoder), __bit_state.0, __bit_state.1);", crate_name, crate_name))?;
                                                     for field in group {
                                                         let attrs = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
                                                         let bits = attrs.bits.unwrap();
                                                         let name = field.to_string_with_prefix("field_");
-                                                        b.push_parsed(format!("__{0} = <_ as {1}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits_{3}({2})?);", name, crate_name, bits, bit_packing))?;
+                                                        if let Some(order) = bit_packing {
+                                                            b.push_parsed(format!("__{0} = <_ as {1}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits_{3}({2})?);", name, crate_name, bits, order))?;
+                                                        } else {
+                                                            b.push_parsed(format!("__{0} = <_ as {1}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits({2}, &__config)?);", name, crate_name, bits))?;
+                                                        }
                                                         b.push_parsed(format!("{{ fn check_width<const B: u8, T: {0}::utils::BitPackedCheck<B>>(_: &T) {{ let _ = <T as {0}::utils::BitPackedCheck<B>>::CHECK; }} check_width::<{1}, _>(&__{2}); }}", crate_name, bits, name))?;
                                                     }
                                                     b.push_parsed("__bit_state = bit_reader.get_state();")?;
