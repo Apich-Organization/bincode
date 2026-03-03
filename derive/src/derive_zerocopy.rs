@@ -166,6 +166,7 @@ impl DeriveZeroCopy {
                 }; // Default
 
                 impl_for.generate_fn("build_to_target")
+                    .with_inline_always()
                     .with_arg("self", "Self")
                     .with_arg("builder", format!("&mut {}::relative_ptr::ZeroBuilder", crate_name))
                     .with_arg("offset", "usize")
@@ -337,6 +338,7 @@ impl DeriveZeroCopy {
                 );
                 impl_for.impl_type("Target", &*target_name)?;
                 impl_for.generate_fn("build_to_target")
+                    .with_inline_always()
                     .with_arg("self", "Self")
                     .with_arg("builder", format!("&mut {}::relative_ptr::ZeroBuilder", crate_name))
                     .with_arg("offset", "usize")

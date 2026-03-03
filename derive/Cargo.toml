@@ -34,7 +34,7 @@ exclude = [
     'Bench Results of bincode-next.md',
     "examples/*",
     ".gitignore",
-    ".github/"
+    ".github/",
 ]
 
 [lib]
@@ -48,4 +48,4 @@ zero-copy = []
 empty-line-after-doc-comments = "allow"
 
 [dependencies]
-virtue = { version = "0.1.2", package = "virtue-next" }
+virtue = { path = "../../virtue", package = "virtue-next" }

@@ -33,6 +33,7 @@ impl DeriveStruct {
                 Ok(())
             })?
             .generate_fn("encode")
+            .with_inline_always()
             .with_generic_deps("__E", [format!("{}::enc::Encoder", crate_name)])
             .with_self_arg(virtue::generate::FnSelfArg::RefSelf)
             .with_arg("encoder", "&mut __E")
@@ -104,6 +105,7 @@ impl DeriveStruct {
                 Ok(())
             })?
             .generate_fn("decode")
+            .with_inline_always()
             .with_generic_deps("__D", [format!("{}::de::Decoder<Context = {}>", crate_name, decode_context)])
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
@@ -189,6 +191,7 @@ impl DeriveStruct {
                 Ok(())
             })?
             .generate_fn("borrow_decode")
+            .with_inline_always()
             .with_generic_deps("__D", [format!("{}::de::BorrowDecoder<'__de, Context = {}>", crate_name, decode_context)])
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
