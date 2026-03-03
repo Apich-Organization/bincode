@@ -12,6 +12,7 @@ pub struct ContainerAttributes {
     #[allow(dead_code)]
     pub endian: Option<(String, Literal)>,
     pub align: Option<(usize, Literal)>,
+    pub bit_packing: Option<(String, Literal)>,
 }
 
 impl Default for ContainerAttributes {
@@ -25,6 +26,7 @@ impl Default for ContainerAttributes {
             borrow_decode_bounds: None,
             endian: None,
             align: None,
+            bit_packing: None,
         }
     }
 }
@@ -101,6 +103,22 @@ impl FromAttribute for ContainerAttributes {
                             result.align = Some((align, val));
                         } else {
                             return Err(Error::custom_at("Should be a valid usize", val.span()));
+                        }
+                    } else {
+                        return Err(Error::custom_at("Should be a literal str", val.span()));
+                    }
+                },
+                | ParsedAttribute::Property(key, val) if key.to_string() == "bit_packing" => {
+                    let val_string = val.to_string();
+                    if val_string.starts_with('"') && val_string.ends_with('"') {
+                        let inner = &val_string[1..val_string.len() - 1];
+                        if inner == "msb" || inner == "lsb" {
+                            result.bit_packing = Some((inner.to_string(), val));
+                        } else {
+                            return Err(Error::custom_at(
+                                "Should be \"msb\" or \"lsb\"",
+                                val.span(),
+                            ));
                         }
                     } else {
                         return Err(Error::custom_at("Should be a literal str", val.span()));
