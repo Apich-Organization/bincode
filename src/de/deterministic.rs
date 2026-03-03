@@ -1,4 +1,4 @@
-// We implemented the duplicate key checks directly inline in the decode impls, but this module might be needed in the future. 
+// We implemented the duplicate key checks directly inline in the decode impls, but this module might be needed in the future.
 #![allow(dead_code)]
 #[cfg(feature = "alloc")]
 use crate::alloc::vec::Vec;

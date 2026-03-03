@@ -254,7 +254,7 @@ where
             #[cfg(feature = "alloc")]
             return crate::enc::deterministic::encode_map_deterministic::<E, _, _, _>(
                 encoder,
-                self.iter().map(|(k, v)| (k, v)),
+                self.iter(),
             );
             #[cfg(not(feature = "alloc"))]
             return crate::error::cold_encode_error_other(
@@ -602,7 +602,7 @@ where
                                     }
 
                                     unsafe {
-                                        std::ptr::write(
+                                        core::ptr::write(
                                             ptr.add(j),
                                             crate::varint::$decode_fn(&mut reader, endian)?,
                                         );
@@ -667,7 +667,7 @@ where
                             for j in 0..to_decode {
                                 let b = bytes[j];
                                 unsafe {
-                                    std::ptr::write(ptr.add(j), $cast(b));
+                                    core::ptr::write(ptr.add(j), $cast(b));
                                 }
                             }
                             unsafe {
@@ -844,7 +844,7 @@ where
                                     }
                                 }
                                 unsafe {
-                                    std::ptr::write(
+                                    core::ptr::write(
                                         ptr.add(j),
                                         crate::varint::$decode_fn(&mut reader, endian)?,
                                     );
@@ -907,7 +907,7 @@ where
                             for j in 0..to_decode {
                                 let b = bytes[j];
                                 unsafe {
-                                    std::ptr::write(ptr.add(j), $cast(b));
+                                    core::ptr::write(ptr.add(j), $cast(b));
                                 }
                             }
                             unsafe {

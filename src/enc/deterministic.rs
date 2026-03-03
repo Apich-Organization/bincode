@@ -80,7 +80,7 @@ where
         entries.push(bytes);
     }
 
-    entries.sort_by(|a, b| a.cmp(b));
+    entries.sort();
 
     for bytes in entries {
         encoder.writer().write(&bytes)?;

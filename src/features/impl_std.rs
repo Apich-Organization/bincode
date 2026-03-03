@@ -614,7 +614,7 @@ where
             #[cfg(feature = "alloc")]
             return crate::enc::deterministic::encode_map_deterministic::<E, _, _, _>(
                 encoder,
-                self.iter().map(|(k, v)| (k, v)),
+                self.iter(),
             );
             #[cfg(not(feature = "alloc"))]
             return crate::error::cold_encode_error_other(

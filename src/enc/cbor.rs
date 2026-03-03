@@ -448,6 +448,7 @@ pub fn encode_map_len<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline]
+#[cfg(feature = "alloc")]
 pub fn encode_map_deterministic<E, K, V, I>(
     encoder: &mut E,
     iter: I,
@@ -495,6 +496,7 @@ where
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline]
+#[cfg(feature = "alloc")]
 pub fn encode_slice_deterministic<E, T, I>(
     encoder: &mut E,
     iter: I,
