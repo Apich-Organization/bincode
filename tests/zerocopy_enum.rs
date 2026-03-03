@@ -1,8 +1,6 @@
 #![cfg(feature = "zero-copy")]
-use bincode_next::relative_ptr::NativeEndian;
 use bincode_next::relative_ptr::ZeroBuilder;
 use bincode_next::relative_ptr::ZeroCopyBuilder;
-use bincode_next::relative_ptr::ZeroCopyType;
 
 #[derive(bincode_derive_next::ZeroCopy, Debug, PartialEq, Eq)]
 #[repr(C, u8)]
