@@ -206,12 +206,21 @@ impl<E, I, L, B, F> Configuration<E, I, L, B, F> {
     }
 
     /// Enables fingerprinting with the default deterministic seed (0).
+    ///
+    /// The fingerprint is a 64-bit hash that covers:
+    /// - The type name
+    /// - For structs: field names, types, and their order
+    /// - For enums: variant names, field names, types, and their order
+    /// - Configuration settings such as endianness and integer encoding
     #[must_use]
     pub const fn with_fingerprint(self) -> Configuration<E, I, L, B, FingerprintEnabled<0>> {
         generate()
     }
 
     /// Enables fingerprinting with a custom seed.
+    ///
+    /// This is similar to [`with_fingerprint`], but allows specifying a custom seed
+    /// to further differentiate fingerprints.
     #[must_use]
     pub const fn with_fingerprint_and_seed<const SEED: u64>(
         self
@@ -220,6 +229,9 @@ impl<E, I, L, B, F> Configuration<E, I, L, B, F> {
     }
 
     /// Enables legacy fingerprinting with an expected hash.
+    ///
+    /// In this mode, bincode will not calculate the fingerprint automatically.
+    /// Instead, it will use the provided `EXPECTED` hash for verification.
     #[must_use]
     pub const fn with_legacy_fingerprint<const EXPECTED: u64>(
         self
