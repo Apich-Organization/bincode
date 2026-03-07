@@ -1,13 +1,27 @@
 //! Fingerprinting implementation for bincode.
 //!
 //! This module provides the [`Fingerprint`] trait and derive macro to enable
-//! schema verification during encoding and decoding.
+//! schema verification during encoding and decoding. The fingerprint is a 64-bit
+//! hash that validates that the encoder and decoder are using the same schema
+//! and configuration.
+//!
+//! The fingerprint covers:
+//! - Type names
+//! - Struct field names, types, and their order
+//! - Enum variant names, field names, types, and their order
+//! - Relevant configuration settings (endianness, integer encoding, etc.)
 
 use crate::config::Config;
 #[cfg(feature = "alloc")]
 use alloc::borrow::ToOwned;
 
 /// Fingerprint trait for types that can be hashed for schema verification.
+///
+/// The fingerprint covers:
+/// - The type name
+/// - For structs: field names, types, and their order
+/// - For enums: variant names, field names, types, and their order
+/// - Relevant configuration settings (endianness, integer encoding, etc.)
 pub trait Fingerprint<C: Config> {
     /// Unique 64-bit compile-time hash of the type's schema AND the Configuration used.
     const SCHEMA_HASH: u64;
