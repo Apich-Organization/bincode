@@ -595,8 +595,10 @@ where
                                     #[cfg(target_arch = "aarch64")]
                                     unsafe {
                                         if j % 8 == 0 && reader.slice.len() > 64 {
-                                            core::arch::aarch64::__prefetch(
-                                                reader.slice.as_ptr().add(64).cast::<i8>(),
+                                            core::arch::asm!(
+                                                "prfm pldl1keep, [{ptr}]",
+                                                ptr = in(reg) reader.slice.as_ptr().add(64),
+                                                options(nostack, preserves_flags, readonly)
                                             );
                                         }
                                     }
