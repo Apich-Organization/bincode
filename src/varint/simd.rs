@@ -33,10 +33,6 @@ pub fn scan_single_byte_varints(bytes: &[u8]) -> VarintScan {
             unsafe {
                 while count + 16 <= bytes.len() {
                     let chunk = _mm_loadu_si128(bytes.as_ptr().add(count).cast::<__m128i>());
-                    // _mm_cmpgt_epi8 treats bytes as signed, so 0..127 are positive, 128..255 are negative.
-                    // This makes it a bit tricky.
-                    // Instead, let's use the unsigned comparison if available, or a trick.
-
                     // Trick: x <= 250 (unsigned) is equivalent to:
                     // (x ^ 0x80) <= (250 ^ 0x80) (signed)
                     // 250 ^ 0x80 = 250 - 128 = 122
