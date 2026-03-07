@@ -33,6 +33,7 @@ impl DeriveStruct {
                 Ok(())
             })?
             .generate_fn("encode")
+            .with_inline_always()
             .with_generic_deps("__E", [format!("{}::enc::Encoder", crate_name)])
             .with_self_arg(virtue::generate::FnSelfArg::RefSelf)
             .with_arg("encoder", "&mut __E")
@@ -42,7 +43,12 @@ impl DeriveStruct {
             ))
             .body(|fn_body| {
                 if let Some(fields) = self.fields.as_ref() {
-                    for field in fields.names() {
+                    let field_names = fields.names();
+                    fn_body.push_parsed(format!(
+                        "encoder.encode_struct_header({})?;",
+                        field_names.len()
+                    ))?;
+                    for field in field_names {
                         let attributes = field
                             .attributes()
                             .get_attribute::<FieldAttributes>()?
@@ -59,6 +65,8 @@ impl DeriveStruct {
                             ))?;
                         }
                     }
+                } else {
+                    fn_body.push_parsed("encoder.encode_struct_header(0)?;")?;
                 }
                 fn_body.push_parsed("core::result::Result::Ok(())")?;
                 Ok(())
@@ -97,21 +105,25 @@ impl DeriveStruct {
                 Ok(())
             })?
             .generate_fn("decode")
+            .with_inline_always()
             .with_generic_deps("__D", [format!("{}::de::Decoder<Context = {}>", crate_name, decode_context)])
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_body| {
+                if let Some(fields) = self.fields.as_ref() {
+                    fn_body.push_parsed(format!(
+                        "decoder.decode_struct_header({})?;",
+                        fields.names().len()
+                    ))?;
+                } else {
+                    fn_body.push_parsed("decoder.decode_struct_header(0)?;")?;
+                }
+
                 // Ok(Self {
                 fn_body.push_parsed("core::result::Result::Ok")?;
                 fn_body.group(Delimiter::Parenthesis, |ok_group| {
                     ok_group.ident_str("Self");
                     ok_group.group(Delimiter::Brace, |struct_body| {
-                        // Fields
-                        // {
-                        //      a: bincode::Decode::decode(decoder)?,
-                        //      b: bincode::Decode::decode(decoder)?,
-                        //      ...
-                        // }
                         if let Some(fields) = self.fields.as_ref() {
                             for field in fields.names() {
                                 let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
@@ -179,10 +191,20 @@ impl DeriveStruct {
                 Ok(())
             })?
             .generate_fn("borrow_decode")
+            .with_inline_always()
             .with_generic_deps("__D", [format!("{}::de::BorrowDecoder<'__de, Context = {}>", crate_name, decode_context)])
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_body| {
+                if let Some(fields) = self.fields.as_ref() {
+                    fn_body.push_parsed(format!(
+                        "decoder.decode_struct_header({})?;",
+                        fields.names().len()
+                    ))?;
+                } else {
+                    fn_body.push_parsed("decoder.decode_struct_header(0)?;")?;
+                }
+
                 // Ok(Self {
                 fn_body.push_parsed("core::result::Result::Ok")?;
                 fn_body.group(Delimiter::Parenthesis, |ok_group| {

@@ -2,9 +2,11 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 2.x.x   | :all:              |
+| Branch | Support Status |
+| :--- | :--- |
+| 3.x.x | Active Support |
+| 2.1.x | Security Updates Only |
+| < 2.1.0 | End of Life (Unsupported) |
 
 ## Reporting a Vulnerability
 

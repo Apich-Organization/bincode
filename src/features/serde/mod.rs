@@ -52,6 +52,12 @@
 //!
 //! **Using any of the above attributes can and will cause issues with bincode and will result in lost data**. Consider using bincode's own derive macro instead.
 //!
+//! ### `deserialize_any` and Self-Describing Formats
+//!
+//! Bincode is not a self-describing format (it does not store type metadata with the data map like JSON does). Because of this, it **does not support `deserialize_any`**.
+//!
+//! This means that types like `serde_json::Value` or `toml::Value` cannot be deserialized directly from a bincode stream. Attempting to do so will result in an `AnyNotSupported` error. To work around this, you must deserialize into strongly-typed data structures representing your schema, rather than dynamic or nested value enums.
+//!
 //! # Why move away from serde?
 //!
 //! Serde is a great library, but it has some issues that makes us want to be decoupled from serde:

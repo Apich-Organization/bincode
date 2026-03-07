@@ -1,4 +1,5 @@
 #![allow(unsafe_code, clippy::cast_possible_truncation)]
+#![allow(clippy::redundant_else)]
 use super::BorrowDecode;
 use super::BorrowDecoder;
 use super::Decode;
@@ -34,29 +35,17 @@ use core::ops::RangeInclusive;
 use core::time::Duration;
 
 impl<Context> Decode<Context> for bool {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        match u8::decode(decoder)? {
-            | 0 => Ok(false),
-            | 1 => Ok(true),
-            | x => crate::error::cold_decode_error_invalid_boolean_value(x),
-        }
+        decoder.decode_bool()
     }
 }
 impl_borrow_decode!(bool);
 
 impl<Context> Decode<Context> for u8 {
-    #[inline]
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(1)?;
-        if let Some(buf) = decoder.reader().peek_read(1) {
-            let byte = buf[0];
-            decoder.reader().consume(1);
-            Ok(byte)
-        } else {
-            let mut bytes = [0u8; 1];
-            decoder.reader().read(&mut bytes)?;
-            Ok(bytes[0])
-        }
+        decoder.decode_u8()
     }
 }
 impl_borrow_decode!(u8);
@@ -72,21 +61,9 @@ impl<Context> Decode<Context> for NonZeroU8 {
 impl_borrow_decode!(NonZeroU8);
 
 impl<Context> Decode<Context> for u16 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(2)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_u16(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 2];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_u16()
     }
 }
 impl_borrow_decode!(u16);
@@ -102,21 +79,9 @@ impl<Context> Decode<Context> for NonZeroU16 {
 impl_borrow_decode!(NonZeroU16);
 
 impl<Context> Decode<Context> for u32 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(4)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_u32(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 4];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_u32()
     }
 }
 impl_borrow_decode!(u32);
@@ -132,21 +97,9 @@ impl<Context> Decode<Context> for NonZeroU32 {
 impl_borrow_decode!(NonZeroU32);
 
 impl<Context> Decode<Context> for u64 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(8)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_u64(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 8];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_u64()
     }
 }
 impl_borrow_decode!(u64);
@@ -163,20 +116,7 @@ impl_borrow_decode!(NonZeroU64);
 
 impl<Context> Decode<Context> for u128 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(16)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_u128(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 16];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_u128()
     }
 }
 impl_borrow_decode!(u128);
@@ -193,25 +133,7 @@ impl_borrow_decode!(NonZeroU128);
 
 impl<Context> Decode<Context> for usize {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(8)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_usize(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 8];
-                decoder.reader().read(&mut bytes)?;
-
-                let value = match D::C::ENDIAN {
-                    | Endianness::Little => u64::from_le_bytes(bytes),
-                    | Endianness::Big => u64::from_be_bytes(bytes),
-                };
-
-                value.try_into().map_err(|_| {
-                    crate::error::cold_decode_error_outside_usize_range::<()>(value).unwrap_err()
-                })
-            },
-        }
+        decoder.decode_usize()
     }
 }
 impl_borrow_decode!(usize);
@@ -227,11 +149,9 @@ impl<Context> Decode<Context> for NonZeroUsize {
 impl_borrow_decode!(NonZeroUsize);
 
 impl<Context> Decode<Context> for i8 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(1)?;
-        let mut bytes = [0u8; 1];
-        decoder.reader().read(&mut bytes)?;
-        Ok(Self::from_ne_bytes(bytes))
+        decoder.decode_i8()
     }
 }
 impl_borrow_decode!(i8);
@@ -247,21 +167,9 @@ impl<Context> Decode<Context> for NonZeroI8 {
 impl_borrow_decode!(NonZeroI8);
 
 impl<Context> Decode<Context> for i16 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(2)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_i16(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 2];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_i16()
     }
 }
 impl_borrow_decode!(i16);
@@ -277,21 +185,9 @@ impl<Context> Decode<Context> for NonZeroI16 {
 impl_borrow_decode!(NonZeroI16);
 
 impl<Context> Decode<Context> for i32 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(4)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_i32(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 4];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_i32()
     }
 }
 impl_borrow_decode!(i32);
@@ -307,21 +203,9 @@ impl<Context> Decode<Context> for NonZeroI32 {
 impl_borrow_decode!(NonZeroI32);
 
 impl<Context> Decode<Context> for i64 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(8)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_i64(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 8];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_i64()
     }
 }
 impl_borrow_decode!(i64);
@@ -338,20 +222,7 @@ impl_borrow_decode!(NonZeroI64);
 
 impl<Context> Decode<Context> for i128 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(16)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_i128(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 16];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => Self::from_le_bytes(bytes),
-                    | Endianness::Big => Self::from_be_bytes(bytes),
-                })
-            },
-        }
+        decoder.decode_i128()
     }
 }
 impl_borrow_decode!(i128);
@@ -368,20 +239,7 @@ impl_borrow_decode!(NonZeroI128);
 
 impl<Context> Decode<Context> for isize {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(8)?;
-        match D::C::INT_ENCODING {
-            | IntEncoding::Variable => {
-                crate::varint::varint_decode_isize(decoder.reader(), D::C::ENDIAN)
-            },
-            | IntEncoding::Fixed => {
-                let mut bytes = [0u8; 8];
-                decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
-                    | Endianness::Little => i64::from_le_bytes(bytes),
-                    | Endianness::Big => i64::from_be_bytes(bytes),
-                } as Self)
-            },
-        }
+        decoder.decode_isize()
     }
 }
 impl_borrow_decode!(isize);
@@ -397,27 +255,17 @@ impl<Context> Decode<Context> for NonZeroIsize {
 impl_borrow_decode!(NonZeroIsize);
 
 impl<Context> Decode<Context> for f32 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(4)?;
-        let mut bytes = [0u8; 4];
-        decoder.reader().read(&mut bytes)?;
-        Ok(match D::C::ENDIAN {
-            | Endianness::Little => Self::from_le_bytes(bytes),
-            | Endianness::Big => Self::from_be_bytes(bytes),
-        })
+        decoder.decode_f32()
     }
 }
 impl_borrow_decode!(f32);
 
 impl<Context> Decode<Context> for f64 {
+    #[inline(always)]
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(8)?;
-        let mut bytes = [0u8; 8];
-        decoder.reader().read(&mut bytes)?;
-        Ok(match D::C::ENDIAN {
-            | Endianness::Little => Self::from_le_bytes(bytes),
-            | Endianness::Big => Self::from_be_bytes(bytes),
-        })
+        decoder.decode_f64()
     }
 }
 impl_borrow_decode!(f64);
@@ -485,7 +333,7 @@ impl<'a, 'de: 'a, Context> BorrowDecode<'de, Context> for &'a [u8] {
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let len = super::decode_slice_len(decoder)?;
+        let len = decoder.decode_byte_slice_len()?;
         decoder.claim_bytes_read(len)?;
         decoder.borrow_reader().take_bytes(len)
     }
@@ -495,7 +343,9 @@ impl<'a, 'de: 'a, Context> BorrowDecode<'de, Context> for &'a str {
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let slice = <&[u8]>::borrow_decode(decoder)?;
+        let len = decoder.decode_str_len()?;
+        decoder.claim_bytes_read(len)?;
+        let slice = decoder.borrow_reader().take_bytes(len)?;
         core::str::from_utf8(slice)
             .map_err(|inner| crate::error::cold_decode_error_utf8::<()>(inner).unwrap_err())
     }
@@ -506,23 +356,76 @@ where
     T: Decode<Context>,
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
+        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode | crate::config::Format::BincodeDeterministic
+        );
 
-        if unty::type_equal::<T, u8>() {
-            let mut buf = [0u8; N];
-            decoder.reader().read(&mut buf)?;
-            let ptr = (&raw mut buf).cast::<[T; N]>();
+        if !is_bincode {
+            if is_u8 {
+                let len = decoder.decode_byte_slice_len()?;
+                if len != N {
+                    return Err(DecodeError::ArrayLengthMismatch {
+                        required: N,
+                        found: len,
+                    });
+                }
+                decoder.claim_bytes_read(N)?;
+                let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
+                unsafe {
+                    let slice_ptr = res.as_mut_ptr().cast::<u8>();
+                    let slice = core::slice::from_raw_parts_mut(slice_ptr, N);
+                    decoder.reader().read(slice)?;
+                    return Ok(res.assume_init());
+                }
+            } else {
+                let len = decoder.decode_array_len()?;
+                if len != N && len != usize::MAX {
+                    return Err(DecodeError::ArrayLengthMismatch {
+                        required: N,
+                        found: len,
+                    });
+                }
+            }
+        }
 
-            // Safety: we know that T is a u8, so it is perfectly safe to
-            // translate an array of u8 into an array of T
-            let res = unsafe { ptr.read() };
-            Ok(res)
+        let is_fixed = matches!(D::C::INT_ENCODING, IntEncoding::Fixed);
+        let is_native_endian = match D::C::ENDIAN {
+            | Endianness::Little => cfg!(target_endian = "little"),
+            | Endianness::Big => cfg!(target_endian = "big"),
+        };
+
+        if is_bincode
+            && (is_u8
+                || (is_fixed
+                    && is_native_endian
+                    && (unty::type_equal::<T, u16>()
+                        || unty::type_equal::<T, i16>()
+                        || unty::type_equal::<T, u32>()
+                        || unty::type_equal::<T, i32>()
+                        || unty::type_equal::<T, u64>()
+                        || unty::type_equal::<T, i64>()
+                        || unty::type_equal::<T, u128>()
+                        || unty::type_equal::<T, i128>()
+                        || unty::type_equal::<T, f32>()
+                        || unty::type_equal::<T, f64>())))
+        {
+            decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
+            // SAFETY: T is a primitive type (pod), so it's safe to read its bytes directly.
+            // We've checked that the encoding is Fixed and Endianness matches,
+            // or that it's a 1-byte type (u8/i8).
+            let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
+            unsafe {
+                let slice_ptr = res.as_mut_ptr().cast::<u8>();
+                let slice =
+                    core::slice::from_raw_parts_mut(slice_ptr, core::mem::size_of::<[T; N]>());
+                decoder.reader().read(slice)?;
+                Ok(res.assume_init())
+            }
         } else {
-            let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
-                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-                T::decode(decoder)
-            }));
+            let result =
+                super::impl_core::collect_into_array(&mut (0..N).map(|_| T::decode(decoder)));
 
             // result is only None if N does not match the values of `(0..N)`, which it always should
             // So this unwrap should never occur
@@ -530,6 +433,7 @@ where
         }
     }
 }
+
 
 impl<'de, T, const N: usize, Context> BorrowDecode<'de, Context> for [T; N]
 where
@@ -538,23 +442,77 @@ where
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
+        let is_u8 = unty::type_equal::<T, u8>() || unty::type_equal::<T, i8>();
+        let is_bincode = matches!(
+            <D::C as crate::config::InternalFormatConfig>::FORMAT,
+            crate::config::Format::Bincode | crate::config::Format::BincodeDeterministic
+        );
 
-        if unty::type_equal::<T, u8>() {
-            let mut buf = [0u8; N];
-            decoder.reader().read(&mut buf)?;
-            let ptr = (&raw mut buf).cast::<[T; N]>();
+        if !is_bincode {
+            if is_u8 {
+                let len = decoder.decode_byte_slice_len()?;
+                if len != N {
+                    return Err(DecodeError::ArrayLengthMismatch {
+                        required: N,
+                        found: len,
+                    });
+                }
+                decoder.claim_bytes_read(N)?;
+                let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
+                unsafe {
+                    let slice_ptr = res.as_mut_ptr().cast::<u8>();
+                    let slice = core::slice::from_raw_parts_mut(slice_ptr, N);
+                    decoder.reader().read(slice)?;
+                    return Ok(res.assume_init());
+                }
+            } else {
+                let len = decoder.decode_array_len()?;
+                if len != N && len != usize::MAX {
+                    return Err(DecodeError::ArrayLengthMismatch {
+                        required: N,
+                        found: len,
+                    });
+                }
+            }
+        }
 
-            // Safety: we know that T is a u8, so it is perfectly safe to
-            // translate an array of u8 into an array of T
-            let res = unsafe { ptr.read() };
-            Ok(res)
+        let is_fixed = matches!(D::C::INT_ENCODING, IntEncoding::Fixed);
+        let is_native_endian = match D::C::ENDIAN {
+            | Endianness::Little => cfg!(target_endian = "little"),
+            | Endianness::Big => cfg!(target_endian = "big"),
+        };
+
+        if is_bincode
+            && (is_u8
+                || (is_fixed
+                    && is_native_endian
+                    && (unty::type_equal::<T, u16>()
+                        || unty::type_equal::<T, i16>()
+                        || unty::type_equal::<T, u32>()
+                        || unty::type_equal::<T, i32>()
+                        || unty::type_equal::<T, u64>()
+                        || unty::type_equal::<T, i64>()
+                        || unty::type_equal::<T, u128>()
+                        || unty::type_equal::<T, i128>()
+                        || unty::type_equal::<T, f32>()
+                        || unty::type_equal::<T, f64>())))
+        {
+            decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
+            // SAFETY: T is a primitive type (pod), so it's safe to read its bytes directly.
+            // We've checked that the encoding is Fixed and Endianness matches,
+            // or that it's a 1-byte type (u8/i8).
+            let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
+            unsafe {
+                let slice_ptr = res.as_mut_ptr().cast::<u8>();
+                let slice =
+                    core::slice::from_raw_parts_mut(slice_ptr, core::mem::size_of::<[T; N]>());
+                decoder.reader().read(slice)?;
+                Ok(res.assume_init())
+            }
         } else {
-            let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
-                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-                T::borrow_decode(decoder)
-            }));
+            let result = super::impl_core::collect_into_array(
+                &mut (0..N).map(|_| T::borrow_decode(decoder)),
+            );
 
             // result is only None if N does not match the values of `(0..N)`, which it always should
             // So this unwrap should never occur
@@ -562,6 +520,7 @@ where
         }
     }
 }
+
 
 impl<Context> Decode<Context> for () {
     fn decode<D: Decoder<Context = Context>>(_: &mut D) -> Result<Self, DecodeError> {
@@ -615,7 +574,7 @@ where
     U: Decode<Context>,
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let is_ok = u32::decode(decoder)?;
+        let is_ok = decoder.decode_variant_index()?;
         match is_ok {
             | 0 => {
                 let t = T::decode(decoder)?;
@@ -644,7 +603,7 @@ where
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D
     ) -> Result<Self, DecodeError> {
-        let is_ok = u32::decode(decoder)?;
+        let is_ok = decoder.decode_variant_index()?;
         match is_ok {
             | 0 => {
                 let t = T::borrow_decode(decoder)?;

@@ -195,6 +195,10 @@ impl<T, const CAP: usize> BoundedVec<T, CAP> {
     }
 
     /// Try to push an element, returning an error if the capacity would be exceeded.
+    ///
+    /// # Errors
+    ///
+    /// Returns `BoundsExceeded` if the vector is already at its maximum capacity.
     #[inline]
     pub fn try_push(
         &mut self,

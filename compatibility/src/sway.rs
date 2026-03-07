@@ -1,26 +1,26 @@
 // Credits to Sway in the Rust Programming Language
 
-use rand::Rng;
+use ::rand::RngExt;
 use serde::Deserialize;
 use serde::Serialize;
 
 #[test]
 pub fn test() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     for _ in 0..1000 {
         crate::test_same(random(&mut rng));
     }
 }
 
-fn random(rng: &mut impl Rng) -> FTXresponse<Trade> {
-    if rng.gen() {
+fn random(rng: &mut impl rand::Rng) -> FTXresponse<Trade> {
+    if rng.random() {
         FTXresponse::Result(FTXresponseSuccess {
             result: Trade::random(rng),
-            success: rng.gen(),
+            success: rng.random(),
         })
     } else {
         FTXresponse::Error(FTXresponseFailure {
-            success: rng.gen(),
+            success: rng.random(),
             error: crate::gen_string(rng),
         })
     }
@@ -69,17 +69,17 @@ pub struct Trade {
 }
 
 impl Trade {
-    fn random(rng: &mut impl Rng) -> Self {
+    fn random(rng: &mut impl rand::Rng) -> Self {
         Self {
-            id: rng.gen(),
-            liquidation: rng.gen(),
-            price: rng.gen(),
-            side: if rng.gen() {
+            id: rng.random(),
+            liquidation: rng.random(),
+            price: rng.random(),
+            side: if rng.random() {
                 TradeSide::Buy
             } else {
                 TradeSide::Sell
             },
-            size: rng.gen(),
+            size: rng.random(),
             time: crate::gen_string(rng),
         }
     }

@@ -10,6 +10,7 @@
 //!
 //! [Decode]: ../trait.Decode.html
 //! [BorrowDecode]: ../trait.BorrowDecode.html
+#![allow(unsafe_code)]
 
 use crate::error::DecodeError;
 
@@ -25,9 +26,69 @@ pub trait Reader {
         bytes: &mut [u8],
     ) -> Result<(), DecodeError>;
 
+    /// Read a single byte from the reader.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    #[inline(always)]
+    fn read_u8(&mut self) -> Result<u8, DecodeError> {
+        let mut byte = [0u8; 1];
+        self.read(&mut byte)?;
+        Ok(byte[0])
+    }
+
+    /// Read a `u16` from the reader.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    #[inline(always)]
+    fn read_u16(&mut self) -> Result<u16, DecodeError> {
+        let mut bytes = [0u8; 2];
+        self.read(&mut bytes)?;
+        Ok(u16::from_ne_bytes(bytes))
+    }
+
+    /// Read a `u32` from the reader.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    #[inline(always)]
+    fn read_u32(&mut self) -> Result<u32, DecodeError> {
+        let mut bytes = [0u8; 4];
+        self.read(&mut bytes)?;
+        Ok(u32::from_ne_bytes(bytes))
+    }
+
+    /// Read a `u64` from the reader.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    #[inline(always)]
+    fn read_u64(&mut self) -> Result<u64, DecodeError> {
+        let mut bytes = [0u8; 8];
+        self.read(&mut bytes)?;
+        Ok(u64::from_ne_bytes(bytes))
+    }
+
+    /// Read a `u128` from the reader.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    #[inline(always)]
+    fn read_u128(&mut self) -> Result<u128, DecodeError> {
+        let mut bytes = [0u8; 16];
+        self.read(&mut bytes)?;
+        Ok(u128::from_ne_bytes(bytes))
+    }
+
     /// If this reader wraps a buffer of any kind, this function lets callers access contents of
     /// the buffer without passing data through a buffer first.
-    #[inline]
+    #[inline(always)]
     fn peek_read(
         &mut self,
         _: usize,
@@ -37,11 +98,17 @@ pub trait Reader {
 
     /// If an implementation of `peek_read` is provided, an implementation of this function
     /// must be provided so that subsequent reads or peek-reads do not return the same bytes
-    #[inline]
+    #[inline(always)]
     fn consume(
         &mut self,
         _: usize,
     ) {
+    }
+
+    /// Returns the next byte without consuming it.
+    #[inline(always)]
+    fn peek_u8(&mut self) -> Option<u8> {
+        self.peek_read(1).map(|b| b[0])
     }
 }
 
@@ -49,7 +116,7 @@ impl<T> Reader for &mut T
 where
     T: Reader,
 {
-    #[inline]
+    #[inline(always)]
     fn read(
         &mut self,
         bytes: &mut [u8],
@@ -57,7 +124,7 @@ where
         (**self).read(bytes)
     }
 
-    #[inline]
+    #[inline(always)]
     fn peek_read(
         &mut self,
         n: usize,
@@ -65,12 +132,32 @@ where
         (**self).peek_read(n)
     }
 
-    #[inline]
+    #[inline(always)]
     fn consume(
         &mut self,
         n: usize,
     ) {
         (*self).consume(n);
+    }
+
+    #[inline(always)]
+    fn read_u16(&mut self) -> Result<u16, DecodeError> {
+        (**self).read_u16()
+    }
+
+    #[inline(always)]
+    fn read_u32(&mut self) -> Result<u32, DecodeError> {
+        (**self).read_u32()
+    }
+
+    #[inline(always)]
+    fn read_u64(&mut self) -> Result<u64, DecodeError> {
+        (**self).read_u64()
+    }
+
+    #[inline(always)]
+    fn read_u128(&mut self) -> Result<u128, DecodeError> {
+        (**self).read_u128()
     }
 }
 
@@ -111,14 +198,18 @@ impl<'storage> Reader for SliceReader<'storage> {
         if bytes.len() > self.slice.len() {
             return crate::error::cold_decode_error_unexpected_end(bytes.len() - self.slice.len());
         }
-        let (read_slice, remaining) = self.slice.split_at(bytes.len());
-        bytes.copy_from_slice(read_slice);
-        self.slice = remaining;
+        // SAFETY: `bytes.len() <= self.slice.len()` is checked above.
+        // `copy_nonoverlapping` is safe because pointers do not overlap and the lengths match.
+        // `get_unchecked` is safe because `bytes.len()` is <= the length of `self.slice`.
+        unsafe {
+            core::ptr::copy_nonoverlapping(self.slice.as_ptr(), bytes.as_mut_ptr(), bytes.len());
+            self.slice = self.slice.get_unchecked(bytes.len()..);
+        }
 
         Ok(())
     }
 
-    #[inline]
+    #[inline(always)]
     fn peek_read(
         &mut self,
         n: usize,
@@ -126,12 +217,71 @@ impl<'storage> Reader for SliceReader<'storage> {
         self.slice.get(..n)
     }
 
-    #[inline]
+    #[inline(always)]
     fn consume(
         &mut self,
         n: usize,
     ) {
-        self.slice = self.slice.get(n..).unwrap_or_default();
+        if n >= self.slice.len() {
+            self.slice = &[];
+        } else {
+            self.slice = unsafe { self.slice.get_unchecked(n..) };
+        }
+    }
+
+    #[inline(always)]
+    fn peek_u8(&mut self) -> Option<u8> {
+        self.slice.first().copied()
+    }
+
+    #[inline(always)]
+    fn read_u8(&mut self) -> Result<u8, DecodeError> {
+        if self.slice.is_empty() {
+            return crate::error::cold_decode_error_unexpected_end(1);
+        }
+        let byte = unsafe { *self.slice.get_unchecked(0) };
+        self.slice = unsafe { self.slice.get_unchecked(1..) };
+        Ok(byte)
+    }
+
+    #[inline(always)]
+    fn read_u16(&mut self) -> Result<u16, DecodeError> {
+        if self.slice.len() < 2 {
+            return crate::error::cold_decode_error_unexpected_end(2 - self.slice.len());
+        }
+        let val = unsafe { core::ptr::read_unaligned(self.slice.as_ptr().cast::<u16>()) };
+        self.slice = unsafe { self.slice.get_unchecked(2..) };
+        Ok(val)
+    }
+
+    #[inline(always)]
+    fn read_u32(&mut self) -> Result<u32, DecodeError> {
+        if self.slice.len() < 4 {
+            return crate::error::cold_decode_error_unexpected_end(4 - self.slice.len());
+        }
+        let val = unsafe { core::ptr::read_unaligned(self.slice.as_ptr().cast::<u32>()) };
+        self.slice = unsafe { self.slice.get_unchecked(4..) };
+        Ok(val)
+    }
+
+    #[inline(always)]
+    fn read_u64(&mut self) -> Result<u64, DecodeError> {
+        if self.slice.len() < 8 {
+            return crate::error::cold_decode_error_unexpected_end(8 - self.slice.len());
+        }
+        let val = unsafe { core::ptr::read_unaligned(self.slice.as_ptr().cast::<u64>()) };
+        self.slice = unsafe { self.slice.get_unchecked(8..) };
+        Ok(val)
+    }
+
+    #[inline(always)]
+    fn read_u128(&mut self) -> Result<u128, DecodeError> {
+        if self.slice.len() < 16 {
+            return crate::error::cold_decode_error_unexpected_end(16 - self.slice.len());
+        }
+        let val = unsafe { core::ptr::read_unaligned(self.slice.as_ptr().cast::<u128>()) };
+        self.slice = unsafe { self.slice.get_unchecked(16..) };
+        Ok(val)
     }
 }
 
@@ -144,8 +294,12 @@ impl<'storage> BorrowReader<'storage> for SliceReader<'storage> {
         if length > self.slice.len() {
             return crate::error::cold_decode_error_unexpected_end(length - self.slice.len());
         }
-        let (read_slice, remaining) = self.slice.split_at(length);
-        self.slice = remaining;
-        Ok(read_slice)
+        // SAFETY: `length <= self.slice.len()` is checked above.
+        // `get_unchecked` is therefore safe for both the read portion and the remainder.
+        unsafe {
+            let read_slice = self.slice.get_unchecked(..length);
+            self.slice = self.slice.get_unchecked(length..);
+            Ok(read_slice)
+        }
     }
 }

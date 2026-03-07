@@ -3,6 +3,7 @@
 //! This crate provides derive macros for `Encode`, `Decode`, `BorrowDecode`, `BitPacked`, `ZeroCopy`, `Fingerprint`, and `StaticSize`.
 
 #![allow(dead_code)]
+#![allow(unused_must_use)]
 
 mod attribute;
 mod derive_bit_packed;
@@ -15,6 +16,7 @@ mod derive_zerocopy;
 use attribute::ContainerAttributes;
 use virtue::prelude::AttributeAccess;
 use virtue::prelude::Body;
+#[allow(unused_imports)]
 use virtue::prelude::Error;
 use virtue::prelude::Parse;
 use virtue::prelude::Result;
@@ -180,20 +182,54 @@ fn derive_zerocopy_inner(input: TokenStream) -> Result<TokenStream> {
         | _ => unreachable!(),
     };
     let (mut generator, attributes, body) = parse.into_generator();
+    let repr = attributes
+        .get_attribute::<attribute::ReprAttributes>()?
+        .unwrap_or_default();
+
     let attributes = attributes
         .get_attribute::<ContainerAttributes>()?
         .unwrap_or_default();
 
     match body {
         | Body::Struct(body) => {
+            if !repr.is_c && !repr.is_transparent {
+                return Err(Error::custom(
+                    "ZeroCopy structs must have #[repr(C)] or #[repr(transparent)]",
+                ));
+            }
             derive_zerocopy::DeriveZeroCopy {
                 fields: body.fields,
+                variants: None,
                 attributes,
+                repr,
                 visibility,
             }
             .generate(&mut generator)?;
         },
-        | _ => return Err(Error::custom("ZeroCopy only supports structs for now")),
+        | Body::Enum(body) => {
+            if !repr.is_c
+                && !repr.is_u8
+                && !repr.is_u16
+                && !repr.is_u32
+                && !repr.is_u64
+                && !repr.is_i8
+                && !repr.is_i16
+                && !repr.is_i32
+                && !repr.is_i64
+            {
+                return Err(Error::custom(
+                    "ZeroCopy enums must have #[repr(C)] or a primitive repr like #[repr(u8)]",
+                ));
+            }
+            derive_zerocopy::DeriveZeroCopy {
+                fields: None,
+                variants: Some(body.variants),
+                attributes,
+                repr,
+                visibility,
+            }
+            .generate(&mut generator)?;
+        },
     }
 
     generator.export_to_file("bincode_next", "ZeroCopy");
@@ -233,6 +269,7 @@ fn derive_static_size_inner(input: TokenStream) -> Result<TokenStream> {
         },
     }
 
+    generator.export_to_file("bincode_next", "StaticSize");
     generator.finish()
 }
 
@@ -271,5 +308,6 @@ fn derive_fingerprint_inner(input: TokenStream) -> Result<TokenStream> {
         },
     }
 
+    generator.export_to_file("bincode_next", "Fingerprint");
     generator.finish()
 }

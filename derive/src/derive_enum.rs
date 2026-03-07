@@ -42,6 +42,7 @@ impl DeriveEnum {
                 Ok(())
             })?
             .generate_fn("encode")
+            .with_inline_always()
             .with_generic_deps("__E", [format!("{}::enc::Encoder", crate_name)])
             .with_self_arg(FnSelfArg::RefSelf)
             .with_arg("encoder", "&mut __E")
@@ -108,7 +109,12 @@ impl DeriveEnum {
                             body.punct(';');
                             // If we have any fields, encode them all one by one
                             if let Some(fields) = variant.fields.as_ref() {
-                                for field_name in fields.names() {
+                                let names = fields.names();
+                                body.push_parsed(format!(
+                                    "encoder.encode_struct_header({})?;",
+                                    names.len()
+                                ))?;
+                                for field_name in names {
                                     let attributes = field_name
                                         .attributes()
                                         .get_attribute::<FieldAttributes>()?
@@ -236,6 +242,7 @@ impl DeriveEnum {
                 Ok(())
             })?
             .generate_fn("decode")
+            .with_inline_always()
             .with_generic_deps("__D", [format!("{}::de::Decoder<Context = {}>", crate_name, decode_context)])
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
@@ -262,41 +269,48 @@ impl DeriveEnum {
                                 variant_case.push(variant_index.remove(0));
                             }
                             variant_case.puncts("=>");
-                            variant_case.push_parsed("core::result::Result::Ok")?;
-                            variant_case.group(Delimiter::Parenthesis, |variant_case_body| {
-                                // Self::Variant { }
-                                // Self::Variant { 0: ..., 1: ... 2: ... },
-                                // Self::Variant { a: ..., b: ... c: ... },
-                                variant_case_body.ident_str("Self");
-                                variant_case_body.puncts("::");
-                                variant_case_body.ident(variant.name.clone());
+                            variant_case.group(Delimiter::Brace, |arm_body| {
+                                if let Some(fields) = variant.fields.as_ref() {
+                                    arm_body.push_parsed(format!(
+                                        "decoder.decode_struct_header({})?;",
+                                        fields.names().len()
+                                    ))?;
+                                }
+                                arm_body.push_parsed("core::result::Result::Ok")?;
+                                arm_body.group(Delimiter::Parenthesis, |variant_case_body| {
+                                    variant_case_body.ident_str("Self");
+                                    variant_case_body.puncts("::");
+                                    variant_case_body.ident(variant.name.clone());
 
-                                variant_case_body.group(Delimiter::Brace, |variant_body| {
-                                    if let Some(fields) = variant.fields.as_ref() {
-                                        let is_tuple = matches!(fields, Fields::Tuple(_));
-                                        for (idx, field) in fields.names().into_iter().enumerate() {
-                                            if is_tuple {
-                                                variant_body.lit_usize(idx);
-                                            } else {
-                                                variant_body.ident(field.unwrap_ident().clone());
-                                            }
-                                            variant_body.punct(':');
-                                            let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
-                                            if attributes.with_serde {
-                                                variant_body
-                                                    .push_parsed(format!(
-                                                        "<{0}::serde::Compat<_> as {0}::Decode::<__D::Context>>::decode(decoder)?.0,",
-                                                        crate_name
-                                                    ))?;
-                                            } else {
-                                                variant_body
-                                                    .push_parsed(format!(
-                                                        "{}::Decode::<__D::Context>::decode(decoder)?,",
-                                                        crate_name
-                                                    ))?;
+                                    variant_case_body.group(Delimiter::Brace, |variant_body| {
+                                        if let Some(fields) = variant.fields.as_ref() {
+                                            let names = fields.names();
+                                            let is_tuple = matches!(fields, Fields::Tuple(_));
+                                            for (idx, field) in names.into_iter().enumerate() {
+                                                if is_tuple {
+                                                    variant_body.lit_usize(idx);
+                                                } else {
+                                                    variant_body.ident(field.unwrap_ident().clone());
+                                                }
+                                                variant_body.punct(':');
+                                                let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
+                                                if attributes.with_serde {
+                                                    variant_body
+                                                        .push_parsed(format!(
+                                                            "<{0}::serde::Compat<_> as {0}::Decode::<__D::Context>>::decode(decoder)?.0,",
+                                                            crate_name
+                                                        ))?;
+                                                } else {
+                                                    variant_body
+                                                        .push_parsed(format!(
+                                                            "{}::Decode::<__D::Context>::decode(decoder)?,",
+                                                            crate_name
+                                                        ))?;
+                                                }
                                             }
                                         }
-                                    }
+                                        Ok(())
+                                    })?;
                                     Ok(())
                                 })?;
                                 Ok(())
@@ -352,6 +366,7 @@ impl DeriveEnum {
                 Ok(())
             })?
             .generate_fn("borrow_decode")
+            .with_inline_always()
             .with_generic_deps("__D", [format!("{}::de::BorrowDecoder<'__de, Context = {}>", crate_name, decode_context)])
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
@@ -375,34 +390,41 @@ impl DeriveEnum {
                                 variant_case.push(variant_index.remove(0));
                             }
                             variant_case.puncts("=>");
-                            variant_case.push_parsed("core::result::Result::Ok")?;
-                            variant_case.group(Delimiter::Parenthesis, |variant_case_body| {
-                                // Self::Variant { }
-                                // Self::Variant { 0: ..., 1: ... 2: ... },
-                                // Self::Variant { a: ..., b: ... c: ... },
-                                variant_case_body.ident_str("Self");
-                                variant_case_body.puncts("::");
-                                variant_case_body.ident(variant.name.clone());
+                            variant_case.group(Delimiter::Brace, |arm_body| {
+                                if let Some(fields) = variant.fields.as_ref() {
+                                    arm_body.push_parsed(format!(
+                                        "decoder.decode_struct_header({})?;",
+                                        fields.names().len()
+                                    ))?;
+                                }
+                                arm_body.push_parsed("core::result::Result::Ok")?;
+                                arm_body.group(Delimiter::Parenthesis, |variant_case_body| {
+                                    variant_case_body.ident_str("Self");
+                                    variant_case_body.puncts("::");
+                                    variant_case_body.ident(variant.name.clone());
 
-                                variant_case_body.group(Delimiter::Brace, |variant_body| {
-                                    if let Some(fields) = variant.fields.as_ref() {
-                                        let is_tuple = matches!(fields, Fields::Tuple(_));
-                                        for (idx, field) in fields.names().into_iter().enumerate() {
-                                            if is_tuple {
-                                                variant_body.lit_usize(idx);
-                                            } else {
-                                                variant_body.ident(field.unwrap_ident().clone());
-                                            }
-                                            variant_body.punct(':');
-                                            let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
-                                            if attributes.with_serde {
-                                                variant_body
-                                                    .push_parsed(format!("<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode::<__D::Context>>::borrow_decode(decoder)?.0,", crate_name))?;
-                                            } else {
-                                                variant_body.push_parsed(format!("{}::BorrowDecode::<__D::Context>::borrow_decode(decoder)?,", crate_name))?;
+                                    variant_case_body.group(Delimiter::Brace, |variant_body| {
+                                        if let Some(fields) = variant.fields.as_ref() {
+                                            let names = fields.names();
+                                            let is_tuple = matches!(fields, Fields::Tuple(_));
+                                            for (idx, field) in names.into_iter().enumerate() {
+                                                if is_tuple {
+                                                    variant_body.lit_usize(idx);
+                                                } else {
+                                                    variant_body.ident(field.unwrap_ident().clone());
+                                                }
+                                                variant_body.punct(':');
+                                                let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
+                                                if attributes.with_serde {
+                                                    variant_body
+                                                        .push_parsed(format!("<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode::<__D::Context>>::borrow_decode(decoder)?.0,", crate_name))?;
+                                                } else {
+                                                    variant_body.push_parsed(format!("{}::BorrowDecode::<__D::Context>::borrow_decode(decoder)?,", crate_name))?;
+                                                }
                                             }
                                         }
-                                    }
+                                        Ok(())
+                                    })?;
                                     Ok(())
                                 })?;
                                 Ok(())

@@ -41,7 +41,7 @@ impl<W: Writer, C: Config> EncoderImpl<W, C> {
     }
 
     /// Return the underlying writer
-    #[inline]
+    #[inline(always)]
     pub fn into_writer(self) -> W {
         self.writer
     }
@@ -51,12 +51,12 @@ impl<W: Writer, C: Config> Encoder for EncoderImpl<W, C> {
     type C = C;
     type W = W;
 
-    #[inline]
+    #[inline(always)]
     fn writer(&mut self) -> &mut Self::W {
         &mut self.writer
     }
 
-    #[inline]
+    #[inline(always)]
     fn config(&self) -> &Self::C {
         &self.config
     }

@@ -12,6 +12,7 @@ pub struct ContainerAttributes {
     #[allow(dead_code)]
     pub endian: Option<(String, Literal)>,
     pub align: Option<(usize, Literal)>,
+    pub bit_packing: Option<(String, Literal)>,
 }
 
 impl Default for ContainerAttributes {
@@ -25,6 +26,7 @@ impl Default for ContainerAttributes {
             borrow_decode_bounds: None,
             endian: None,
             align: None,
+            bit_packing: None,
         }
     }
 }
@@ -101,6 +103,22 @@ impl FromAttribute for ContainerAttributes {
                             result.align = Some((align, val));
                         } else {
                             return Err(Error::custom_at("Should be a valid usize", val.span()));
+                        }
+                    } else {
+                        return Err(Error::custom_at("Should be a literal str", val.span()));
+                    }
+                },
+                | ParsedAttribute::Property(key, val) if key.to_string() == "bit_packing" => {
+                    let val_string = val.to_string();
+                    if val_string.starts_with('"') && val_string.ends_with('"') {
+                        let inner = &val_string[1..val_string.len() - 1];
+                        if inner == "msb" || inner == "lsb" {
+                            result.bit_packing = Some((inner.to_string(), val));
+                        } else {
+                            return Err(Error::custom_at(
+                                "Should be \"msb\" or \"lsb\"",
+                                val.span(),
+                            ));
                         }
                     } else {
                         return Err(Error::custom_at("Should be a literal str", val.span()));
@@ -197,6 +215,80 @@ impl FromAttribute for FieldAttributes {
             }
         }
 
+        if found {
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
+    }
+}
+#[derive(Default)]
+pub struct ReprAttributes {
+    pub is_c: bool,
+    pub is_transparent: bool,
+    pub is_u8: bool,
+    pub is_u16: bool,
+    pub is_u32: bool,
+    pub is_u64: bool,
+    pub is_i8: bool,
+    pub is_i16: bool,
+    pub is_i32: bool,
+    pub is_i64: bool,
+}
+
+impl FromAttribute for ReprAttributes {
+    fn parse(group: &Group) -> Result<Option<Self>> {
+        let attributes = match parse_tagged_attribute(group, "repr")? {
+            | Some(body) => body,
+            | None => return Ok(None),
+        };
+        let mut result = Self::default();
+        let mut found = false;
+        for attribute in attributes {
+            match attribute {
+                | ParsedAttribute::Tag(i) if i.to_string() == "C" => {
+                    result.is_c = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "transparent" => {
+                    result.is_transparent = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "u8" => {
+                    result.is_u8 = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "u16" => {
+                    result.is_u16 = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "u32" => {
+                    result.is_u32 = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "u64" => {
+                    result.is_u64 = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "i8" => {
+                    result.is_i8 = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "i16" => {
+                    result.is_i16 = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "i32" => {
+                    result.is_i32 = true;
+                    found = true;
+                },
+                | ParsedAttribute::Tag(i) if i.to_string() == "i64" => {
+                    result.is_i64 = true;
+                    found = true;
+                },
+                | _ => {},
+            }
+        }
         if found {
             Ok(Some(result))
         } else {

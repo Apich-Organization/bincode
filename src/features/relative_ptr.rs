@@ -37,6 +37,10 @@ impl<T: StaticSize, const N: usize> StaticSize for [T; N] {
 
 /// A marker trait indicating that a type has a fixed, predictable layout (e.g., `#[repr(C)]`)
 /// and contains no padding bytes or invalid bit patterns allowing safe zero-copy casting.
+///
+/// # Safety
+///
+/// The type must have a fixed, predictable layout (e.g., `#[repr(C)]`) and contain no padding bytes or invalid bit patterns allowing safe zero-copy casting.
 pub unsafe trait ZeroCopy: StaticSize {
     /// The required alignment for this type.
     const ALIGN: usize;
@@ -761,11 +765,8 @@ impl<T: ZeroCopy + DeepValidator, const ALIGN: usize, E: Endian> DeepValidator
         &self,
         buffer: &[u8],
     ) -> bool {
-        if let Some(target) = self.get(buffer) {
-            target.is_valid_deep(buffer)
-        } else {
-            false
-        }
+        self.get(buffer)
+            .is_some_and(|target| target.is_valid_deep(buffer))
     }
 }
 
@@ -973,7 +974,7 @@ pub struct AlignedBuffer {
 #[cfg(feature = "alloc")]
 impl AlignedBuffer {
     fn from_vec(
-        data: Vec<u8>,
+        data: &[u8],
         align: usize,
     ) -> Self {
         let len = data.len();
@@ -1053,6 +1054,13 @@ pub struct ZeroBuilder {
 }
 
 #[cfg(feature = "alloc")]
+impl Default for ZeroBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(feature = "alloc")]
 impl ZeroBuilder {
     /// Creates a new instance.
     #[must_use]
@@ -1102,17 +1110,18 @@ impl ZeroBuilder {
     pub fn write<T: ZeroCopy>(
         &mut self,
         offset: usize,
-        val: T,
+        val: &T,
     ) {
         let size = T::SIZE;
-        let bytes = unsafe { core::slice::from_raw_parts((&raw const val).cast::<u8>(), size) };
+        let bytes =
+            unsafe { core::slice::from_raw_parts(core::ptr::from_ref(val).cast::<u8>(), size) };
         self.data[offset..offset + size].copy_from_slice(bytes);
     }
 
     /// Pushes a value onto the builder and returns its offset.
     pub fn push<T: ZeroCopy>(
         &mut self,
-        val: T,
+        val: &T,
     ) -> usize {
         let offset = self.reserve::<T>();
         self.write(offset, val);
@@ -1133,13 +1142,19 @@ impl ZeroBuilder {
     /// Finalizes the builder and returns the `AlignedBuffer`.
     #[must_use]
     pub fn finish(self) -> AlignedBuffer {
-        AlignedBuffer::from_vec(self.data, self.max_align)
+        AlignedBuffer::from_vec(&self.data, self.max_align)
     }
 
     /// Returns the current length of the buffer.
     #[must_use]
     pub const fn len(&self) -> usize {
         self.data.len()
+    }
+
+    /// Returns true if the buffer is empty.
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.data.is_empty()
     }
 }
 
@@ -1182,7 +1197,7 @@ pub trait ZeroCopyBuilder<E: Endian = NativeEndian, const ALIGN: usize = 0> {
             .data
             .resize(offset + <Self::Target as StaticSize>::SIZE, 0);
         let target = self.build_to_target(builder, offset);
-        builder.write(offset, target);
+        builder.write(offset, &target);
         offset
     }
 }
@@ -1240,7 +1255,7 @@ where
         for (i, item) in self.0.into_iter().enumerate() {
             let item_offset = data_offset + i * T::SIZE;
             let target = item.build_to_target(builder, item_offset);
-            builder.write(item_offset, target);
+            builder.write(item_offset, &target);
         }
         ZeroArray {
             ptr: RelativePtr::new(checked_relative_offset(data_offset, offset)),
@@ -1277,7 +1292,7 @@ where
         for (i, item) in self.0.into_iter().enumerate() {
             let item_offset = data_offset + i * T::SIZE;
             let target = item.build_to_target(builder, item_offset);
-            builder.write(item_offset, target);
+            builder.write(item_offset, &target);
         }
         // RelativePtr is at offset + size_of::<u32>() (after the `len` field)
         let ptr_field_offset = offset + core::mem::size_of::<u32>();
@@ -1489,7 +1504,7 @@ where
         for (i, item) in self.into_iter().enumerate() {
             let item_offset = data_offset + i * T::SIZE;
             let target = item.build_to_target(builder, item_offset);
-            builder.write(item_offset, target);
+            builder.write(item_offset, &target);
         }
         // RelativePtr is at offset + size_of::<u32>() (after the `len` field)
         let ptr_field_offset = offset + core::mem::size_of::<u32>();

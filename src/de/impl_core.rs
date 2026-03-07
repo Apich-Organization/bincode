@@ -18,6 +18,7 @@ struct Guard<'a, T, const N: usize> {
 }
 
 impl<T, const N: usize> Drop for Guard<'_, T, N> {
+    #[inline(always)]
     fn drop(&mut self) {
         debug_assert!(self.initialized <= N);
 
@@ -41,6 +42,7 @@ impl<T, const N: usize> Drop for Guard<'_, T, N> {
 /// If `iter.next()` panicks, all items already yielded by the iterator are
 /// dropped.
 #[allow(clippy::while_let_on_iterator)]
+#[inline]
 pub fn collect_into_array<E, I, T, const N: usize>(iter: &mut I) -> Option<Result<[T; N], E>>
 where
     I: Iterator<Item = Result<T, E>>,
@@ -126,24 +128,26 @@ pub unsafe fn slice_assume_init_mut<T>(slice: &mut [MaybeUninit<T>]) -> &mut [T]
 ///
 /// # Examples
 ///
-/// ```ignore
-/// #![feature(maybe_uninit_uninit_array, maybe_uninit_extra, maybe_uninit_slice)]
-///
+/// ```
 /// use std::mem::MaybeUninit;
 ///
-/// extern "C" {
-///     fn read_into_buffer(ptr: *mut u8, max_len: usize) -> usize;
+/// unsafe extern "C" {
+///     fn read_into_buffer(
+///         ptr: *mut u8,
+///         max_len: usize,
+///     ) -> usize;
 /// }
 ///
 /// /// Returns a (possibly smaller) slice of data that was actually read
 /// fn read(buf: &mut [MaybeUninit<u8>]) -> &[u8] {
 ///     unsafe {
-///         let len = read_into_buffer(buf.as_mut_ptr() as *mut u8, buf.len());
-///         MaybeUninit::slice_assume_init_ref(&buf[..len])
+///         // Mocking the C function
+///         let len = 0; // read_into_buffer(buf.as_mut_ptr() as *mut u8, buf.len());
+///         core::slice::from_raw_parts(buf.as_ptr() as *const u8, len)
 ///     }
 /// }
 ///
-/// let mut buf: [MaybeUninit<u8>; 32] = MaybeUninit::uninit_array();
+/// let mut buf: [MaybeUninit<u8>; 32] = unsafe { MaybeUninit::uninit().assume_init() };
 /// let data = read(&mut buf);
 /// ```
 // #[unstable(feature = "maybe_uninit_uninit_array", issue = "none")]
@@ -163,20 +167,16 @@ fn uninit_array<T, const LEN: usize>() -> [MaybeUninit<T>; LEN] {
 ///
 /// # Examples
 ///
-/// ```ignore
-/// #![feature(maybe_uninit_uninit_array)]
-/// #![feature(maybe_uninit_array_assume_init)]
+/// ```
 /// use std::mem::MaybeUninit;
 ///
-/// let mut array: [MaybeUninit<i32>; 3] = MaybeUninit::uninit_array();
+/// let mut array: [MaybeUninit<i32>; 3] = unsafe { MaybeUninit::uninit().assume_init() };
 /// array[0].write(0);
 /// array[1].write(1);
 /// array[2].write(2);
 ///
 /// // SAFETY: Now safe as we initialised all elements
-/// let array = unsafe {
-///     MaybeUninit::array_assume_init(array)
-/// };
+/// let array: [i32; 3] = unsafe { core::ptr::read(&array as *const _ as *const [i32; 3]) };
 ///
 /// assert_eq!(array, [0, 1, 2]);
 /// ```

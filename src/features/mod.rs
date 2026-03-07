@@ -16,3 +16,12 @@ pub use self::derive::*;
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub mod serde;
+
+/// Relative pointer system for zero-copy nested structures
+#[cfg(feature = "zero-copy")]
+pub mod relative_ptr;
+
+#[cfg(feature = "static-size")]
+pub mod bounded;
+#[cfg(feature = "static-size")]
+pub mod static_size;

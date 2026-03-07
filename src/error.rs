@@ -22,7 +22,7 @@ macro_rules! bincode_error {
             )*
         }
 
-        paste::paste! {
+        pastey::paste! {
             $(
                 $(#[$variant_meta])*
                 #[doc(hidden)]
@@ -186,6 +186,9 @@ bincode_error! {
     /// The decoder tried to decode a `bool` and failed. The given value is what is actually read.
     InvalidBooleanValue(inner: u8),
 
+    /// Invalid CBOR "additional info" value (28-31) was found.
+    InvalidCborInfo(inner: u8),
+
     /// The decoder tried to decode an array of length `required`, but the binary data contained an array of length `found`.
     ArrayLengthMismatch {
         /// The length of the array required by the rust type.
@@ -201,6 +204,14 @@ bincode_error! {
     /// example going from a 64 bit architecture to a 32 or 16 bit one may
     /// cause this error.
     OutsideUsizeRange(inner: u64),
+
+    /// The encoded value is outside of the range of the target isize type.
+    ///
+    /// This can happen if an isize was encoded on an architecture with a larger
+    /// isize type and then decoded on an architecture with a smaller one. For
+    /// example going from a 64 bit architecture to a 32 or 16 bit one may
+    /// cause this error.
+    OutsideIsizeRange(inner: i64),
 
     /// Tried to decode an enum with no variants
     EmptyEnum {
@@ -264,6 +275,12 @@ bincode_error! {
         /// The hash that was found in the encoded data
         actual: u64,
     },
+
+    /// The decoder tried to decode a map, but a duplicate key was found.
+    DuplicateMapKey,
+
+    /// The decoder tried to decode a map, but the keys were not in the correct order.
+    InvalidMapOrder,
 }
 }
 

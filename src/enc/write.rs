@@ -1,8 +1,30 @@
 //! This module contains writer-based structs and traits.
 //!
 //! Because `std::io::Write` is only limited to `std` and not `core`, we provide our own [Writer].
+#![allow(unsafe_code)]
 
 use crate::error::EncodeError;
+
+#[cfg(feature = "alloc")]
+impl Writer for crate::alloc::vec::Vec<u8> {
+    #[inline(always)]
+    fn write(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(), EncodeError> {
+        self.extend_from_slice(bytes);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u8(
+        &mut self,
+        value: u8,
+    ) -> Result<(), EncodeError> {
+        self.push(value);
+        Ok(())
+    }
+}
 
 /// Trait that indicates that a struct can be used as a destination to encode data too. This is used by [Encode]
 ///
@@ -17,15 +39,120 @@ pub trait Writer {
         &mut self,
         bytes: &[u8],
     ) -> Result<(), EncodeError>;
+
+    /// Write a single byte to the underlying writer.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError::UnexpectedEnd` if the writer does not have enough space.
+    #[inline(always)]
+    fn write_u8(
+        &mut self,
+        value: u8,
+    ) -> Result<(), EncodeError> {
+        self.write(&[value])
+    }
+
+    /// Write a `u16` to the underlying writer.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError::UnexpectedEnd` if the writer does not have enough space.
+    #[inline(always)]
+    fn write_u16(
+        &mut self,
+        value: u16,
+    ) -> Result<(), EncodeError> {
+        self.write(&value.to_ne_bytes())
+    }
+
+    /// Write a `u32` to the underlying writer.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError::UnexpectedEnd` if the writer does not have enough space.
+    #[inline(always)]
+    fn write_u32(
+        &mut self,
+        value: u32,
+    ) -> Result<(), EncodeError> {
+        self.write(&value.to_ne_bytes())
+    }
+
+    /// Write a `u64` to the underlying writer.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError::UnexpectedEnd` if the writer does not have enough space.
+    #[inline(always)]
+    fn write_u64(
+        &mut self,
+        value: u64,
+    ) -> Result<(), EncodeError> {
+        self.write(&value.to_ne_bytes())
+    }
+
+    /// Write a `u128` to the underlying writer.
+    ///
+    /// # Errors
+    ///
+    /// Returns `EncodeError::UnexpectedEnd` if the writer does not have enough space.
+    #[inline(always)]
+    fn write_u128(
+        &mut self,
+        value: u128,
+    ) -> Result<(), EncodeError> {
+        self.write(&value.to_ne_bytes())
+    }
 }
 
 impl<T: Writer> Writer for &mut T {
-    #[inline]
+    #[inline(always)]
     fn write(
         &mut self,
         bytes: &[u8],
     ) -> Result<(), EncodeError> {
         (**self).write(bytes)
+    }
+
+    #[inline(always)]
+    fn write_u8(
+        &mut self,
+        value: u8,
+    ) -> Result<(), EncodeError> {
+        (**self).write_u8(value)
+    }
+
+    #[inline(always)]
+    fn write_u16(
+        &mut self,
+        value: u16,
+    ) -> Result<(), EncodeError> {
+        (**self).write_u16(value)
+    }
+
+    #[inline(always)]
+    fn write_u32(
+        &mut self,
+        value: u32,
+    ) -> Result<(), EncodeError> {
+        (**self).write_u32(value)
+    }
+
+    #[inline(always)]
+    fn write_u64(
+        &mut self,
+        value: u64,
+    ) -> Result<(), EncodeError> {
+        (**self).write_u64(value)
+    }
+
+    #[inline(always)]
+    fn write_u128(
+        &mut self,
+        value: u128,
+    ) -> Result<(), EncodeError> {
+        (**self).write_u128(value)
     }
 }
 
@@ -73,9 +200,110 @@ impl Writer for SliceWriter<'_> {
         if bytes.len() > self.slice.len() {
             return crate::error::cold_encode_error_unexpected_end();
         }
-        let (a, b) = core::mem::take(&mut self.slice).split_at_mut(bytes.len());
-        a.copy_from_slice(bytes);
-        self.slice = b;
+        // SAFETY: `bytes.len() <= self.slice.len()` is checked above.
+        // `copy_nonoverlapping` is safe since the pointers won't overlap and bounds are exact.
+        // Advancing the pointer by `bytes.len()` is safe for the same reason.
+        unsafe {
+            core::ptr::copy_nonoverlapping(bytes.as_ptr(), self.slice.as_mut_ptr(), bytes.len());
+            let ptr = self.slice.as_mut_ptr().add(bytes.len());
+            let len = self.slice.len() - bytes.len();
+            self.slice = core::slice::from_raw_parts_mut(ptr, len);
+        }
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u8(
+        &mut self,
+        value: u8,
+    ) -> Result<(), EncodeError> {
+        if self.slice.is_empty() {
+            return crate::error::cold_encode_error_unexpected_end();
+        }
+        // SAFETY: `!self.slice.is_empty()` is checked above.
+        unsafe {
+            *self.slice.as_mut_ptr() = value;
+            let ptr = self.slice.as_mut_ptr().add(1);
+            let len = self.slice.len() - 1;
+            self.slice = core::slice::from_raw_parts_mut(ptr, len);
+        }
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u16(
+        &mut self,
+        value: u16,
+    ) -> Result<(), EncodeError> {
+        if self.slice.len() < 2 {
+            return crate::error::cold_encode_error_unexpected_end();
+        }
+        // SAFETY: `self.slice.len() < 2` is checked above.
+        unsafe {
+            core::ptr::write_unaligned(self.slice.as_mut_ptr().cast::<u16>(), value);
+            let ptr = self.slice.as_mut_ptr().add(2);
+            let len = self.slice.len() - 2;
+            self.slice = core::slice::from_raw_parts_mut(ptr, len);
+        }
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u32(
+        &mut self,
+        value: u32,
+    ) -> Result<(), EncodeError> {
+        if self.slice.len() < 4 {
+            return crate::error::cold_encode_error_unexpected_end();
+        }
+        // SAFETY: `self.slice.len() < 4` is checked above.
+        unsafe {
+            core::ptr::write_unaligned(self.slice.as_mut_ptr().cast::<u32>(), value);
+            let ptr = self.slice.as_mut_ptr().add(4);
+            let len = self.slice.len() - 4;
+            self.slice = core::slice::from_raw_parts_mut(ptr, len);
+        }
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u64(
+        &mut self,
+        value: u64,
+    ) -> Result<(), EncodeError> {
+        if self.slice.len() < 8 {
+            return crate::error::cold_encode_error_unexpected_end();
+        }
+        // SAFETY: `self.slice.len() < 8` is checked above.
+        unsafe {
+            core::ptr::write_unaligned(self.slice.as_mut_ptr().cast::<u64>(), value);
+            let ptr = self.slice.as_mut_ptr().add(8);
+            let len = self.slice.len() - 8;
+            self.slice = core::slice::from_raw_parts_mut(ptr, len);
+        }
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u128(
+        &mut self,
+        value: u128,
+    ) -> Result<(), EncodeError> {
+        if self.slice.len() < 16 {
+            return crate::error::cold_encode_error_unexpected_end();
+        }
+        // SAFETY: `self.slice.len() < 16` is checked above.
+        unsafe {
+            core::ptr::write_unaligned(self.slice.as_mut_ptr().cast::<u128>(), value);
+            let ptr = self.slice.as_mut_ptr().add(16);
+            let len = self.slice.len() - 16;
+            self.slice = core::slice::from_raw_parts_mut(ptr, len);
+        }
 
         Ok(())
     }
@@ -94,6 +322,56 @@ impl Writer for SizeWriter {
         bytes: &[u8],
     ) -> Result<(), EncodeError> {
         self.bytes_written += bytes.len();
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u8(
+        &mut self,
+        _: u8,
+    ) -> Result<(), EncodeError> {
+        self.bytes_written += 1;
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u16(
+        &mut self,
+        _: u16,
+    ) -> Result<(), EncodeError> {
+        self.bytes_written += 2;
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u32(
+        &mut self,
+        _: u32,
+    ) -> Result<(), EncodeError> {
+        self.bytes_written += 4;
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u64(
+        &mut self,
+        _: u64,
+    ) -> Result<(), EncodeError> {
+        self.bytes_written += 8;
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u128(
+        &mut self,
+        _: u128,
+    ) -> Result<(), EncodeError> {
+        self.bytes_written += 16;
 
         Ok(())
     }
