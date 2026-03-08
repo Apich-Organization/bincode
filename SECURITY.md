@@ -80,6 +80,13 @@ net.ipv4.tcp_syncookies = 1
 net.core.somaxconn = 4096
 net.core.netdev_max_backlog = 5000
 
+# Others 
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.default.log_martians = 1
+
 # --- B. Filesystem / Permission Hardening ---
 
 # Disable magic SysRq key (unless you need it for emergency debugging)
