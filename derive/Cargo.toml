@@ -48,4 +48,5 @@ zero-copy = []
 empty-line-after-doc-comments = "allow"
 
 [dependencies]
-virtue = { path = "../../virtue", package = "virtue-next", version = "0.1.3" }
+virtue = { package = "virtue-next", version = "0.1.3" }
+
