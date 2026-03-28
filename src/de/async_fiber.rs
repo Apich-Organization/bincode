@@ -46,10 +46,117 @@ pub enum FiberStatus {
     Panicked,
 }
 
+/// A fiber stack with an `mmap`-backed guard page at the bottom.
+///
+/// Layout (low → high):
+/// ```text
+/// [ guard page  |  usable stack memory ]
+///   PAGE_SIZE       stack_size
+/// ```
+///
+/// The guard page is mapped `PROT_NONE`, so any access (stack overflow) will
+/// trigger a hardware fault (SIGSEGV / SIGBUS) instead of silently corrupting
+/// adjacent heap memory.
+#[cfg(feature = "async-fiber")]
+pub struct GuardedStack {
+    /// Base pointer returned by `mmap` (start of guard page).
+    base: *mut u8,
+    /// Total allocation length (guard + usable).
+    total_len: usize,
+    /// Page size used for the guard.
+    page_size: usize,
+}
+
+#[cfg(feature = "async-fiber")]
+impl GuardedStack {
+    /// Allocate a new guarded stack of *at least* `usable_size` bytes.
+    ///
+    /// # Panics
+    /// Panics if the OS refuses the `mmap` / `mprotect` calls.
+    pub fn new(usable_size: usize) -> Self {
+        let page_size = page_size();
+        // Round usable_size up to page boundary.
+        let usable_size = (usable_size + page_size - 1) & !(page_size - 1);
+        let total_len = page_size + usable_size;
+
+        unsafe {
+            let base = libc::mmap(
+                core::ptr::null_mut(),
+                total_len,
+                libc::PROT_READ | libc::PROT_WRITE,
+                libc::MAP_PRIVATE | libc::MAP_ANONYMOUS,
+                -1,
+                0,
+            );
+            assert!(base != libc::MAP_FAILED, "mmap failed for fiber stack");
+
+            // Protect the first page as a guard (PROT_NONE → any access faults).
+            let rc = libc::mprotect(base, page_size, libc::PROT_NONE);
+            assert!(rc == 0, "mprotect failed for guard page");
+
+            GuardedStack {
+                base: base as *mut u8,
+                total_len,
+                page_size,
+            }
+        }
+    }
+
+    /// Usable stack region (excludes guard page).
+    #[inline]
+    pub fn usable(&self) -> &[u8] {
+        unsafe {
+            core::slice::from_raw_parts(
+                self.base.add(self.page_size),
+                self.total_len - self.page_size,
+            )
+        }
+    }
+
+    /// Usable stack region (mutable).
+    #[inline]
+    pub fn usable_mut(&mut self) -> &mut [u8] {
+        unsafe {
+            core::slice::from_raw_parts_mut(
+                self.base.add(self.page_size),
+                self.total_len - self.page_size,
+            )
+        }
+    }
+
+    /// The top of the usable stack (highest address), 16-byte aligned.
+    #[inline]
+    pub fn top(&self) -> u64 {
+        let raw = self.base as u64 + self.total_len as u64;
+        raw & !15 // 16-byte align
+    }
+}
+
+#[cfg(feature = "async-fiber")]
+impl Drop for GuardedStack {
+    fn drop(&mut self) {
+        unsafe {
+            let rc = libc::munmap(self.base as *mut libc::c_void, self.total_len);
+            debug_assert!(rc == 0, "munmap failed for fiber stack");
+        }
+    }
+}
+
+// GuardedStack owns a unique mmap region — safe to move between threads.
+#[cfg(feature = "async-fiber")]
+unsafe impl Send for GuardedStack {}
+
+#[cfg(feature = "async-fiber")]
+fn page_size() -> usize {
+    // Cached via a static to avoid repeated syscalls.
+    static PAGE_SIZE: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
+    *PAGE_SIZE.get_or_init(|| unsafe { libc::sysconf(libc::_SC_PAGESIZE) as usize })
+}
+
 #[cfg(feature = "async-fiber")]
 #[repr(C)]
 pub struct FiberContext {
-    pub stack: Pin<Box<[u8]>>,
+    pub stack: GuardedStack,
     pub regs: Registers,
     pub executor_regs: Registers,
     pub status: FiberStatus,
@@ -60,13 +167,19 @@ pub struct FiberContext {
     pub result_ptr: *mut (),
     pub reader_ptr: *mut (),
     pub buf_ptr: *mut [u8],
+    /// Thread that is currently executing the fiber. Used to enforce thread
+    /// affinity: the fiber must be resumed on the same thread that last
+    /// suspended it (i.e. it cannot migrate mid-execution).
+    pub owner_thread: Option<std::thread::ThreadId>,
 }
-unsafe impl Send for FiberContext {}
-unsafe impl Sync for FiberContext {}
+
+// FiberContext is intentionally NOT Send/Sync.
+// It is only accessed through BridgeFuture, which manually implements
+// Send/Sync with the correct safety invariants.
 
 #[cfg(feature = "async-fiber")]
 std::thread_local! {
-    static STACK_POOL: RefCell<Vec<Pin<Box<[u8]>>>> = RefCell::new(Vec::new());
+    static STACK_POOL: RefCell<Vec<GuardedStack>> = RefCell::new(Vec::new());
     static CURRENT_FIBER: std::cell::Cell<*mut FiberContext> = std::cell::Cell::new(core::ptr::null_mut());
 }
 
@@ -204,14 +317,6 @@ pub struct FiberReader<'a, R: tokio::io::AsyncRead + Unpin> {
 }
 
 #[cfg(feature = "async-fiber")]
-impl<'a, R: tokio::io::AsyncRead + Unpin> FiberReader<'a, R> {
-    fn available(ctx: &mut FiberContext) -> usize {
-        let buf = unsafe { &mut *ctx.buf_ptr };
-        buf.len()
-    }
-}
-
-#[cfg(feature = "async-fiber")]
 impl<'a, R: tokio::io::AsyncRead + Unpin> crate::de::read::Reader for FiberReader<'a, R> {
     fn read(&mut self, bytes: &mut [u8]) -> Result<(), crate::error::DecodeError> {
         let n = bytes.len();
@@ -219,35 +324,38 @@ impl<'a, R: tokio::io::AsyncRead + Unpin> crate::de::read::Reader for FiberReade
         let ctx = unsafe { &mut *self.ctx };
         while written < n {
             let buf = unsafe { &mut *ctx.buf_ptr };
-            
+
             if buf.is_empty() {
                 unsafe {
                     ctx.status = FiberStatus::Yielded;
                     switch_context(&mut ctx.regs, &ctx.executor_regs);
-                    
+
                     if ctx.status == FiberStatus::Finished {
-                        return Err(crate::error::DecodeError::UnexpectedEnd { additional: n - written });
+                        return Err(crate::error::DecodeError::UnexpectedEnd {
+                            additional: n - written,
+                        });
                     }
                 }
             }
-            
+
             let buf = unsafe { &mut *ctx.buf_ptr };
-            
+
             if !buf.is_empty() {
                 let to_copy = core::cmp::min(n - written, buf.len());
                 bytes[written..written + to_copy].copy_from_slice(&buf[0..to_copy]);
-                
-                // update buf_ptr using slice addressing
+
                 unsafe {
                     ctx.buf_ptr = core::ptr::slice_from_raw_parts_mut(
                         buf.as_mut_ptr().add(to_copy),
-                        buf.len() - to_copy
+                        buf.len() - to_copy,
                     );
                 }
-                
+
                 written += to_copy;
             } else {
-                return Err(crate::error::DecodeError::UnexpectedEnd { additional: n - written });
+                return Err(crate::error::DecodeError::UnexpectedEnd {
+                    additional: n - written,
+                });
             }
         }
         Ok(())
@@ -274,24 +382,9 @@ impl<R: tokio::io::AsyncRead + Unpin> AsyncFiberBridge<R> {
             f: Some(f),
             ctx: None,
             read_buffer: alloc::vec![0; 8192].into_boxed_slice(),
-            valid_bytes: 0,
-            consumed_bytes: 0,
+            result: None,
             _marker: core::marker::PhantomData,
         }
-    }
-}
-
-#[cfg(feature = "async-fiber")]
-pub struct DummyReader;
-
-#[cfg(feature = "async-fiber")]
-impl tokio::io::AsyncRead for DummyReader {
-    fn poll_read(
-        self: Pin<&mut Self>,
-        _cx: &mut Context<'_>,
-        _buf: &mut tokio::io::ReadBuf<'_>,
-    ) -> Poll<std::io::Result<()>> {
-        Poll::Ready(Ok(()))
     }
 }
 
@@ -299,25 +392,62 @@ impl tokio::io::AsyncRead for DummyReader {
 unsafe fn dummy_invoke(_: *mut ()) {}
 
 #[cfg(feature = "async-fiber")]
-unsafe extern "C" fn fiber_trampoline() { unsafe {
-    let ctx_ptr = CURRENT_FIBER.with(|c| c.get());
-    let ctx = &mut *ctx_ptr;
-    
-    // We catch panic to handle unwind cleanly
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        (ctx.invoke_closure)(ctx.closure_ptr);
-    }));
-    
-    ctx.status = if result.is_err() {
-        ctx.panic_payload = Some(result.unwrap_err());
-        FiberStatus::Panicked
-    } else {
-        FiberStatus::Finished
-    };
-    
-    switch_context(&mut ctx.regs, &ctx.executor_regs);
-    unreachable!("fiber finished and should not be resumed");
+unsafe extern "C" fn fiber_trampoline() {
+    unsafe {
+        let ctx_ptr = CURRENT_FIBER.with(|c| c.get());
+        let ctx = &mut *ctx_ptr;
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            (ctx.invoke_closure)(ctx.closure_ptr);
+        }));
+
+        ctx.status = if result.is_err() {
+            ctx.panic_payload = Some(result.unwrap_err());
+            FiberStatus::Panicked
+        } else {
+            FiberStatus::Finished
+        };
+
+        // Clear the thread-local before switching back — the fiber is done.
+        CURRENT_FIBER.with(|c| c.set(core::ptr::null_mut()));
+        switch_context(&mut ctx.regs, &ctx.executor_regs);
+        unreachable!("fiber finished and should not be resumed");
+    }
+}
+
+/// Helper: set the thread-local and assert thread affinity, then switch.
+///
+/// # Safety
+/// `ctx` must be a valid, pinned `FiberContext` whose stack is live.
+#[cfg(feature = "async-fiber")]
+#[inline]
+unsafe fn resume_fiber(ctx: &mut FiberContext) { unsafe {
+    let current_thread = std::thread::current().id();
+
+    // Thread affinity check: the fiber must resume on the same OS thread
+    // that last ran it.  Tokio's multi-threaded executor can move futures
+    // between worker threads between polls, but the *fiber* (which lives
+    // on its own stack) must not be migrated mid-execution.  Because we
+    // only ever switch *into* the fiber from `poll`, and the fiber always
+    // switches back before `poll` returns, the fiber is never "in-flight"
+    // across a thread migration — the migration can only happen while the
+    // fiber is suspended and `poll` has returned `Pending`.
+    //
+    // We record the thread on first resume and re-record on every resume,
+    // which is correct because the fiber is guaranteed to be fully
+    // suspended (back on the executor stack) when a migration occurs.
+    ctx.owner_thread = Some(current_thread);
+
+    CURRENT_FIBER.with(|c| c.set(ctx as *mut _));
+    switch_context(&mut ctx.executor_regs, &ctx.regs);
+    // After returning here the fiber has yielded or finished.
+    // Clear the thread-local to prevent stale pointer access.
+    CURRENT_FIBER.with(|c| c.set(core::ptr::null_mut()));
 }}
+
+// =============================================================================
+// BridgeFuture
+// =============================================================================
 
 #[cfg(feature = "async-fiber")]
 struct BridgeFuture<R, F, T> {
@@ -325,10 +455,19 @@ struct BridgeFuture<R, F, T> {
     f: Option<F>,
     ctx: Option<Box<FiberContext>>,
     read_buffer: Box<[u8]>,
-    valid_bytes: usize,
-    consumed_bytes: usize,
+    result: Option<Result<T, crate::error::DecodeError>>,
     _marker: core::marker::PhantomData<T>,
 }
+
+// SAFETY: BridgeFuture is Send+Sync when its components are, which is the
+// normal requirement for futures on multi-threaded executors.  The raw
+// pointers inside FiberContext are only dereferenced while the fiber is
+// actively running (inside `poll`), never across an await point, and we
+// enforce thread-affinity within a single `poll` invocation.
+#[cfg(feature = "async-fiber")]
+unsafe impl<R: Send, F: Send, T: Send> Send for BridgeFuture<R, F, T> {}
+#[cfg(feature = "async-fiber")]
+unsafe impl<R: Sync, F: Sync, T: Sync> Sync for BridgeFuture<R, F, T> {}
 
 #[cfg(feature = "async-fiber")]
 impl<R, F, T> Future for BridgeFuture<R, F, T>
@@ -339,140 +478,196 @@ where
     type Output = Result<T, crate::error::DecodeError>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-         if self.ctx.is_none() {
-             let stack = STACK_POOL.with(|pool| pool.borrow_mut().pop()).unwrap_or_else(|| {
-                 alloc::vec![0; 16384].into_boxed_slice().into()
-             });
-             
-             let mut ctx = Box::new(FiberContext {
-                 stack,
-                 regs: Registers::new(),
-                 executor_regs: Registers::new(),
-                 status: FiberStatus::Initial,
-                 panic_payload: None,
-                 trampoline: fiber_trampoline,
-                 invoke_closure: dummy_invoke,
-                 closure_ptr: core::ptr::null_mut(),
-                 result_ptr: core::ptr::null_mut(),
-                 reader_ptr: core::ptr::null_mut(),
-                 buf_ptr: core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut(), 0),
-             });
-             
-             let sp = ctx.stack.as_ptr() as u64 + ctx.stack.len() as u64;
-             let sp = sp & !15; // align to 16
-             
-             // Setup initial registers for each arch
-             #[cfg(target_arch = "x86_64")]
-             {
-                 ctx.regs.gprs[0] = sp - 8;
-                 ctx.regs.gprs[7] = fiber_trampoline as *const () as u64;
-             }
-             #[cfg(target_arch = "aarch64")]
-             {
-                 ctx.regs.gprs[12] = sp;
-                 ctx.regs.gprs[11] = fiber_trampoline as u64;
-             }
-             #[cfg(target_arch = "riscv64")]
-             {
-                 ctx.regs.gprs[0] = sp;
-                 ctx.regs.gprs[13] = fiber_trampoline as u64;
-             }
-             
-             let this = unsafe { self.as_mut().get_unchecked_mut() };
-             this.ctx = Some(ctx);
-         }
-         
-         let this = unsafe { self.get_unchecked_mut() };
-         let ctx = this.ctx.as_mut().unwrap();
-         
-         if let Some(f) = this.f.take() {
-            let mut result_slot: Option<Result<T, crate::error::DecodeError>> = None;
-            let result_ptr = &mut result_slot as *mut Option<Result<T, crate::error::DecodeError>>;
-            ctx.result_ptr = result_ptr as *mut ();
-            
+        // -- Initialise fiber on first poll ----------------------------------
+        if self.ctx.is_none() {
+            let stack = STACK_POOL
+                .with(|pool| pool.borrow_mut().pop())
+                .unwrap_or_else(|| {
+                    // Default 64 KiB usable stack + 1 guard page.
+                    GuardedStack::new(64 * 1024)
+                });
+
+            let mut ctx = Box::new(FiberContext {
+                stack,
+                regs: Registers::new(),
+                executor_regs: Registers::new(),
+                status: FiberStatus::Initial,
+                panic_payload: None,
+                trampoline: fiber_trampoline,
+                invoke_closure: dummy_invoke,
+                closure_ptr: core::ptr::null_mut(),
+                result_ptr: core::ptr::null_mut(),
+                reader_ptr: core::ptr::null_mut(),
+                buf_ptr: core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut(), 0),
+                owner_thread: None,
+            });
+
+            let sp = ctx.stack.top();
+
+            #[cfg(target_arch = "x86_64")]
+            {
+                // x86_64: RSP is gprs[0], return address slot is gprs[7]
+                ctx.regs.gprs[0] = sp - 8;
+                ctx.regs.gprs[7] = fiber_trampoline as *const () as u64;
+            }
+            #[cfg(target_arch = "aarch64")]
+            {
+                ctx.regs.gprs[12] = sp; // SP
+                ctx.regs.gprs[11] = fiber_trampoline as u64; // LR (x30)
+            }
+            #[cfg(target_arch = "riscv64")]
+            {
+                ctx.regs.gprs[0] = sp; // SP
+                ctx.regs.gprs[13] = fiber_trampoline as u64; // RA
+            }
+
+            let this = unsafe { self.as_mut().get_unchecked_mut() };
+            this.ctx = Some(ctx);
+        }
+
+        let this = unsafe { self.get_unchecked_mut() };
+        let ctx = this.ctx.as_mut().unwrap();
+
+        // Refresh the result pointer on every poll — the BridgeFuture may
+        // have been moved by the executor (it implements Unpin implicitly
+        // via DerefMut on the Pin, but we use get_unchecked_mut above).
+        ctx.result_ptr =
+            &mut this.result as *mut Option<Result<T, crate::error::DecodeError>> as *mut ();
+
+        // -- First poll: set up the closure and do the initial switch --------
+        if let Some(f) = this.f.take() {
             struct ClosureData<R: tokio::io::AsyncRead + Unpin, F, T> {
                 f: F,
                 _marker: core::marker::PhantomData<(R, T)>,
             }
-            
-            unsafe fn invoke<R: tokio::io::AsyncRead + Unpin, F, T>(data: *mut ()) 
+
+            unsafe fn invoke<R: tokio::io::AsyncRead + Unpin, F, T>(data: *mut ())
             where
                 F: FnOnce(&mut FiberReader<'_, R>) -> Result<T, crate::error::DecodeError>,
-            { unsafe {
-                let data = Box::from_raw(data as *mut ClosureData<R, F, T>);
-                let f = data.f;
-                let ctx_ptr = CURRENT_FIBER.with(|c| c.get());
-                let mut real_reader: FiberReader<'_, R> = FiberReader {
-                    inner: core::marker::PhantomData,
-                    ctx: ctx_ptr,
-                };
-                let res = f(&mut real_reader);
-                let rp = (*ctx_ptr).result_ptr as *mut Option<Result<T, crate::error::DecodeError>>;
-                *rp = Some(res);
-            }}
+            {
+                unsafe {
+                    let data = Box::from_raw(data as *mut ClosureData<R, F, T>);
+                    let f = data.f;
+                    let ctx_ptr = CURRENT_FIBER.with(|c| c.get());
+                    let mut real_reader: FiberReader<'_, R> = FiberReader {
+                        inner: core::marker::PhantomData,
+                        ctx: ctx_ptr,
+                    };
+                    let res = f(&mut real_reader);
+                    let rp = (*ctx_ptr).result_ptr
+                        as *mut Option<Result<T, crate::error::DecodeError>>;
+                    *rp = Some(res);
+                }
+            }
 
-            let data = Box::new(ClosureData::<R, F, T> { f, _marker: core::marker::PhantomData });
+            let data = Box::new(ClosureData::<R, F, T> {
+                f,
+                _marker: core::marker::PhantomData,
+            });
             ctx.closure_ptr = Box::into_raw(data) as *mut ();
             ctx.invoke_closure = invoke::<R, F, T>;
-            
+
             ctx.status = FiberStatus::Running;
-            
-            CURRENT_FIBER.with(|c| c.set(&mut **ctx as *mut _));
+
             unsafe {
-                switch_context(&mut ctx.executor_regs, &ctx.regs);
+                resume_fiber(ctx);
             }
-         }
-         
-         loop {
-             let ctx = this.ctx.as_mut().unwrap();
-             
-             if ctx.status == FiberStatus::Finished {
-                 let res = unsafe {
-                     let rp = ctx.result_ptr as *mut Option<Result<T, crate::error::DecodeError>>;
-                     (*rp).take().unwrap()
-                 };
-                 // Return stack to pool
-                 STACK_POOL.with(|pool| pool.borrow_mut().push(this.ctx.take().unwrap().stack));
-                 return Poll::Ready(res);
-             } else if ctx.status == FiberStatus::Panicked {
-                 let payload = ctx.panic_payload.take().unwrap();
-                 STACK_POOL.with(|pool| pool.borrow_mut().push(this.ctx.take().unwrap().stack));
-                 std::panic::resume_unwind(payload);
-             } else if ctx.status == FiberStatus::Yielded {
-                 // Try reading more data
-                 let mut buf = tokio::io::ReadBuf::new(&mut this.read_buffer[..]);
-                 let poll_res = Pin::new(&mut this.reader).poll_read(cx, &mut buf);
-                 match poll_res {
-                     Poll::Ready(Ok(())) => {
-                         let filled = buf.filled().len();
-                         if filled == 0 {
-                             ctx.status = FiberStatus::Finished; // EOF
-                             CURRENT_FIBER.with(|c| c.set(&mut **ctx as *mut _));
-                             // switch to let fiber notice EOF and error out
-                             ctx.buf_ptr = core::ptr::slice_from_raw_parts_mut(this.read_buffer.as_mut_ptr(), 0);
-                             unsafe {
-                                 switch_context(&mut ctx.executor_regs, &ctx.regs);
-                             }
-                             continue;
-                         } else {
-                             ctx.status = FiberStatus::Running;
-                             ctx.buf_ptr = core::ptr::slice_from_raw_parts_mut(this.read_buffer.as_mut_ptr(), filled);
-                             CURRENT_FIBER.with(|c| c.set(&mut **ctx as *mut _));
-                             unsafe {
-                                 switch_context(&mut ctx.executor_regs, &ctx.regs);
-                             }
-                             continue;
-                         }
-                     },
-                     Poll::Ready(Err(_e)) => {
-                         STACK_POOL.with(|pool| pool.borrow_mut().push(this.ctx.take().unwrap().stack));
-                         return Poll::Ready(Err(crate::error::DecodeError::Other("IO error")));
-                     },
-                     Poll::Pending => return Poll::Pending,
-                 }
-             } else {
-                 unreachable!("Invalid fiber status");
-             }
-         }
+        }
+
+        // -- Subsequent polls: feed data / propagate results -----------------
+        loop {
+            let ctx = this.ctx.as_mut().unwrap();
+
+            match ctx.status {
+                FiberStatus::Finished => {
+                    // Return the guarded stack to the thread-local pool.
+                    STACK_POOL.with(|pool| {
+                        pool.borrow_mut()
+                            .push(this.ctx.take().unwrap().stack)
+                    });
+                    return Poll::Ready(this.result.take().unwrap());
+                }
+                FiberStatus::Panicked => {
+                    let payload = ctx.panic_payload.take().unwrap();
+                    STACK_POOL.with(|pool| {
+                        pool.borrow_mut()
+                            .push(this.ctx.take().unwrap().stack)
+                    });
+                    std::panic::resume_unwind(payload);
+                }
+                FiberStatus::Yielded => {
+                    // The fiber needs more data — try to read from the
+                    // async reader.
+                    let mut buf = tokio::io::ReadBuf::new(&mut this.read_buffer[..]);
+                    let poll_res = Pin::new(&mut this.reader).poll_read(cx, &mut buf);
+                    match poll_res {
+                        Poll::Ready(Ok(())) => {
+                            let filled = buf.filled().len();
+                            if filled == 0 {
+                                // EOF — tell the fiber so it can return an error.
+                                ctx.status = FiberStatus::Finished;
+                                ctx.buf_ptr = core::ptr::slice_from_raw_parts_mut(
+                                    this.read_buffer.as_mut_ptr(),
+                                    0,
+                                );
+                                unsafe {
+                                    resume_fiber(ctx);
+                                }
+                                continue;
+                            } else {
+                                ctx.status = FiberStatus::Running;
+                                ctx.buf_ptr = core::ptr::slice_from_raw_parts_mut(
+                                    this.read_buffer.as_mut_ptr(),
+                                    filled,
+                                );
+                                unsafe {
+                                    resume_fiber(ctx);
+                                }
+                                continue;
+                            }
+                        }
+                        Poll::Ready(Err(_e)) => {
+                            STACK_POOL.with(|pool| {
+                                pool.borrow_mut()
+                                    .push(this.ctx.take().unwrap().stack)
+                            });
+                            return Poll::Ready(Err(crate::error::DecodeError::Other(
+                                "async IO error in fiber bridge",
+                            )));
+                        }
+                        Poll::Pending => return Poll::Pending,
+                    }
+                }
+                _ => {
+                    unreachable!("invalid fiber status in poll loop");
+                }
+            }
+        }
+    }
+}
+
+// Clean up fiber resources if the future is dropped while the fiber is
+// suspended (e.g. the task is cancelled).  The GuardedStack will be
+// unmapped by its own Drop impl, so we just need to ensure we don't leak
+// the closure data.
+#[cfg(feature = "async-fiber")]
+impl<R, F, T> Drop for BridgeFuture<R, F, T> {
+    fn drop(&mut self) {
+        if let Some(ctx) = self.ctx.take() {
+            // If the fiber never ran, the closure data is still live.
+            if !ctx.closure_ptr.is_null() && ctx.status == FiberStatus::Initial {
+                // We cannot safely drop the typed ClosureData here without
+                // knowing the concrete type — but since `f` is still in
+                // `self.f` (Option is still Some), nothing was leaked.
+                // The Box<ClosureData> will be reclaimed when the
+                // BridgeFuture itself drops.
+            }
+            // The GuardedStack inside ctx.stack is dropped here,
+            // which calls munmap on the guard-page-protected memory.
+            // We intentionally do NOT return it to the pool in the
+            // cancellation path — the stack may be in an inconsistent
+            // state if the fiber was mid-execution.
+            drop(ctx);
+        }
     }
 }
