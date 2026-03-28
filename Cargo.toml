@@ -29,7 +29,7 @@ exclude = [
     ".gitignore",
     ".github/",
 ]
-rust-version = "1.90.0"
+rust-version = "1.91.0"
 
 publish = true
 
@@ -51,8 +51,10 @@ alloc = ["serde?/alloc"]
 derive = ["bincode_derive-next"]
 zero-copy = ["bincode_derive-next?/zero-copy"]
 static-size = ["bincode_derive-next?/static-size"]
+async-fiber = ["dep:futures-io", "dep:libc", "std"]
 # Remember to run 'MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --all-features --no-fail-fast'
 # And remeber 'sudo chrt -f 99 cargo +nightly bench --bench complex' also.
+# And for loom: 'RUSTFLAGS="--cfg loom" cargo test --test async_fiber_loom --features "async-fiber, tokio/full" --release'
 
 [dependencies]
 bincode_derive-next = { path = "derive", version = "3.0.0-rc.5", optional = true }
@@ -60,14 +62,23 @@ serde = { version = "1.0", default-features = false, optional = true }
 unty = { version = "0.1.1", package = "unty-next" }
 rapidhash = { version = "4.4", default-features = false }
 pastey = "0.2"
+futures-io = { version = "0.3", optional = true }
+libc = { version = "0.2", optional = true }
 
 # Used for tests
 [dev-dependencies]
-ouroboros = "0.18.3"
+ouroboros = "0.18"
 serde_derive = "1.0"
 serde_json = { version = "1.0", default-features = false }
 tempfile = "3.2"
-criterion = "0.8"
+criterion = { version = "0.8", features = ["async_tokio"] }
+tokio = { version = "1.50", features = [
+    "rt",
+    "macros",
+    "rt-multi-thread",
+    "io-util",
+    "fs",
+] }
 rand = "0.10"
 uuid = { version = "1.1", features = ["serde"] }
 chrono = { version = "0.4", features = ["serde"] }
@@ -77,8 +88,9 @@ bincode_v2 = { version = "2.0.0-rc.3", package = "bincode", features = [
     "serde",
 ] }
 serde = { version = "1.0", features = ["derive"] }
-bumpalo = { version = "3.16.0", features = ["collections"] }
-proptest = "1.10.0"
+bumpalo = { version = "3.16", features = ["collections"] }
+proptest = "1.10"
+loom = "0.7"
 
 [[bench]]
 name = "varint"
@@ -104,6 +116,11 @@ harness = false
 name = "relative_ptr_bench"
 harness = false
 required-features = ["zero-copy"]
+
+[[bench]]
+name = "async_fiber"
+harness = false
+required-features = ["async-fiber"]
 
 [profile.bench]
 codegen-units = 1
@@ -140,3 +157,6 @@ crate-type = ["cdylib", "rlib", "staticlib"]
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(loom)'] }

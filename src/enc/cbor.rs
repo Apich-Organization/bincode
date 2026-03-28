@@ -21,16 +21,16 @@ fn encode_header<W: Writer>(
     if val <= 23 {
         writer.write_u8(major | val as u8)
     } else if val <= 0xFF {
-        writer.write_u8(major | 24)?;
+        writer.write_u8(major | 0x0018)?;
         writer.write_u8(val as u8)
     } else if val <= 0xFFFF {
-        writer.write_u8(major | 25)?;
+        writer.write_u8(major | 0x0019)?;
         writer.write_u16((val as u16).to_be())
     } else if val <= 0xFFFF_FFFF {
-        writer.write_u8(major | 26)?;
+        writer.write_u8(major | 0x001a)?;
         writer.write_u32((val as u32).to_be())
     } else {
-        writer.write_u8(major | 27)?;
+        writer.write_u8(major | 0x001b)?;
         writer.write_u64(val.to_be())
     }
 }

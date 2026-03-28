@@ -19,6 +19,9 @@ use crate::config::InternalLimitConfig;
 use crate::error::DecodeError;
 use crate::utils::Sealed;
 
+/// Fiber-backed abstraction for zero-cost async decoding.
+#[cfg(feature = "async-fiber")]
+pub mod async_fiber;
 /// Bit-level reader for space-optimized packing.
 pub mod bit_reader;
 pub(crate) mod cbor;
