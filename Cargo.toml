@@ -51,7 +51,7 @@ alloc = ["serde?/alloc"]
 derive = ["bincode_derive-next"]
 zero-copy = ["bincode_derive-next?/zero-copy"]
 static-size = ["bincode_derive-next?/static-size"]
-async-fiber = ["dep:futures-io", "dep:once_cell", "dep:libc", "std"]
+async-fiber = ["dep:futures-io", "dep:libc", "std"]
 # Remember to run 'MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --all-features --no-fail-fast'
 # And remeber 'sudo chrt -f 99 cargo +nightly bench --bench complex' also.
 # And for loom: 'RUSTFLAGS="--cfg loom" cargo test --test async_fiber_loom --features "async-fiber, tokio/full" --release'
@@ -62,18 +62,17 @@ serde = { version = "1.0", default-features = false, optional = true }
 unty = { version = "0.1.1", package = "unty-next" }
 rapidhash = { version = "4.4", default-features = false }
 pastey = "0.2"
-futures-io = { version = "0.3.31", optional = true }
-once_cell = { version = "1.0", optional = true }
+futures-io = { version = "0.3", optional = true }
 libc = { version = "0.2", optional = true }
 
 # Used for tests
 [dev-dependencies]
-ouroboros = "0.18.3"
+ouroboros = "0.18"
 serde_derive = "1.0"
 serde_json = { version = "1.0", default-features = false }
 tempfile = "3.2"
 criterion = { version = "0.8", features = ["async_tokio"] }
-tokio = { version = "1.0", features = [
+tokio = { version = "1.50", features = [
     "rt",
     "macros",
     "rt-multi-thread",
@@ -89,8 +88,8 @@ bincode_v2 = { version = "2.0.0-rc.3", package = "bincode", features = [
     "serde",
 ] }
 serde = { version = "1.0", features = ["derive"] }
-bumpalo = { version = "3.16.0", features = ["collections"] }
-proptest = "1.10.0"
+bumpalo = { version = "3.16", features = ["collections"] }
+proptest = "1.10"
 loom = "0.7"
 
 [[bench]]
