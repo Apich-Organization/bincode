@@ -94,6 +94,7 @@ Enable it via the `async-fiber` feature:
 bincode-next = { version = "3.0.0-rc.5", features = ["async-fiber"] }
 ```
 
+```rust
 use bincode_next::{config, decode_async, encode_to_vec, Decode, Encode};
 
 #[derive(Encode, Decode, PartialEq, Debug)]
@@ -111,6 +112,7 @@ async fn main() {
     let entity: Entity = decode_async(config::standard(), &mut reader).await.unwrap();
     assert_eq!(my_entity, entity);
 }
+```
 
 ## Performance Optimizations
 
