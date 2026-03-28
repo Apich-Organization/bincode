@@ -94,21 +94,23 @@ Enable it via the `async-fiber` feature:
 bincode-next = { version = "3.0.0-rc.5", features = ["async-fiber"] }
 ```
 
-```rust
-use bincode_next::{config, decode_async, Decode};
+use bincode_next::{config, decode_async, encode_to_vec, Decode, Encode};
 
-#[derive(Decode, PartialEq, Debug)]
+#[derive(Encode, Decode, PartialEq, Debug)]
 struct Entity { x: f32, y: f32 }
 
 #[tokio::main]
 async fn main() {
-    // You can use any tokio::io::AsyncRead source
-    let mut reader = tokio::io::empty(); 
+    let my_entity = Entity { x: 1.0, y: 2.0 };
+    let encoded = encode_to_vec(&my_entity, config::standard()).unwrap();
+    // You can use any type that implements `futures_io::AsyncRead`.
+    // For this example, we'll use a simple byte slice, which implements it.
+    let mut reader = &encoded[..];
     
     // Decodes asynchronously on a fiber without custom async traits!
-    // let entity: Entity = decode_async(config::standard(), &mut reader).await.unwrap();
+    let entity: Entity = decode_async(config::standard(), &mut reader).await.unwrap();
+    assert_eq!(my_entity, entity);
 }
-```
 
 ## Performance Optimizations
 
