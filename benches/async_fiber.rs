@@ -34,6 +34,29 @@ pub fn bench_async_fiber(c: &mut Criterion) {
 
     #[cfg(feature = "async-fiber")]
     {
+        fn dummy_waker() -> std::task::Waker {
+            static VTABLE: std::task::RawWakerVTable = std::task::RawWakerVTable::new(
+                |_| std::task::RawWaker::new(std::ptr::null(), &VTABLE),
+                |_| {},
+                |_| {},
+                |_| {},
+            );
+            unsafe { std::task::Waker::from_raw(std::task::RawWaker::new(std::ptr::null(), &VTABLE)) }
+        }
+
+        group.bench_with_input(BenchmarkId::new("async_fiber_raw", 0), &encoded, |b, encoded| {
+            let waker = dummy_waker();
+            let mut cx = std::task::Context::from_waker(&waker);
+            b.iter(|| {
+                let reader = encoded.as_slice();
+                let mut fut = Box::pin(decode_async(config::standard(), reader));
+                match fut.as_mut().poll(&mut cx) {
+                    std::task::Poll::Ready(Ok(decoded)) => criterion::black_box(decoded),
+                    _ => criterion::black_box(()),
+                }
+            })
+        });
+
         let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
         
         group.bench_with_input(BenchmarkId::new("async_fiber_chunked", 0), &encoded, |b, encoded| {
