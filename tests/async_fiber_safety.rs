@@ -3,7 +3,7 @@ mod safety_tests {
     use bincode_next::{config, decode_async, Decode};
     use std::pin::Pin;
     use std::task::{Context, Poll, Waker, RawWaker, RawWakerVTable};
-    use tokio::io::AsyncRead;
+    use futures_io::AsyncRead;
     use bincode_next::de::read::Reader;
 
     fn dummy_waker() -> Waker {
@@ -36,8 +36,8 @@ mod safety_tests {
         fn poll_read(
             self: Pin<&mut Self>,
             _cx: &mut Context<'_>,
-            _buf: &mut tokio::io::ReadBuf<'_>,
-        ) -> Poll<std::io::Result<()>> {
+            _buf: &mut [u8],
+        ) -> Poll<std::io::Result<usize>> {
             Poll::Pending
         }
     }

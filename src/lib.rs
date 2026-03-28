@@ -462,7 +462,7 @@ pub async fn decode_async<T, R, C>(
 ) -> Result<T, crate::error::DecodeError>
 where
     T: crate::Decode<()>,
-    R: tokio::io::AsyncRead + std::marker::Unpin,
+    R: futures_io::AsyncRead + std::marker::Unpin,
     C: crate::config::Config,
     C::Mode: crate::config::InternalFingerprintGuard<T, C>,
 {
@@ -485,7 +485,7 @@ pub async fn decode_serde_async<'de, T, R, C>(
 ) -> Result<T, crate::error::DecodeError>
 where
     T: ::serde::Deserialize<'de>,
-    R: tokio::io::AsyncRead + std::marker::Unpin,
+    R: futures_io::AsyncRead + std::marker::Unpin,
     C: crate::config::Config,
 {
     let bridge = crate::de::async_fiber::AsyncFiberBridge::new(reader);

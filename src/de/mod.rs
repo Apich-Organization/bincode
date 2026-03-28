@@ -23,6 +23,7 @@ use crate::utils::Sealed;
 pub mod bit_reader;
 pub(crate) mod cbor;
 pub mod read;
+/// Fiber-backed abstraction for zero-cost async decoding.
 #[cfg(feature = "async-fiber")]
 pub mod async_fiber;
 

@@ -4,7 +4,7 @@ mod proptests {
     use proptest::prelude::*;
     use std::pin::Pin;
     use std::task::{Context, Poll};
-    use tokio::io::AsyncRead;
+    use futures_io::AsyncRead;
 
     #[derive(Encode, Decode, PartialEq, Debug, Clone)]
     struct TestData {
@@ -24,17 +24,19 @@ mod proptests {
         fn poll_read(
             mut self: Pin<&mut Self>,
             _cx: &mut Context<'_>,
-            buf: &mut tokio::io::ReadBuf<'_>,
-        ) -> Poll<std::io::Result<()>> {
-            if self.pos >= self.data.len() {
-                return Poll::Ready(Ok(()));
+            buf: &mut [u8],
+        ) -> Poll<std::io::Result<usize>> {
+            if self.pos >= self.data.len() || buf.is_empty() {
+                return Poll::Ready(Ok(0));
             }
             let chunk_size = *self.chunk_sizes.get(self.chunk_idx).unwrap_or(&1);
             self.chunk_idx += 1;
-            let end = std::cmp::min(self.pos + chunk_size, self.data.len());
-            buf.put_slice(&self.data[self.pos..end]);
+            let to_read = std::cmp::min(chunk_size, buf.len());
+            let end = std::cmp::min(self.pos + to_read, self.data.len());
+            let copied = end - self.pos;
+            buf[..copied].copy_from_slice(&self.data[self.pos..end]);
             self.pos = end;
-            Poll::Ready(Ok(()))
+            Poll::Ready(Ok(copied))
         }
     }
 

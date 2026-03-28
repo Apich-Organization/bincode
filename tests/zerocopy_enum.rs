@@ -14,7 +14,7 @@ enum TestEnum {
 fn test_zerocopy_enum() {
     let mut builder = ZeroBuilder::new();
 
-    let val_a = TestEnumBuilder::A(42u32.into());
+    let val_a = TestEnumBuilder::A(42u32);
     let offset_a = builder.reserve::<TestEnum>();
     let target_a = val_a.build_to_target(&mut builder, offset_a);
 
@@ -25,8 +25,8 @@ fn test_zerocopy_enum() {
     }
 
     let val_b = TestEnumBuilder::B {
-        x: 100u64.into(),
-        y: 200u32.into(),
+        x: 100u64,
+        y: 200u32,
     };
     let offset_b = builder.reserve::<TestEnum>();
     let target_b = val_b.build_to_target(&mut builder, offset_b);

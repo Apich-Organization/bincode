@@ -4,7 +4,7 @@ mod loom_tests {
     use loom::thread;
     use std::pin::Pin;
     use std::task::{Context, Poll, Waker, RawWaker, RawWakerVTable};
-    use tokio::io::AsyncRead;
+    use futures_io::AsyncRead;
 
     // A mock AsyncRead that yields exactly once, simulating an IO delay.
     struct YieldReader {
@@ -16,14 +16,15 @@ mod loom_tests {
         fn poll_read(
             mut self: Pin<&mut Self>,
             _cx: &mut Context<'_>,
-            buf: &mut tokio::io::ReadBuf<'_>,
-        ) -> Poll<std::io::Result<()>> {
+            buf: &mut [u8],
+        ) -> Poll<std::io::Result<usize>> {
             if !self.yielded {
                 self.yielded = true;
                 Poll::Pending
             } else {
-                buf.put_slice(&self.data);
-                Poll::Ready(Ok(()))
+                let to_read = std::cmp::min(self.data.len(), buf.len());
+                buf[..to_read].copy_from_slice(&self.data[..to_read]);
+                Poll::Ready(Ok(to_read))
             }
         }
     }

@@ -1,7 +1,7 @@
 #[cfg(feature = "async-fiber")]
 mod async_fiber_tests {
     use bincode_next::{config, decode_async, encode_to_vec, Decode, Encode};
-    use tokio::io::AsyncRead;
+    use futures_io::AsyncRead;
     use std::pin::Pin;
     use std::task::{Context, Poll};
 
@@ -24,15 +24,17 @@ mod async_fiber_tests {
         fn poll_read(
             mut self: Pin<&mut Self>,
             _cx: &mut Context<'_>,
-            buf: &mut tokio::io::ReadBuf<'_>,
-        ) -> Poll<std::io::Result<()>> {
-            if self.pos >= self.data.len() {
-                return Poll::Ready(Ok(()));
+            buf: &mut [u8],
+        ) -> Poll<std::io::Result<usize>> {
+            if self.pos >= self.data.len() || buf.is_empty() {
+                return Poll::Ready(Ok(0));
             }
-            let end = std::cmp::min(self.pos + self.chunk_size, self.data.len());
-            buf.put_slice(&self.data[self.pos..end]);
+            let to_read = std::cmp::min(self.chunk_size, buf.len());
+            let end = std::cmp::min(self.pos + to_read, self.data.len());
+            let copied = end - self.pos;
+            buf[..copied].copy_from_slice(&self.data[self.pos..end]);
             self.pos = end;
-            Poll::Ready(Ok(()))
+            Poll::Ready(Ok(copied))
         }
     }
 
