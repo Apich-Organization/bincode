@@ -452,6 +452,49 @@ where
     D::decode(&mut decoder)
 }
 
+/// Attempt to decode a given type `T` from the given async reader safely using a non-blocking fiber.
+///
+/// Requires the `async-fiber` feature.
+#[cfg(feature = "async-fiber")]
+pub async fn decode_async<T, R, C>(
+    config: C,
+    reader: R,
+) -> Result<T, crate::error::DecodeError>
+where
+    T: crate::Decode<()>,
+    R: tokio::io::AsyncRead + std::marker::Unpin,
+    C: crate::config::Config,
+    C::Mode: crate::config::InternalFingerprintGuard<T, C>,
+{
+    let bridge = crate::de::async_fiber::AsyncFiberBridge::new(reader);
+    bridge.run(move |fiber_reader| {
+        // Because fingerprinting might yield, we do it in the fiber.
+        C::Mode::decode_check(&config, fiber_reader)?;
+        let mut decoder = crate::de::DecoderImpl::<_, C, ()>::new(fiber_reader, config, ());
+        T::decode(&mut decoder)
+    }).await
+}
+
+/// Attempt to decode a given serde-compatible type `T` from the given async reader safely using a non-blocking fiber.
+///
+/// Requires the `async-fiber` feature.
+#[cfg(all(feature = "async-fiber", feature = "serde"))]
+pub async fn decode_serde_async<'de, T, R, C>(
+    config: C,
+    reader: R,
+) -> Result<T, crate::error::DecodeError>
+where
+    T: ::serde::Deserialize<'de>,
+    R: tokio::io::AsyncRead + std::marker::Unpin,
+    C: crate::config::Config,
+{
+    let bridge = crate::de::async_fiber::AsyncFiberBridge::new(reader);
+    bridge.run(move |fiber_reader| {
+        let mut serde_decoder = crate::features::serde::OwnedSerdeDecoder::from_reader(fiber_reader, config);
+        T::deserialize(serde_decoder.as_deserializer())
+    }).await
+}
+
 // TODO: Currently our doctests fail when trying to include the specs because the specs depend on `derive` and `alloc`.
 // But we want to have the specs in the docs always
 #[cfg(all(feature = "alloc", feature = "derive", doc))]

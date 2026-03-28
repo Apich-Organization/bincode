@@ -23,6 +23,8 @@ use crate::utils::Sealed;
 pub mod bit_reader;
 pub(crate) mod cbor;
 pub mod read;
+#[cfg(feature = "async-fiber")]
+pub mod async_fiber;
 
 pub use self::decoder::DecoderImpl;
 
