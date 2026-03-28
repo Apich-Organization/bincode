@@ -1,4 +1,5 @@
 #![allow(unsafe_code)]
+#![allow(clippy::vec_box)]
 
 #[cfg(feature = "async-fiber")]
 use alloc::boxed::Box;
@@ -32,11 +33,19 @@ pub struct Registers {
 impl Registers {
     /// Create a zero-initialized register state.
     #[must_use]
+    #[inline(always)]
     pub const fn new() -> Self {
         Self {
             gprs: [0; 16],
             extended_state: [0; 512],
         }
+    }
+}
+
+impl Default for Registers {
+    #[inline(always)]
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -85,6 +94,7 @@ impl GuardedStack {
     /// # Panics
     /// Panics if the OS refuses the `mmap` / `mprotect` calls.
     #[must_use]
+    #[inline]
     pub fn new(usable_size: usize) -> Self {
         let page_size = page_size();
         // Round usable_size up to page boundary.
@@ -115,7 +125,7 @@ impl GuardedStack {
     }
 
     /// Usable stack region (excludes guard page).
-    #[inline]
+    #[inline(always)]
     #[must_use]
     pub const fn usable(&self) -> &[u8] {
         unsafe {
@@ -127,7 +137,7 @@ impl GuardedStack {
     }
 
     /// Usable stack region (mutable).
-    #[inline]
+    #[inline(always)]
     pub const fn usable_mut(&mut self) -> &mut [u8] {
         unsafe {
             core::slice::from_raw_parts_mut(
@@ -138,7 +148,7 @@ impl GuardedStack {
     }
 
     /// The top of the usable stack (highest address), 16-byte aligned.
-    #[inline]
+    #[inline(always)]
     #[must_use]
     pub fn top(&self) -> u64 {
         let raw = self.base as u64 + self.total_len as u64;
@@ -148,6 +158,7 @@ impl GuardedStack {
 
 #[cfg(feature = "async-fiber")]
 impl Drop for GuardedStack {
+    #[inline(always)]
     fn drop(&mut self) {
         unsafe {
             let rc = libc::munmap(self.base.cast::<libc::c_void>(), self.total_len);
@@ -161,6 +172,7 @@ impl Drop for GuardedStack {
 unsafe impl Send for GuardedStack {}
 
 #[cfg(feature = "async-fiber")]
+#[inline(always)]
 fn page_size() -> usize {
     // Cached via a static to avoid repeated syscalls.
     static PAGE_SIZE: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
@@ -363,6 +375,7 @@ pub struct FiberReader<'a, R: futures_io::AsyncRead + Unpin> {
 
 #[cfg(feature = "async-fiber")]
 impl<R: futures_io::AsyncRead + Unpin> crate::de::read::Reader for FiberReader<'_, R> {
+    #[inline]
     fn read(
         &mut self,
         bytes: &mut [u8],
@@ -388,19 +401,18 @@ impl<R: futures_io::AsyncRead + Unpin> crate::de::read::Reader for FiberReader<'
 
             if buf.is_empty() {
                 return crate::error::cold_decode_error_unexpected_end(n - written);
-            } else {
-                let to_copy = core::cmp::min(n - written, buf.len());
-                bytes[written..written + to_copy].copy_from_slice(&buf[0..to_copy]);
-
-                unsafe {
-                    ctx.buf_ptr = core::ptr::slice_from_raw_parts_mut(
-                        buf.as_mut_ptr().add(to_copy),
-                        buf.len() - to_copy,
-                    );
-                }
-
-                written += to_copy;
             }
+            let to_copy = core::cmp::min(n - written, buf.len());
+            bytes[written..written + to_copy].copy_from_slice(&buf[0..to_copy]);
+
+            unsafe {
+                ctx.buf_ptr = core::ptr::slice_from_raw_parts_mut(
+                    buf.as_mut_ptr().add(to_copy),
+                    buf.len() - to_copy,
+                );
+            }
+
+            written += to_copy;
         }
         Ok(())
     }
@@ -415,12 +427,14 @@ pub struct AsyncFiberBridge<R: futures_io::AsyncRead + Unpin> {
 
 #[cfg(feature = "async-fiber")]
 impl<R: futures_io::AsyncRead + Unpin> AsyncFiberBridge<R> {
-    /// Constructs a new asynchronous bridge mapping futures_io `AsyncRead`.
+    /// Constructs a new asynchronous bridge mapping `futures_io`'s `AsyncRead`.
+    #[inline(always)]
     pub const fn new(reader: R) -> Self {
         Self { reader }
     }
 
     /// Spawns the parsing process, converting the synchronous Decode traits to a Future.
+    #[inline(always)]
     pub fn run<F, T>(
         self,
         f: F,
@@ -439,9 +453,11 @@ impl<R: futures_io::AsyncRead + Unpin> AsyncFiberBridge<R> {
 }
 
 #[cfg(feature = "async-fiber")]
+#[inline(always)]
 const unsafe fn dummy_invoke(_: *mut ()) {}
 
 #[cfg(feature = "async-fiber")]
+#[inline]
 unsafe extern "C" fn fiber_trampoline() {
     unsafe {
         let ctx_ptr = CURRENT_FIBER.with(core::cell::Cell::get);
@@ -451,8 +467,8 @@ unsafe extern "C" fn fiber_trampoline() {
             (ctx.invoke_closure)(ctx.closure_ptr);
         }));
 
-        ctx.status = if result.is_err() {
-            ctx.panic_payload = Some(result.unwrap_err());
+        ctx.status = if let Err(e) = result {
+            ctx.panic_payload = Some(e);
             FiberStatus::Panicked
         } else {
             FiberStatus::Finished
@@ -512,6 +528,7 @@ struct BridgeFuture<R, F, T> {
 // actively running (inside `poll`), never across an await point, and we
 // enforce thread-affinity within a single `poll` invocation.
 #[cfg(feature = "async-fiber")]
+#[allow(clippy::non_send_fields_in_send_ty)]
 unsafe impl<R: Send, F: Send, T: Send> Send for BridgeFuture<R, F, T> {}
 #[cfg(feature = "async-fiber")]
 unsafe impl<R: Sync, F: Sync, T: Sync> Sync for BridgeFuture<R, F, T> {}
@@ -524,6 +541,7 @@ where
 {
     type Output = Result<T, crate::error::DecodeError>;
 
+    #[allow(clippy::too_many_lines)]
     fn poll(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
@@ -670,7 +688,6 @@ where
                             unsafe {
                                 resume_fiber(ctx);
                             }
-                            continue;
                         },
                         | Poll::Ready(Err(_e)) => {
                             CONTEXT_POOL.with(|pool| {
@@ -696,6 +713,7 @@ where
 // memories will be successfully unmapped / dropped natively.
 #[cfg(feature = "async-fiber")]
 impl<R, F, T> Drop for BridgeFuture<R, F, T> {
+    #[inline(always)]
     fn drop(&mut self) {
         if let Some(ctx) = self.ctx.take() {
             // Context is dropped instead of pooled to discard dirty internal state.

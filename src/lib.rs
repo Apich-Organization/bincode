@@ -455,6 +455,12 @@ where
 /// Attempt to decode a given type `T` from the given async reader safely using a non-blocking fiber.
 ///
 /// Requires the `async-fiber` feature.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the reader fails or the data is invalid.
+///
+/// [config]: config/index.html
 #[cfg(feature = "async-fiber")]
 pub async fn decode_async<T, R, C>(
     config: C,
@@ -480,6 +486,12 @@ where
 /// Attempt to decode a given serde-compatible type `T` from the given async reader safely using a non-blocking fiber.
 ///
 /// Requires the `async-fiber` feature.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the reader fails or the data is invalid.
+///
+/// [config]: config/index.html
 #[cfg(all(feature = "async-fiber", feature = "serde"))]
 pub async fn decode_serde_async<'de, T, R, C>(
     config: C,
