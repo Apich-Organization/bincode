@@ -84,6 +84,32 @@ fn main() {
 }
 ```
 
+### High-Performance Async Decoding
+
+Bincode-Next supports true zero-cost asynchronous decoding using **Unified Fiber-backed Async (UFA)**. By executing synchronous traits on a dedicated lightweight fiber stack, we avoid the overhead of state machine generation and achieve high performance over `tokio::io::AsyncRead`.
+
+Enable it via the `async-fiber` feature:
+```toml
+[dependencies]
+bincode-next = { version = "3.0.0-rc.5", features = ["async-fiber"] }
+```
+
+```rust
+use bincode_next::{config, decode_async, Decode};
+
+#[derive(Decode, PartialEq, Debug)]
+struct Entity { x: f32, y: f32 }
+
+#[tokio::main]
+async fn main() {
+    // You can use any tokio::io::AsyncRead source
+    let mut reader = tokio::io::empty(); 
+    
+    // Decodes asynchronously on a fiber without custom async traits!
+    // let entity: Entity = decode_async(config::standard(), &mut reader).await.unwrap();
+}
+```
+
 ## Performance Optimizations
 
 Bincode-Next includes advanced optimizations for extreme performance:

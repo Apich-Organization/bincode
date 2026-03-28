@@ -50,10 +50,11 @@ std = ["alloc", "serde?/std"]
 alloc = ["serde?/alloc"]
 derive = ["bincode_derive-next"]
 zero-copy = ["bincode_derive-next?/zero-copy"]
-static-size = ["bincode_derive-next?/static-size", "alloc"]
-async-fiber = ["tokio/io-util", "dep:once_cell", "dep:libc", "alloc"]
+static-size = ["bincode_derive-next?/static-size"]
+async-fiber = ["tokio/io-util", "dep:once_cell", "dep:libc", "std"]
 # Remember to run 'MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --all-features --no-fail-fast'
 # And remeber 'sudo chrt -f 99 cargo +nightly bench --bench complex' also.
+# And for loom: 'RUSTFLAGS="--cfg loom" cargo test --test async_fiber_loom --features "async-fiber, tokio/full" --release'
 
 [dependencies]
 bincode_derive-next = { path = "derive", version = "3.0.0-rc.5", optional = true }
@@ -83,6 +84,8 @@ bincode_v2 = { version = "2.0.0-rc.3", package = "bincode", features = [
 serde = { version = "1.0", features = ["derive"] }
 bumpalo = { version = "3.16.0", features = ["collections"] }
 proptest = "1.10.0"
+tokio = { version = "1.0", features = ["rt", "macros", "rt-multi-thread"] }
+loom = "0.7"
 
 [[bench]]
 name = "varint"
@@ -108,6 +111,11 @@ harness = false
 name = "relative_ptr_bench"
 harness = false
 required-features = ["zero-copy"]
+
+[[bench]]
+name = "async_fiber"
+harness = false
+required-features = ["async-fiber"]
 
 [profile.bench]
 codegen-units = 1
@@ -144,3 +152,6 @@ crate-type = ["cdylib", "rlib", "staticlib"]
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(loom)'] }
