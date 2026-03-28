@@ -37,12 +37,10 @@ pub fn bench_async_fiber(c: &mut Criterion) {
         let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
         
         group.bench_with_input(BenchmarkId::new("async_fiber_chunked", 0), &encoded, |b, encoded| {
-            b.iter(|| {
-                rt.block_on(async {
-                    let reader = encoded.as_slice();
-                    let decoded: BenchPayload = decode_async(config::standard(), reader).await.unwrap();
-                    criterion::black_box(decoded);
-                })
+            b.to_async(&rt).iter(|| async {
+                let reader = encoded.as_slice();
+                let decoded: BenchPayload = decode_async(config::standard(), reader).await.unwrap();
+                criterion::black_box(decoded);
             })
         });
     }

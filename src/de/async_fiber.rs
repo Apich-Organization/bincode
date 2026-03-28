@@ -167,6 +167,7 @@ pub struct FiberContext {
     pub result_ptr: *mut (),
     pub reader_ptr: *mut (),
     pub buf_ptr: *mut [u8],
+    pub read_buffer: Box<[u8]>,
     /// Thread that is currently executing the fiber. Used to enforce thread
     /// affinity: the fiber must be resumed on the same thread that last
     /// suspended it (i.e. it cannot migrate mid-execution).
@@ -179,7 +180,7 @@ pub struct FiberContext {
 
 #[cfg(feature = "async-fiber")]
 std::thread_local! {
-    static STACK_POOL: RefCell<Vec<GuardedStack>> = RefCell::new(Vec::new());
+    static CONTEXT_POOL: RefCell<Vec<Box<FiberContext>>> = RefCell::new(Vec::new());
     static CURRENT_FIBER: std::cell::Cell<*mut FiberContext> = std::cell::Cell::new(core::ptr::null_mut());
 }
 
@@ -381,7 +382,6 @@ impl<R: tokio::io::AsyncRead + Unpin> AsyncFiberBridge<R> {
             reader: self.reader,
             f: Some(f),
             ctx: None,
-            read_buffer: alloc::vec![0; 8192].into_boxed_slice(),
             result: None,
             _marker: core::marker::PhantomData,
         }
@@ -445,16 +445,11 @@ unsafe fn resume_fiber(ctx: &mut FiberContext) { unsafe {
     CURRENT_FIBER.with(|c| c.set(core::ptr::null_mut()));
 }}
 
-// =============================================================================
-// BridgeFuture
-// =============================================================================
-
 #[cfg(feature = "async-fiber")]
 struct BridgeFuture<R, F, T> {
     reader: R,
     f: Option<F>,
     ctx: Option<Box<FiberContext>>,
-    read_buffer: Box<[u8]>,
     result: Option<Result<T, crate::error::DecodeError>>,
     _marker: core::marker::PhantomData<T>,
 }
@@ -480,27 +475,33 @@ where
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         // -- Initialise fiber on first poll ----------------------------------
         if self.ctx.is_none() {
-            let stack = STACK_POOL
+            let mut ctx = CONTEXT_POOL
                 .with(|pool| pool.borrow_mut().pop())
                 .unwrap_or_else(|| {
                     // Default 64 KiB usable stack + 1 guard page.
-                    GuardedStack::new(64 * 1024)
+                    Box::new(FiberContext {
+                        stack: GuardedStack::new(64 * 1024),
+                        regs: Registers::new(),
+                        executor_regs: Registers::new(),
+                        status: FiberStatus::Initial,
+                        panic_payload: None,
+                        trampoline: fiber_trampoline,
+                        invoke_closure: dummy_invoke,
+                        closure_ptr: core::ptr::null_mut(),
+                        result_ptr: core::ptr::null_mut(),
+                        reader_ptr: core::ptr::null_mut(),
+                        buf_ptr: core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut(), 0),
+                        read_buffer: alloc::vec![0; 8192].into_boxed_slice(),
+                        owner_thread: None,
+                    })
                 });
 
-            let mut ctx = Box::new(FiberContext {
-                stack,
-                regs: Registers::new(),
-                executor_regs: Registers::new(),
-                status: FiberStatus::Initial,
-                panic_payload: None,
-                trampoline: fiber_trampoline,
-                invoke_closure: dummy_invoke,
-                closure_ptr: core::ptr::null_mut(),
-                result_ptr: core::ptr::null_mut(),
-                reader_ptr: core::ptr::null_mut(),
-                buf_ptr: core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut(), 0),
-                owner_thread: None,
-            });
+            ctx.status = FiberStatus::Initial;
+            ctx.panic_payload = None;
+            ctx.result_ptr = core::ptr::null_mut();
+            ctx.reader_ptr = core::ptr::null_mut();
+            ctx.buf_ptr = core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut(), 0);
+            ctx.owner_thread = None;
 
             let sp = ctx.stack.top();
 
@@ -526,6 +527,7 @@ where
         }
 
         let this = unsafe { self.get_unchecked_mut() };
+        let this_ptr = this as *mut BridgeFuture<R, F, T> as *mut ();
         let ctx = this.ctx.as_mut().unwrap();
 
         // Refresh the result pointer on every poll — the BridgeFuture may
@@ -535,19 +537,14 @@ where
             &mut this.result as *mut Option<Result<T, crate::error::DecodeError>> as *mut ();
 
         // -- First poll: set up the closure and do the initial switch --------
-        if let Some(f) = this.f.take() {
-            struct ClosureData<R: tokio::io::AsyncRead + Unpin, F, T> {
-                f: F,
-                _marker: core::marker::PhantomData<(R, T)>,
-            }
-
+        if this.f.is_some() && ctx.status == FiberStatus::Initial {
             unsafe fn invoke<R: tokio::io::AsyncRead + Unpin, F, T>(data: *mut ())
             where
                 F: FnOnce(&mut FiberReader<'_, R>) -> Result<T, crate::error::DecodeError>,
             {
                 unsafe {
-                    let data = Box::from_raw(data as *mut ClosureData<R, F, T>);
-                    let f = data.f;
+                    let this = &mut *(data as *mut BridgeFuture<R, F, T>);
+                    let f = this.f.take().unwrap();
                     let ctx_ptr = CURRENT_FIBER.with(|c| c.get());
                     let mut real_reader: FiberReader<'_, R> = FiberReader {
                         inner: core::marker::PhantomData,
@@ -560,11 +557,7 @@ where
                 }
             }
 
-            let data = Box::new(ClosureData::<R, F, T> {
-                f,
-                _marker: core::marker::PhantomData,
-            });
-            ctx.closure_ptr = Box::into_raw(data) as *mut ();
+            ctx.closure_ptr = this_ptr;
             ctx.invoke_closure = invoke::<R, F, T>;
 
             ctx.status = FiberStatus::Running;
@@ -574,31 +567,34 @@ where
             }
         }
 
-        // -- Subsequent polls: feed data / propagate results -----------------
         loop {
             let ctx = this.ctx.as_mut().unwrap();
 
             match ctx.status {
                 FiberStatus::Finished => {
-                    // Return the guarded stack to the thread-local pool.
-                    STACK_POOL.with(|pool| {
+                    // Return context to pool.
+                    CONTEXT_POOL.with(|pool| {
                         pool.borrow_mut()
-                            .push(this.ctx.take().unwrap().stack)
+                            .push(this.ctx.take().unwrap())
                     });
                     return Poll::Ready(this.result.take().unwrap());
                 }
                 FiberStatus::Panicked => {
                     let payload = ctx.panic_payload.take().unwrap();
-                    STACK_POOL.with(|pool| {
+                    CONTEXT_POOL.with(|pool| {
                         pool.borrow_mut()
-                            .push(this.ctx.take().unwrap().stack)
+                            .push(this.ctx.take().unwrap())
                     });
                     std::panic::resume_unwind(payload);
                 }
                 FiberStatus::Yielded => {
                     // The fiber needs more data — try to read from the
                     // async reader.
-                    let mut buf = tokio::io::ReadBuf::new(&mut this.read_buffer[..]);
+                    
+                    // We must borrow ctx and this.reader disjointly.
+                    // Since this.reader and this.ctx are distinct fields, we can do:
+                    let ctx_read_buf = &mut ctx.read_buffer[..];
+                    let mut buf = tokio::io::ReadBuf::new(ctx_read_buf);
                     let poll_res = Pin::new(&mut this.reader).poll_read(cx, &mut buf);
                     match poll_res {
                         Poll::Ready(Ok(())) => {
@@ -607,7 +603,7 @@ where
                                 // EOF — tell the fiber so it can return an error.
                                 ctx.status = FiberStatus::Finished;
                                 ctx.buf_ptr = core::ptr::slice_from_raw_parts_mut(
-                                    this.read_buffer.as_mut_ptr(),
+                                    ctx.read_buffer.as_mut_ptr(),
                                     0,
                                 );
                                 unsafe {
@@ -617,7 +613,7 @@ where
                             } else {
                                 ctx.status = FiberStatus::Running;
                                 ctx.buf_ptr = core::ptr::slice_from_raw_parts_mut(
-                                    this.read_buffer.as_mut_ptr(),
+                                    ctx.read_buffer.as_mut_ptr(),
                                     filled,
                                 );
                                 unsafe {
@@ -627,9 +623,9 @@ where
                             }
                         }
                         Poll::Ready(Err(_e)) => {
-                            STACK_POOL.with(|pool| {
+                            CONTEXT_POOL.with(|pool| {
                                 pool.borrow_mut()
-                                    .push(this.ctx.take().unwrap().stack)
+                                    .push(this.ctx.take().unwrap())
                             });
                             return Poll::Ready(Err(crate::error::DecodeError::Other(
                                 "async IO error in fiber bridge",
@@ -647,26 +643,13 @@ where
 }
 
 // Clean up fiber resources if the future is dropped while the fiber is
-// suspended (e.g. the task is cancelled).  The GuardedStack will be
-// unmapped by its own Drop impl, so we just need to ensure we don't leak
-// the closure data.
+// suspended (e.g. the task is cancelled). The GuardedStack and Context 
+// memories will be successfully unmapped / dropped natively.
 #[cfg(feature = "async-fiber")]
 impl<R, F, T> Drop for BridgeFuture<R, F, T> {
     fn drop(&mut self) {
         if let Some(ctx) = self.ctx.take() {
-            // If the fiber never ran, the closure data is still live.
-            if !ctx.closure_ptr.is_null() && ctx.status == FiberStatus::Initial {
-                // We cannot safely drop the typed ClosureData here without
-                // knowing the concrete type — but since `f` is still in
-                // `self.f` (Option is still Some), nothing was leaked.
-                // The Box<ClosureData> will be reclaimed when the
-                // BridgeFuture itself drops.
-            }
-            // The GuardedStack inside ctx.stack is dropped here,
-            // which calls munmap on the guard-page-protected memory.
-            // We intentionally do NOT return it to the pool in the
-            // cancellation path — the stack may be in an inconsistent
-            // state if the fiber was mid-execution.
+            // Context is dropped instead of pooled to discard dirty internal state.
             drop(ctx);
         }
     }
