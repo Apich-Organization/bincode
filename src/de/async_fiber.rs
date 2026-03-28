@@ -693,10 +693,7 @@ where
                             CONTEXT_POOL.with(|pool| {
                                 pool.borrow_mut().push(this.ctx.take().unwrap());
                             });
-                            return Poll::Ready(Err(crate::error::DecodeError::Io {
-                                inner: Box::new(e),
-                                path: crate::error_path::Path::new(),
-                            }));
+                            return Poll::Ready(crate::error::cold_decode_error_io(e, 1));
                         },
                         | Poll::Pending => return Poll::Pending,
                     }
