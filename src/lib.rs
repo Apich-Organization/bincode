@@ -467,12 +467,14 @@ where
     C::Mode: crate::config::InternalFingerprintGuard<T, C>,
 {
     let bridge = crate::de::async_fiber::AsyncFiberBridge::new(reader);
-    bridge.run(move |fiber_reader| {
-        // Because fingerprinting might yield, we do it in the fiber.
-        C::Mode::decode_check(&config, fiber_reader)?;
-        let mut decoder = crate::de::DecoderImpl::<_, C, ()>::new(fiber_reader, config, ());
-        T::decode(&mut decoder)
-    }).await
+    bridge
+        .run(move |fiber_reader| {
+            // Because fingerprinting might yield, we do it in the fiber.
+            C::Mode::decode_check(&config, fiber_reader)?;
+            let mut decoder = crate::de::DecoderImpl::<_, C, ()>::new(fiber_reader, config, ());
+            T::decode(&mut decoder)
+        })
+        .await
 }
 
 /// Attempt to decode a given serde-compatible type `T` from the given async reader safely using a non-blocking fiber.
@@ -489,10 +491,13 @@ where
     C: crate::config::Config,
 {
     let bridge = crate::de::async_fiber::AsyncFiberBridge::new(reader);
-    bridge.run(move |fiber_reader| {
-        let mut serde_decoder = crate::features::serde::OwnedSerdeDecoder::from_reader(fiber_reader, config);
-        T::deserialize(serde_decoder.as_deserializer())
-    }).await
+    bridge
+        .run(move |fiber_reader| {
+            let mut serde_decoder =
+                crate::features::serde::OwnedSerdeDecoder::from_reader(fiber_reader, config);
+            T::deserialize(serde_decoder.as_deserializer())
+        })
+        .await
 }
 
 // TODO: Currently our doctests fail when trying to include the specs because the specs depend on `derive` and `alloc`.

@@ -1,9 +1,14 @@
 #[cfg(feature = "async-fiber")]
 mod async_fiber_tests {
-    use bincode_next::{config, decode_async, encode_to_vec, Decode, Encode};
+    use bincode_next::Decode;
+    use bincode_next::Encode;
+    use bincode_next::config;
+    use bincode_next::decode_async;
+    use bincode_next::encode_to_vec;
     use futures_io::AsyncRead;
     use std::pin::Pin;
-    use std::task::{Context, Poll};
+    use std::task::Context;
+    use std::task::Poll;
 
     #[derive(Encode, Decode, PartialEq, Debug, Clone)]
     struct ComplexStruct {
@@ -39,7 +44,7 @@ mod async_fiber_tests {
     }
 
     #[test]
-    #[cfg_attr(miri, ignore)] 
+    #[cfg_attr(miri, ignore)]
     fn test_async_fiber_chunked() {
         let original = ComplexStruct {
             a: 42,
@@ -51,7 +56,9 @@ mod async_fiber_tests {
 
         let encoded = encode_to_vec(&original, config::standard()).unwrap();
 
-        let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
 
         rt.block_on(async {
             // Try different chunk sizes to force the fiber to yield multiple times
@@ -62,14 +69,17 @@ mod async_fiber_tests {
                     pos: 0,
                 };
 
-                let decoded: ComplexStruct = decode_async::<ComplexStruct, _, _>(config::standard(), reader).await.unwrap();
+                let decoded: ComplexStruct =
+                    decode_async::<ComplexStruct, _, _>(config::standard(), reader)
+                        .await
+                        .unwrap();
                 assert_eq!(original, decoded, "Failed at chunk size {}", chunk_size);
             }
         });
     }
 
     #[test]
-    #[cfg_attr(miri, ignore)] 
+    #[cfg_attr(miri, ignore)]
     fn test_async_fiber_panic_propagation() {
         // Here we could test that panics inside the fiber propagate back to the executor correctly.
         // Due to the complexity of the current fiber state and naked asm, we assert it doesn't leak.

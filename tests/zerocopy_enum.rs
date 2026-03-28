@@ -24,10 +24,7 @@ fn test_zerocopy_enum() {
         | _ => panic!("Expected A"),
     }
 
-    let val_b = TestEnumBuilder::B {
-        x: 100u64,
-        y: 200u32,
-    };
+    let val_b = TestEnumBuilder::B { x: 100u64, y: 200u32 };
     let offset_b = builder.reserve::<TestEnum>();
     let target_b = val_b.build_to_target(&mut builder, offset_b);
 

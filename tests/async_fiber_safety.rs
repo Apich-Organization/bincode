@@ -1,10 +1,16 @@
 #[cfg(feature = "async-fiber")]
 mod safety_tests {
-    use bincode_next::{config, decode_async, Decode};
-    use std::pin::Pin;
-    use std::task::{Context, Poll, Waker, RawWaker, RawWakerVTable};
-    use futures_io::AsyncRead;
+    use bincode_next::Decode;
+    use bincode_next::config;
     use bincode_next::de::read::Reader;
+    use bincode_next::decode_async;
+    use futures_io::AsyncRead;
+    use std::pin::Pin;
+    use std::task::Context;
+    use std::task::Poll;
+    use std::task::RawWaker;
+    use std::task::RawWakerVTable;
+    use std::task::Waker;
 
     fn dummy_waker() -> Waker {
         static VTABLE: RawWakerVTable = RawWakerVTable::new(
@@ -24,7 +30,7 @@ mod safety_tests {
 
     impl Decode<()> for PanickingStruct {
         fn decode<D: bincode_next::de::Decoder>(
-            _decoder: &mut D,
+            _decoder: &mut D
         ) -> Result<Self, bincode_next::error::DecodeError> {
             panic!("Intentional panic inside fiber!");
         }
@@ -44,12 +50,15 @@ mod safety_tests {
 
     #[test]
     fn test_panic_propagation() {
-        let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
 
         let result = std::panic::catch_unwind(|| {
             rt.block_on(async {
                 let reader = DummyReader;
-                let _decoded: PanickingStruct = decode_async(config::standard(), reader).await.unwrap();
+                let _decoded: PanickingStruct =
+                    decode_async(config::standard(), reader).await.unwrap();
             })
         });
 
@@ -68,7 +77,7 @@ mod safety_tests {
 
     impl Decode<()> for SuspendedStruct {
         fn decode<D: bincode_next::de::Decoder>(
-            decoder: &mut D,
+            decoder: &mut D
         ) -> Result<Self, bincode_next::error::DecodeError> {
             let mut buf = [0u8; 1];
             // This will pend indefinitely with DummyReader, yielding back to the executor
@@ -80,8 +89,11 @@ mod safety_tests {
     #[test]
     fn test_fiber_drop_memory_safety() {
         let reader = DummyReader;
-        let mut future = Box::pin(decode_async::<SuspendedStruct, _, _>(config::standard(), reader));
-        
+        let mut future = Box::pin(decode_async::<SuspendedStruct, _, _>(
+            config::standard(),
+            reader,
+        ));
+
         let waker = dummy_waker();
         let mut cx = Context::from_waker(&waker);
 
@@ -90,7 +102,7 @@ mod safety_tests {
 
         // Now drop the future while the fiber is yielded mid-execution.
         // This exercises BridgeFuture::drop, which drops the mapped FiberContext
-        // and its GuardedStack cleanly, preventing segfaults. Locals inside the 
+        // and its GuardedStack cleanly, preventing segfaults. Locals inside the
         // fiber stack will be leaked as designed (safe in Rust), but the OS-level
         // memory mapped via mmap is appropriately unmapped via Drop on GuardedStack.
         drop(future);

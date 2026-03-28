@@ -1,10 +1,15 @@
 #[cfg(feature = "async-fiber")]
 mod proptests {
-    use bincode_next::{config, decode_async, encode_to_vec, Decode, Encode};
+    use bincode_next::Decode;
+    use bincode_next::Encode;
+    use bincode_next::config;
+    use bincode_next::decode_async;
+    use bincode_next::encode_to_vec;
+    use futures_io::AsyncRead;
     use proptest::prelude::*;
     use std::pin::Pin;
-    use std::task::{Context, Poll};
-    use futures_io::AsyncRead;
+    use std::task::Context;
+    use std::task::Poll;
 
     #[derive(Encode, Decode, PartialEq, Debug, Clone)]
     struct TestData {
@@ -42,7 +47,7 @@ mod proptests {
 
     proptest! {
         #[test]
-        #[cfg_attr(miri, ignore)] 
+        #[cfg_attr(miri, ignore)]
         fn test_async_fiber_decode_random_chunks(
             chunk_sizes in prop::collection::vec(1..50usize, 100),
             a in any::<u64>(),

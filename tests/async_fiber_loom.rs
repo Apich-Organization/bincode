@@ -1,10 +1,15 @@
 #[cfg(all(feature = "async-fiber", loom))]
 mod loom_tests {
-    use bincode_next::{config, decode_async};
+    use bincode_next::config;
+    use bincode_next::decode_async;
+    use futures_io::AsyncRead;
     use loom::thread;
     use std::pin::Pin;
-    use std::task::{Context, Poll, Waker, RawWaker, RawWakerVTable};
-    use futures_io::AsyncRead;
+    use std::task::Context;
+    use std::task::Poll;
+    use std::task::RawWaker;
+    use std::task::RawWakerVTable;
+    use std::task::Waker;
 
     // A mock AsyncRead that yields exactly once, simulating an IO delay.
     struct YieldReader {
@@ -41,17 +46,20 @@ mod loom_tests {
     }
 
     #[test]
-    #[cfg_attr(miri, ignore)] 
+    #[cfg_attr(miri, ignore)]
     fn test_fiber_thread_migration() {
         loom::model(|| {
             let encoded = bincode_next::encode_to_vec(&42u32, config::standard()).unwrap();
-            let reader = YieldReader { data: encoded, yielded: false };
-            
+            let reader = YieldReader {
+                data: encoded,
+                yielded: false,
+            };
+
             // Initialize the future
             let mut f = Box::pin(decode_async::<u32, _, _>(config::standard(), reader));
             let waker = dummy_waker();
             let mut cx = Context::from_waker(&waker);
-            
+
             // First poll triggers the fiber to start, read 0 bytes, yield Pending.
             assert!(f.as_mut().poll(&mut cx).is_pending());
 
@@ -59,29 +67,34 @@ mod loom_tests {
             thread::spawn(move || {
                 let waker = dummy_waker();
                 let mut cx = Context::from_waker(&waker);
-                
+
                 // Second poll resumes the fiber on a different thread
                 let Poll::Ready(Ok(decoded)) = f.as_mut().poll(&mut cx) else {
                     panic!("Expected Ready(Ok)");
                 };
-                
+
                 assert_eq!(decoded, 42);
-            }).join().unwrap();
+            })
+            .join()
+            .unwrap();
         });
     }
 
     #[test]
-    #[cfg_attr(miri, ignore)] 
+    #[cfg_attr(miri, ignore)]
     fn test_fiber_cancellation() {
         loom::model(|| {
             let encoded = bincode_next::encode_to_vec(&42u32, config::standard()).unwrap();
-            let reader = YieldReader { data: encoded, yielded: false };
-            
+            let reader = YieldReader {
+                data: encoded,
+                yielded: false,
+            };
+
             // Initialize the future
             let mut f = Box::pin(decode_async::<u32, _, _>(config::standard(), reader));
             let waker = dummy_waker();
             let mut cx = Context::from_waker(&waker);
-            
+
             // First poll triggers the fiber to start, read 0 bytes, yield Pending.
             assert!(f.as_mut().poll(&mut cx).is_pending());
 
