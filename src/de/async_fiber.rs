@@ -689,13 +689,14 @@ where
                                 resume_fiber(ctx);
                             }
                         },
-                        | Poll::Ready(Err(_e)) => {
+                        | Poll::Ready(Err(e)) => {
                             CONTEXT_POOL.with(|pool| {
                                 pool.borrow_mut().push(this.ctx.take().unwrap());
                             });
-                            return Poll::Ready(crate::error::cold_decode_error_other(
-                                "async IO error in fiber bridge",
-                            ));
+                            return Poll::Ready(Err(crate::error::DecodeError::Io {
+                                inner: Box::new(e),
+                                path: crate::error_path::Path::new(),
+                            }));
                         },
                         | Poll::Pending => return Poll::Pending,
                     }
