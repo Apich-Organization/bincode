@@ -207,10 +207,6 @@ pub struct FiberContext {
     pub buf_ptr: *mut [u8],
     /// 8KB heap-allocated IO staging buffer.
     pub read_buffer: Box<[u8]>,
-    /// Thread that is currently executing the fiber. Used to enforce thread
-    /// affinity: the fiber must be resumed on the same thread that last
-    /// suspended it (i.e. it cannot migrate mid-execution).
-    pub owner_thread: Option<std::thread::ThreadId>,
 }
 
 // FiberContext is intentionally NOT Send/Sync.
@@ -489,21 +485,10 @@ unsafe extern "C" fn fiber_trampoline() {
 #[inline]
 unsafe fn resume_fiber(ctx: &mut FiberContext) {
     unsafe {
-        let current_thread = std::thread::current().id();
-
-        // Thread affinity check: the fiber must resume on the same OS thread
-        // that last ran it.  Multi-threaded executors can move futures
-        // between worker threads between polls, but the *fiber* (which lives
-        // on its own stack) must not be migrated mid-execution.  Because we
-        // only ever switch *into* the fiber from `poll`, and the fiber always
-        // switches back before `poll` returns, the fiber is never "in-flight"
-        // across a thread migration — the migration can only happen while the
-        // fiber is suspended and `poll` has returned `Pending`.
-        //
-        // We record the thread on first resume and re-record on every resume,
-        // which is correct because the fiber is guaranteed to be fully
-        // suspended (back on the executor stack) when a migration occurs.
-        ctx.owner_thread = Some(current_thread);
+        // Thread affinity check is completely omitted; fibers can transparently
+        // migrate across executor threads since `mmap` and heap regions share
+        // the generic virtual address space and executor generic regs snapshot
+        // the active execution context per poll dynamically.
 
         CURRENT_FIBER.with(|c| c.set(core::ptr::from_mut(ctx)));
         switch_context(&raw mut ctx.executor_regs, &raw const ctx.regs);
@@ -551,9 +536,9 @@ where
             let mut ctx = CONTEXT_POOL
                 .with(|pool| pool.borrow_mut().pop())
                 .unwrap_or_else(|| {
-                    // Default 64 KiB usable stack + 1 guard page.
+                    // Default 2 MiB usable stack via mmap with guard region.
                     Box::new(FiberContext {
-                        stack: GuardedStack::new(64 * 1024),
+                        stack: GuardedStack::new(2 * 1024 * 1024),
                         regs: Registers::new(),
                         executor_regs: Registers::new(),
                         status: FiberStatus::Initial,
@@ -565,7 +550,6 @@ where
                         reader_ptr: core::ptr::null_mut(),
                         buf_ptr: core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut(), 0),
                         read_buffer: alloc::vec![0; 8192].into_boxed_slice(),
-                        owner_thread: None,
                     })
                 });
 
@@ -574,7 +558,6 @@ where
             ctx.result_ptr = core::ptr::null_mut();
             ctx.reader_ptr = core::ptr::null_mut();
             ctx.buf_ptr = core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut(), 0);
-            ctx.owner_thread = None;
 
             let sp = ctx.stack.top();
 

@@ -77,11 +77,4 @@ mod async_fiber_tests {
             }
         });
     }
-
-    #[test]
-    #[cfg_attr(miri, ignore)]
-    fn test_async_fiber_panic_propagation() {
-        // Here we could test that panics inside the fiber propagate back to the executor correctly.
-        // Due to the complexity of the current fiber state and naked asm, we assert it doesn't leak.
-    }
 }
