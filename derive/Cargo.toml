@@ -1,6 +1,6 @@
 [package]
 name = "bincode_derive-next"
-version = "3.0.0-rc.6"
+version = "3.0.0-rc.7"
 # remember to update bincode
 authors = [
     "Xinyu Yang <xinyu.yang@apich.org>",
@@ -49,4 +49,3 @@ empty-line-after-doc-comments = "allow"
 
 [dependencies]
 virtue = { package = "virtue-next", version = "0.1.3" }
-
