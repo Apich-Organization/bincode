@@ -415,6 +415,27 @@ impl<R: futures_io::AsyncRead + Unpin> crate::de::read::Reader for FiberReader<'
 }
 
 /// Standard entry point that allows asynchronously decoding structs by transparently spawning an executor-integrated Fiber state machine.
+///
+/// # CRITICAL SAFETY WARNING: THREAD MIGRATION & TLS
+///
+/// Under standard usage, `BridgeFuture` implements `Send` allowing execution on
+/// multi-threaded runtimes (like Tokio's worker pool).
+///
+/// **DO NOT use Thread-Local Storage (TLS) or `!Send` types (e.g. `Rc`, `RefCell`, `MutexGuard`) inside your `Decode` trait implementations!**
+///
+/// When the underlying reader returns `Poll::Pending`, the fiber execution stack
+/// is suspended. A work-stealing executor may then migrate the suspended `BridgeFuture`
+/// to a completely different OS thread. 
+///
+/// Normally, the Rust compiler analyzes `.await` points and prevents futures holding
+/// `!Send` data from implementing `Send`. However, because the fiber's yield point is
+/// hidden behind the synchronous `bincode::de::read::Reader::read` invocation, the
+/// compiler **cannot** analyze the variables held on the fiber's stack.
+///
+/// If a fiber migrates threads while holding a reference to Thread **A**'s TLS,
+/// upon resuming, it will execute on Thread **B** while still illegally referencing
+/// Thread **A**'s memory buffer, resulting in **Undefined Behavior**, panicking, or
+/// silent memory corruption.
 #[cfg(feature = "async-fiber")]
 pub struct AsyncFiberBridge<R: futures_io::AsyncRead + Unpin> {
     /// Underlying futures_io-based `AsyncRead` source.
@@ -507,11 +528,17 @@ struct BridgeFuture<R, F, T> {
     _marker: core::marker::PhantomData<T>,
 }
 
-// SAFETY: BridgeFuture is Send+Sync when its components are, which is the
-// normal requirement for futures on multi-threaded executors.  The raw
-// pointers inside FiberContext are only dereferenced while the fiber is
-// actively running (inside `poll`), never across an await point, and we
-// enforce thread-affinity within a single `poll` invocation.
+// SAFETY: BridgeFuture is Send+Sync when its components are.
+//
+// WARNING: As stated on `AsyncFiberBridge`, this circumvents the compiler's
+// ability to analyze variables held across yield points. The fiber natively
+// guarantees pointer safety for generic hardware execution bounds via the `mmap`
+// generic process address space and dynamic `executor_regs` restoring. However,
+// `!Send` structures (like `Rc` and `thread_local!`) instantiated inside the
+// user's `Decode` stack will blindly be migrated across threads, which is **UB**.
+//
+// By using this abstraction, the caller is trusted that their `Decode` derivations
+// strictly instantiate thread-safe, `Send`-equivalent variables locally.
 #[cfg(feature = "async-fiber")]
 #[allow(clippy::non_send_fields_in_send_ty)]
 unsafe impl<R: Send, F: Send, T: Send> Send for BridgeFuture<R, F, T> {}
