@@ -22,10 +22,6 @@ mod safety_tests {
         unsafe { Waker::from_raw(RawWaker::new(std::ptr::null(), &VTABLE)) }
     }
 
-    // -------------------------------------------------------------
-    // Test Panic Propagation
-    // -------------------------------------------------------------
-
     struct PanickingStruct;
 
     impl Decode<()> for PanickingStruct {
@@ -68,10 +64,6 @@ mod safety_tests {
             assert_eq!(*s, "Intentional panic inside fiber!");
         }
     }
-
-    // -------------------------------------------------------------
-    // Test Safe Future Drop
-    // -------------------------------------------------------------
 
     struct SuspendedStruct;
 

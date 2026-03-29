@@ -91,9 +91,15 @@ serde = { version = "1.0", features = ["derive"] }
 bumpalo = { version = "3.16", features = ["collections"] }
 proptest = "1.10"
 loom = "0.7"
+async-bincode = "0.8"
+futures = "0.3"
 
 [[bench]]
 name = "varint"
+harness = false
+
+[[bench]]
+name = "concurrency"
 harness = false
 
 [[bench]]
