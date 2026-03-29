@@ -3,9 +3,9 @@
 <img align="right" src="./logo.svg" height="200" />
 
 [![Discord Server](https://img.shields.io/discord/1459399539403522074.svg?label=Discord&logo=discord&color=blue)](https://discord.gg/D5e2czMTT9)
-[![](https://img.shields.io/crates/v/bincode-next.svg)](https://crates.io/crates/bincode-next)
-[![](https://img.shields.io/crates/l/bincode-next)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/crates/l/bincode-next)](https://opensource.org/licenses/MIT)
 [![Scc Count Badge Code](https://sloc.xyz/github/Apich-Organization/bincode/?category=code)](https://github.com/Apich-Organization/bincode/)
+[![DOI](https://zenodo.org/badge/DOI/10.6084/m9.figshare.31410402.svg)](https://doi.org/10.6084/m9.figshare.31410402)
 
 **Bincode-Next** is a high-performance binary encoder/decoder pair that uses a zero-fluff encoding scheme. It is a modernized fork of the original `bincode` library, maintained by the Apich Organization to ensure continued development and extreme performance optimizations for the Rust ecosystem.
 
