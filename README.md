@@ -88,12 +88,6 @@ fn main() {
 
 Bincode-Next supports true zero-cost asynchronous decoding using **Unified Fiber-backed Async (UFA)**. By executing synchronous traits on a dedicated lightweight fiber stack, we avoid the overhead of state machine generation and achieve high performance over `tokio::io::AsyncRead`.
 
-Enable it via the `async-fiber` feature:
-```toml
-[dependencies]
-bincode-next = { version = "3.0.0-rc.5", features = ["async-fiber"] }
-```
-
 ```rust
 use bincode_next::{config, decode_async, encode_to_vec, Decode, Encode};
 
