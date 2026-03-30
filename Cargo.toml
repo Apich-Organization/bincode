@@ -93,6 +93,8 @@ proptest = "1.10"
 loom = "0.7"
 async-bincode = "0.8"
 futures = "0.3"
+
+[target.'cfg(not(feature = "std"))'.dependencies]
 panic-halt = "1.0"
 
 [[bench]]
