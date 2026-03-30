@@ -75,6 +75,8 @@
           ],
           "rust": [
             "stable",
+            "beta",
+            "nightly",
             "1.91.0"
           ],
           "features": [
@@ -124,6 +126,8 @@ fi",
           ],
           "rust": [
             "stable",
+            "beta",
+            "nightly",
             "1.91.0"
           ],
           "features": [
