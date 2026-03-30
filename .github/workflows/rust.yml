@@ -86,16 +86,16 @@
             "1.91.0"
           ],
           "features": [
-            "",
-            "alloc",
-            "alloc,derive",
+            "no-std",
+            "alloc,no-std",
+            "alloc,derive,no-std",
             "std",
             "std,derive",
-            "serde",
-            "alloc,serde",
+            "serde,no-std",
+            "alloc,serde,no-std",
             "std,serde",
-            "serde,derive",
-            "alloc,serde,derive",
+            "serde,derive,no-std",
+            "alloc,serde,derive,no-std",
             "std,serde,derive",
             "std,serde,derive,zero-copy,static-size,async-fiber",
           ]
