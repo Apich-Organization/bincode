@@ -1040,8 +1040,7 @@ fn checked_relative_offset(
     let diff = to as isize - from as isize;
     i32::try_from(diff).unwrap_or_else(|_| {
         panic!(
-            "Relative offset overflow: distance {} between positions {} and {} exceeds i32 range",
-            diff, from, to
+            "Relative offset overflow: distance {diff} between positions {from} and {to} exceeds i32 range"
         )
     })
 }
