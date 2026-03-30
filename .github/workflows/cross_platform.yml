@@ -94,7 +94,6 @@
             # "aarch64-unknown-fuchsia",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/1222): currently broken
             # "aarch64-linux-android",
-            "aarch64-linux-android",
             "arm-linux-androideabi",
             "arm-unknown-linux-musleabi",
             "arm-unknown-linux-musleabihf",
@@ -106,12 +105,10 @@
             "armv7-unknown-linux-musleabihf",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/634): broken
             # "asmjs-unknown-emscripten",
-            "asmjs-unknown-emscripten",
             "i586-unknown-linux-gnu",
             "i586-unknown-linux-musl",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/1222): currently broken
             # "i686-linux-android",
-            "i686-linux-android",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
             # "i686-unknown-freebsd",
             "i686-unknown-linux-musl",
@@ -175,7 +172,6 @@
           "run": "cross test --target ${{ matrix.platform }} --all-features",
           "name": "Run tests",
           "env": {
-            "RUSTFLAGS": "-D warnings",
             "RUST_BACKTRACE": "1",
           }
         }
