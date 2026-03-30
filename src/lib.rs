@@ -182,7 +182,7 @@ pub use relative_ptr::ZeroCopy;
 pub use relative_ptr::ZeroCopyType;
 
 #[cfg(not(feature = "std"))]
-#[cfg(feature = "no-std-compat")]
+#[cfg(feature = "no-std")]
 use panic_halt as _;
 
 use config::Config;
