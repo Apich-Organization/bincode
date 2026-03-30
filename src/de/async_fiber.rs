@@ -425,7 +425,7 @@ impl<R: futures_io::AsyncRead + Unpin> crate::de::read::Reader for FiberReader<'
 ///
 /// When the underlying reader returns `Poll::Pending`, the fiber execution stack
 /// is suspended. A work-stealing executor may then migrate the suspended `BridgeFuture`
-/// to a completely different OS thread. 
+/// to a completely different OS thread.
 ///
 /// Normally, the Rust compiler analyzes `.await` points and prevents futures holding
 /// `!Send` data from implementing `Send`. However, because the fiber's yield point is
