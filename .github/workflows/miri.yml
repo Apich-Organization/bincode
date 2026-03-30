@@ -4,6 +4,7 @@
     "push": {
       "branches": [
         "trunk",
+        "main",
         "v*.x",
         "ci/*"
       ]
@@ -11,6 +12,7 @@
     "pull_request": {
       "branches": [
         "trunk",
+        "main",
         "v*.x"
       ]
     }
