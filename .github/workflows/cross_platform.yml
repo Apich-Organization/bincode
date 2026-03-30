@@ -36,7 +36,8 @@
 
             # `cross` does not provide a Docker image for target i686-pc-windows-msvc
             # "i686-pc-windows-msvc",
-            "i686-unknown-linux-gnu",
+            # compile problems relating to cross-rs
+            # "i686-unknown-linux-gnu",
             # `cross` does not provide a Docker image for target x86_64-apple-darwin
             # "x86_64-apple-darwin",
 
@@ -57,9 +58,12 @@
             # `cross` does not provide a Docker image for target aarch64-pc-windows-msvc
             # "aarch64-pc-windows-msvc",
             "aarch64-unknown-linux-musl",
-            "arm-unknown-linux-gnueabi",
-            "arm-unknown-linux-gnueabihf",
-            "armv7-unknown-linux-gnueabihf",
+            # compile problems relating to cross-rs
+            # "arm-unknown-linux-gnueabi",
+            # compile problems relating to cross-rs
+            # "arm-unknown-linux-gnueabihf",
+            # compile problems relating to cross-rs
+            # "armv7-unknown-linux-gnueabihf",
             # `cross` does not provide a Docker image for target loongarch64-unknown-linux-gnu
             # "loongarch64-unknown-linux-gnu",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
@@ -70,11 +74,15 @@
             # "mips64el-unknown-linux-gnuabi64",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
             # "mipsel-unknown-linux-gnu",
-            "powerpc-unknown-linux-gnu",
-            "powerpc64-unknown-linux-gnu",
-            "powerpc64le-unknown-linux-gnu",
+            # compile problems relating to cross-rs
+            # "powerpc-unknown-linux-gnu",
+            # compile problems relating to cross-rs
+            # "powerpc64-unknown-linux-gnu",
+            # compile problems relating to cross-rs
+            # "powerpc64le-unknown-linux-gnu",
             "riscv64gc-unknown-linux-gnu",
-            "s390x-unknown-linux-gnu",
+            # compile problems relating to cross-rs
+            # "s390x-unknown-linux-gnu",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
             # "x86_64-unknown-freebsd",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
@@ -94,24 +102,36 @@
             # "aarch64-unknown-fuchsia",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/1222): currently broken
             # "aarch64-linux-android",
-            "arm-linux-androideabi",
-            "arm-unknown-linux-musleabi",
-            "arm-unknown-linux-musleabihf",
-            "armv5te-unknown-linux-gnueabi",
-            "armv5te-unknown-linux-musleabi",
-            "armv7-linux-androideabi",
-            "armv7-unknown-linux-gnueabi",
-            "armv7-unknown-linux-musleabi",
-            "armv7-unknown-linux-musleabihf",
+            # compile problems relating to cross-rs
+            # "arm-linux-androideabi",
+            # compile problems relating to cross-rs
+            # "arm-unknown-linux-musleabi",
+            # compile problems relating to cross-rs
+            # "arm-unknown-linux-musleabihf",
+            # compile problems relating to cross-rs
+            # "armv5te-unknown-linux-gnueabi",
+            # compile problems relating to cross-rs
+            # "armv5te-unknown-linux-musleabi",
+            # compile problems relating to cross-rs
+            # "armv7-linux-androideabi",
+            # compile problems relating to cross-rs
+            # "armv7-unknown-linux-gnueabi",
+            # compile problems relating to cross-rs
+            # "armv7-unknown-linux-musleabi",
+            # compile problems relating to cross-rs
+            # "armv7-unknown-linux-musleabihf",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/634): broken
             # "asmjs-unknown-emscripten",
-            "i586-unknown-linux-gnu",
-            "i586-unknown-linux-musl",
+            # compile problems relating to cross-rs
+            # "i586-unknown-linux-gnu",
+            # compile problems relating to cross-rs
+            # "i586-unknown-linux-musl",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/1222): currently broken
             # "i686-linux-android",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
             # "i686-unknown-freebsd",
-            "i686-unknown-linux-musl",
+            # compile problems relating to cross-rs
+            # "i686-unknown-linux-musl",
             # "mips-unknown-linux-musl",
             # "mips64-unknown-linux-muslabi64",
             # "mips64el-unknown-linux-muslabi64",
@@ -120,8 +140,10 @@
             # "sparc64-unknown-linux-gnu",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
             # "sparcv9-sun-solaris",
-            "thumbv7neon-linux-androideabi",
-            "thumbv7neon-unknown-linux-gnueabihf",
+            # compile problems relating to cross-rs
+            # "thumbv7neon-linux-androideabi",
+            # compile problems relating to cross-rs
+            # "thumbv7neon-unknown-linux-gnueabihf",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
             # "wasm32-unknown-emscripten",
             # `cross` does not provide a Docker image for target wasm32-unknown-unknown
