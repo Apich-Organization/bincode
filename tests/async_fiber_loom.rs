@@ -1,4 +1,4 @@
-#[cfg(all(feature = "async-fiber", loom))]
+#![cfg(all(feature = "async-fiber", loom))]
 mod loom_tests {
     use bincode_next::config;
     use bincode_next::decode_async;

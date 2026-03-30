@@ -1,4 +1,4 @@
-#[cfg(feature = "async-fiber")]
+#![cfg(feature = "async-fiber")]
 mod async_fiber_tests {
     use bincode_next::Decode;
     use bincode_next::Encode;
