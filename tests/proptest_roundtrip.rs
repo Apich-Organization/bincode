@@ -1,3 +1,5 @@
+#![cfg(all(feature = "std", feature = "derive"))]
+
 //! Comprehensive property-based round-trip tests for bincode.
 //!
 //! Tests encode→decode round-trips across all config combinations:

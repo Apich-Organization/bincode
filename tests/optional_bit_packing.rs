@@ -1,3 +1,5 @@
+#![cfg(feature = "derive")]
+
 use bincode_next::BitPacked;
 use bincode_next::config;
 

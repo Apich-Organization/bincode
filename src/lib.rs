@@ -516,8 +516,6 @@ where
         .await
 }
 
-// TODO: Currently our doctests fail when trying to include the specs because the specs depend on `derive` and `alloc`.
-// But we want to have the specs in the docs always
 #[cfg(all(feature = "alloc", feature = "derive", doc))]
 pub mod spec {
     #![doc = include_str!("../docs/spec.md")]
@@ -530,6 +528,7 @@ pub mod migration_guide {
 
 // Test the examples in readme.md
 #[cfg(all(feature = "alloc", feature = "derive", doctest))]
+#[cfg_attr(miri, ignore)]
 mod readme {
     #![doc = include_str!("../README.md")]
 }

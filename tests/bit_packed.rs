@@ -1,4 +1,5 @@
 #![cfg(feature = "derive")]
+
 use bincode_next::BitPacked;
 
 #[derive(BitPacked, PartialEq, Debug)]

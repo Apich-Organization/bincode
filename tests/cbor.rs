@@ -1,3 +1,5 @@
+#![cfg(all(feature = "alloc", feature = "derive"))]
+
 use bincode::Decode;
 use bincode::Encode;
 use bincode::config::{

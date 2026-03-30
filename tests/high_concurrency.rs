@@ -1,3 +1,4 @@
+#[cfg(feature = "async-fiber")]
 use bincode_next::Encode;
 use bincode_next::config;
 use bincode_next::decode_async;
