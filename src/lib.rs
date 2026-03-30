@@ -181,7 +181,10 @@ pub use relative_ptr::ZeroCopy;
 #[cfg(feature = "zero-copy")]
 pub use relative_ptr::ZeroCopyType;
 
-#[cfg(not(feature = "std"))]
+#[cfg(not(any(
+    feature = "std",
+    feature = "serde"
+)))]
 #[cfg(feature = "no-std")]
 use panic_halt as _;
 
