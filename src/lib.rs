@@ -80,7 +80,6 @@
 // -------------------------------------------------------------------------
 #![deny(
     // Rust Compiler Errors
-    dead_code,
     unreachable_code,
     improper_ctypes_definitions,
     future_incompatible,
@@ -106,6 +105,8 @@
 // LEVEL 2: STYLE WARNINGS (Warn)
 // -------------------------------------------------------------------------
 #![warn(
+    // For `no-std` Situation Issues
+    dead_code,
     warnings,
     unsafe_code,
     clippy::dbg_macro,
