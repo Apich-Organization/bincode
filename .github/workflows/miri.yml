@@ -33,7 +33,7 @@ cargo miri setup",
           "name": "Install Rust nightly"
         },
         {
-          "run": "MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --all-features --no-fail-fast",
+          "run": "MIRIFLAGS='-Zmiri-disable-isolation' cargo +nightly miri test --all-features --no-fail-fast",
           "name": "All features"
         }
       ]
