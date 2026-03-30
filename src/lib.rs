@@ -181,6 +181,9 @@ pub use relative_ptr::ZeroCopy;
 #[cfg(feature = "zero-copy")]
 pub use relative_ptr::ZeroCopyType;
 
+#[cfg(not(feature = "std"))]
+use panic_halt as _;
+
 use config::Config;
 use config::internal::InternalFingerprintGuard;
 
