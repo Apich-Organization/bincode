@@ -1,3 +1,5 @@
+#![cfg(feature = "derive")]
+
 #[cfg(feature = "zero-copy")]
 use bincode_next::ZeroCopy;
 

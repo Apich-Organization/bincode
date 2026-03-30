@@ -1,4 +1,6 @@
 #![cfg(feature = "zero-copy")]
+#![cfg(feature = "derive")]
+
 use bincode_next::relative_ptr::ZeroBuilder;
 use bincode_next::relative_ptr::ZeroCopyBuilder;
 

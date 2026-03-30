@@ -1,4 +1,6 @@
-#[cfg(feature = "static-size")]
+#![cfg(feature = "static-size")]
+#![cfg(feature = "derive")]
+
 mod tests {
     use bincode_next::Decode;
     use bincode_next::Encode;
