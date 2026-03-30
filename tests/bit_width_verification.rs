@@ -1,4 +1,4 @@
-#![cfg(feature = "derive")]
+#![cfg(all(feature = "std", feature = "derive"))]
 
 use bincode_next::BitPacked;
 

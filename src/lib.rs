@@ -528,7 +528,13 @@ pub mod migration_guide {
 }
 
 // Test the examples in readme.md
-#[cfg(all(feature = "alloc", feature = "derive", doctest))]
+#[cfg(all(
+    feature = "std",
+    feature = "derive",
+    feature = "serde",
+    feature = "async-fiber",
+    doctest
+))]
 #[cfg_attr(miri, ignore)]
 mod readme {
     #![doc = include_str!("../README.md")]
