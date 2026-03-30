@@ -49,6 +49,7 @@ default = ["std", "derive"]
 std = ["alloc", "serde?/std"]
 alloc = ["serde?/alloc"]
 derive = ["bincode_derive-next"]
+no-std = ["panic-halt"]
 zero-copy = ["bincode_derive-next?/zero-copy"]
 static-size = ["bincode_derive-next?/static-size"]
 async-fiber = ["dep:futures-io", "dep:libc", "std"]
@@ -64,6 +65,7 @@ rapidhash = { version = "4.4", default-features = false }
 pastey = "0.2"
 futures-io = { version = "0.3", optional = true }
 libc = { version = "0.2", optional = true }
+panic-halt = { version = "1.0", optional = true }
 
 # Used for tests
 [dev-dependencies]
@@ -93,9 +95,6 @@ proptest = "1.10"
 loom = "0.7"
 async-bincode = "0.8"
 futures = "0.3"
-
-[target.'cfg(not(feature = "std"))'.dependencies]
-panic-halt = "1.0"
 
 [[bench]]
 name = "varint"
