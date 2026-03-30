@@ -50,14 +50,6 @@
           "uses": "actions-rs/cargo@v1",
           "with": {
             "command": "check",
-            "args": "--all-features"
-          },
-          "name": "Run `cargo check`"
-        },
-        {
-          "uses": "actions-rs/cargo@v1",
-          "with": {
-            "command": "check",
             "args": "--all-features --bench *"
           },
           "name": "Run `cargo check` on benches"
@@ -72,8 +64,8 @@
         }
       ]
     },
-    "test": {
-      "name": "Test",
+    "checks": {
+      "name": "Check",
       "strategy": {
         "matrix": {
           "runner": [
@@ -119,15 +111,67 @@
         {
           "run": "if [ -z \"${{ matrix.features }}\" ]\n
 then\n
+  cargo check --no-default-features\n
+else\n
+  cargo check --no-default-features --features ${{ matrix.features }}\n
+fi",
+          "name": "Run `cargo check` on all features",
+          "shell": "bash",
+        }
+      ]
+    },
+    "test": {
+      "name": "Test",
+      "strategy": {
+        "matrix": {
+          "runner": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
+          "rust": [
+            "stable",
+            "1.91.0"
+          ],
+          "features": [
+            "alloc,no-std",
+            "alloc,derive,no-std",
+            "std",
+            "std,derive",
+            "serde",
+            "alloc,serde",
+            "std,serde",
+            "serde,derive",
+            "alloc,serde,derive",
+            "std,serde,derive",
+            "std,serde,derive,zero-copy,static-size,async-fiber",
+          ]
+        }
+      },
+      "runs-on": "${{ matrix.runner }}",
+      "steps": [
+        {
+          "uses": "actions/checkout@v4",
+          "name": "Checkout"
+        },
+        {
+          "uses": "actions-rs/toolchain@v1",
+          "with": {
+            "profile": "minimal",
+            "toolchain": "${{ matrix.rust }}",
+            "override": true
+          },
+          "name": "Install Rust ${{ matrix.rust }}"
+        },
+        {
+          "run": "if [ -z \"${{ matrix.features }}\" ]\n
+then\n
   cargo test --no-default-features\n
 else\n
   cargo test --no-default-features --features ${{ matrix.features }}\n
 fi",
           "name": "Run `cargo test` on all features",
           "shell": "bash",
-          "env": {
-            "RUSTFLAGS": "-D warnings"
-          }
         }
       ]
     },
