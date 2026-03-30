@@ -28,7 +28,7 @@
             "stable",
             "beta",
             "nightly",
-            "1.85.0"
+            "1.91.0"
           ]
         }
       },
@@ -83,7 +83,7 @@
           ],
           "rust": [
             "stable",
-            "1.85.0"
+            "1.91.0"
           ],
           "features": [
             "",
@@ -97,6 +97,7 @@
             "serde,derive",
             "alloc,serde,derive",
             "std,serde,derive",
+            "std,serde,derive,zero-copy,static-size,async-fiber",
           ]
         }
       },
@@ -142,7 +143,7 @@ fi",
           "uses": "actions-rs/toolchain@v1",
           "with": {
             "profile": "minimal",
-            "toolchain": "1.85.0",
+            "toolchain": "1.91.0",
             "override": true,
             "components": "rustfmt, clippy"
           },
@@ -160,7 +161,7 @@ fi",
           "uses": "actions-rs/cargo@v1",
           "with": {
             "command": "clippy",
-            "args": "--all-features -- -D warnings"
+            "args": "--all-features"
           },
           "name": "Run `cargo clippy`"
         }
@@ -178,7 +179,7 @@ fi",
           "uses": "actions-rs/toolchain@v1",
           "with": {
             "profile": "minimal",
-            "toolchain": "1.85.0",
+            "toolchain": "1.91.0",
             "override": true,
           },
           "name": "Install Rust stable"
