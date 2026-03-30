@@ -78,7 +78,6 @@
             "1.91.0"
           ],
           "features": [
-            "no-std",
             "alloc,no-std",
             "alloc,derive,no-std",
             "std",
