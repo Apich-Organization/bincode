@@ -78,15 +78,9 @@
             "1.91.0"
           ],
           "features": [
-            "alloc,no-std",
-            "alloc,derive,no-std",
             "std",
             "std,derive",
-            "serde",
-            "alloc,serde",
             "std,serde",
-            "serde,derive",
-            "alloc,serde,derive",
             "std,serde,derive",
             "std,serde,derive,zero-copy,static-size,async-fiber",
           ]
@@ -133,15 +127,9 @@ fi",
             "1.91.0"
           ],
           "features": [
-            "alloc,no-std",
-            "alloc,derive,no-std",
             "std",
             "std,derive",
-            "serde",
-            "alloc,serde",
             "std,serde",
-            "serde,derive",
-            "alloc,serde,derive",
             "std,serde,derive",
             "std,serde,derive,zero-copy,static-size,async-fiber",
           ]
