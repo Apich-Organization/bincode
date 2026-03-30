@@ -169,7 +169,7 @@
           "name": "Install cargo cross"
         },
         {
-          "run": "cross test --target ${{ matrix.platform }}",
+          "run": "cross test --target ${{ matrix.platform }} --all-features",
           "name": "Run tests",
           "env": {
             "RUSTFLAGS": "-D warnings",
