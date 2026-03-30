@@ -143,16 +143,16 @@ fi",
           "uses": "actions-rs/toolchain@v1",
           "with": {
             "profile": "minimal",
-            "toolchain": "1.91.0",
+            "toolchain": "nightly",
             "override": true,
             "components": "rustfmt, clippy"
           },
-          "name": "Install Rust stable"
+          "name": "Install Rust nightly"
         },
         {
           "uses": "actions-rs/cargo@v1",
           "with": {
-            "command": "fmt",
+            "command": "+nightly fmt",
             "args": "--all -- --check"
           },
           "name": "Run `cargo fmt`"
