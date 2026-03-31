@@ -44,13 +44,16 @@ impl AsyncRead for PartialReader {
     }
 }
 
-async fn run_worker(encoded: Vec<u8>) {
+async fn run_worker(
+    encoded: Vec<u8>
+) -> core::result::Result<(), bincode_next::error::DecodeError> {
     let reader = PartialReader {
         data: encoded,
         yields: 1, // Yield once to simulate async I/O wait and context switching
         pos: 0,
     };
-    let _decoded: BenchPayload = decode_async(config::standard(), reader).await.unwrap();
+    let _decoded: BenchPayload = decode_async(config::standard(), reader).await?;
+    Ok(())
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
@@ -71,28 +74,35 @@ async fn test_high_concurrency() {
 
     let start = Instant::now();
     let mut completed: usize = 0;
+    let mut successes: usize = 0;
+    let mut errors: usize = 0;
 
     while completed < total_tasks {
         let this_batch = std::cmp::min(batch_size, total_tasks - completed);
-        let mut handles: Vec<JoinHandle<()>> = Vec::with_capacity(this_batch);
+        let mut handles: Vec<
+            JoinHandle<core::result::Result<(), bincode_next::error::DecodeError>>,
+        > = Vec::with_capacity(this_batch);
         for _ in 0..this_batch {
             let enc_clone = encoded.clone();
-            handles.push(tokio::spawn(async move {
-                run_worker(enc_clone).await;
-            }));
+            handles.push(tokio::spawn(async move { run_worker(enc_clone).await }));
         }
         for handle in handles {
-            handle.await.unwrap();
+            match handle.await.unwrap() {
+                | Ok(_) => successes += 1,
+                | Err(_) => errors += 1,
+            }
         }
         completed += this_batch;
     }
 
     let elapsed = start.elapsed();
     println!(
-        "Successfully processed {} tasks with yields in {:.2?} ({:.2} tasks/sec)",
+        "Processed {} tasks in {:.2?} ({:.2} tasks/sec). Success: {}, Errors: {}",
         total_tasks,
         elapsed,
-        total_tasks as f64 / elapsed.as_secs_f64()
+        total_tasks as f64 / elapsed.as_secs_f64(),
+        successes,
+        errors
     );
 }
 
@@ -106,28 +116,36 @@ async fn test_high_concurrency_no_batching() {
     let encoded = bincode_next::encode_to_vec(&payload, config::standard()).unwrap();
 
     let concurrency = 5_000_000;
-    println!("Spawning {} concurrent parsing tasks...", concurrency);
+    println!(
+        "Spawning {} concurrent parsing tasks (no batching)...",
+        concurrency
+    );
 
-    let mut handles: Vec<JoinHandle<()>> = Vec::with_capacity(concurrency);
+    let mut handles = Vec::with_capacity(concurrency);
 
     let start = Instant::now();
 
     for _ in 0..concurrency {
         let enc_clone = encoded.clone();
-        handles.push(tokio::spawn(async move {
-            run_worker(enc_clone).await;
-        }));
+        handles.push(tokio::spawn(async move { run_worker(enc_clone).await }));
     }
 
+    let mut successes: usize = 0;
+    let mut errors: usize = 0;
     for handle in handles {
-        handle.await.unwrap();
+        match handle.await.unwrap() {
+            | Ok(_) => successes += 1,
+            | Err(_) => errors += 1,
+        }
     }
 
     let elapsed = start.elapsed();
     println!(
-        "Successfully processed {} tasks with yields in {:.2?} ({:.2} tasks/sec)",
+        "Processed {} tasks (no batching) in {:.2?} ({:.2} tasks/sec). Success: {}, Errors: {}",
         concurrency,
         elapsed,
-        concurrency as f64 / elapsed.as_secs_f64()
+        concurrency as f64 / elapsed.as_secs_f64(),
+        successes,
+        errors
     );
 }

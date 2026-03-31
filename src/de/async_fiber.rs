@@ -93,12 +93,12 @@ pub struct GuardedStack {
 impl GuardedStack {
     /// Allocate a new guarded stack of *at least* `usable_size` bytes.
     ///
-    /// # Panics
-    /// Panics if the OS refuses the `mmap` / `mprotect` calls.
-    #[must_use]
+    /// # Errors
+    ///
+    /// Returns an error if `mmap` or `mprotect` fails.
     #[inline]
     #[cfg(unix)]
-    pub fn new(usable_size: usize) -> Self {
+    pub fn new(usable_size: usize) -> core::result::Result<Self, crate::error::DecodeError> {
         let page_size = page_size();
         // Round usable_size up to page boundary.
         let usable_size = (usable_size + page_size - 1) & !(page_size - 1);
@@ -113,25 +113,33 @@ impl GuardedStack {
                 -1,
                 0,
             );
-            assert!(base != libc::MAP_FAILED, "mmap failed for fiber stack");
+            if base == libc::MAP_FAILED {
+                return crate::error::cold_decode_error_other("mmap failed for fiber stack");
+            }
 
             // Protect the first page as a guard (PROT_NONE → any access faults).
             let rc = libc::mprotect(base, page_size, libc::PROT_NONE);
-            assert!(rc == 0, "mprotect failed for guard page");
+            if rc != 0 {
+                libc::munmap(base, total_len);
+                return crate::error::cold_decode_error_other("mprotect failed for guard page");
+            }
 
-            Self {
+            Ok(Self {
                 base: base.cast::<u8>(),
                 total_len,
                 page_size,
-            }
+            })
         }
     }
 
     /// Allocate a new guarded stack on Windows.
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `VirtualAlloc` or `VirtualProtect` fails.
     #[inline]
     #[cfg(windows)]
-    pub fn new(usable_size: usize) -> Self {
+    pub fn new(usable_size: usize) -> core::result::Result<Self, crate::error::DecodeError> {
         let page_size = page_size();
         let usable_size = (usable_size + page_size - 1) & !(page_size - 1);
         let total_len = page_size + usable_size;
@@ -144,7 +152,11 @@ impl GuardedStack {
                 winapi_shim::MEM_COMMIT | winapi_shim::MEM_RESERVE,
                 winapi_shim::PAGE_READWRITE,
             );
-            assert!(!base.is_null(), "VirtualAlloc failed for fiber stack");
+            if base.is_null() {
+                return crate::error::cold_decode_error_other(
+                    "VirtualAlloc failed for fiber stack",
+                );
+            }
 
             // Guard the first page
             let mut old_protect = 0;
@@ -154,13 +166,18 @@ impl GuardedStack {
                 winapi_shim::PAGE_NOACCESS,
                 &mut old_protect,
             );
-            assert!(rc != 0, "VirtualProtect failed for guard page");
+            if rc == 0 {
+                winapi_shim::VirtualFree(base, 0, winapi_shim::MEM_RELEASE);
+                return crate::error::cold_decode_error_other(
+                    "VirtualProtect failed for guard page",
+                );
+            }
 
-            Self {
+            Ok(Self {
                 base: base.cast::<u8>(),
                 total_len,
                 page_size,
-            }
+            })
         }
     }
 
@@ -299,7 +316,7 @@ mod winapi_shim {
 
 /// Context metadata for an executing fiber, managing stacks, registers, and closure passing.
 #[cfg(feature = "async-fiber")]
-#[repr(C)]
+#[repr(C, align(16))]
 pub struct FiberContext {
     /// The `GuardedStack` which maps the actual stack space in memory.
     pub stack: GuardedStack,
@@ -335,6 +352,10 @@ std::thread_local! {
     static CONTEXT_POOL: RefCell<Vec<Box<FiberContext>>> = const { RefCell::new(Vec::new()) };
     static CURRENT_FIBER: std::cell::Cell<*mut FiberContext> = const { std::cell::Cell::new(core::ptr::null_mut()) };
 }
+
+/// Cap the number of contexts pooled per thread to prevent unbounded mmap accumulation.
+#[cfg(feature = "async-fiber")]
+const MAX_POOLED_CONTEXTS: usize = 1_048_576;
 
 // x86_64 context switch — System V ABI (Linux, macOS, FreeBSD, …)
 // Arguments: rdi = save, rsi = restore
@@ -788,25 +809,30 @@ where
     ) -> Poll<Self::Output> {
         // -- Initialise fiber on first poll ----------------------------------
         if self.ctx.is_none() {
-            let mut ctx = CONTEXT_POOL
-                .with(|pool| pool.borrow_mut().pop())
-                .unwrap_or_else(|| {
-                    // Default 2 MiB usable stack via mmap with guard region.
-                    Box::new(FiberContext {
-                        stack: GuardedStack::new(2 * 1024 * 1024),
-                        regs: Registers::new(),
-                        executor_regs: Registers::new(),
-                        status: FiberStatus::Initial,
-                        panic_payload: None,
-                        trampoline: fiber_trampoline,
-                        invoke_closure: dummy_invoke,
-                        closure_ptr: core::ptr::null_mut(),
-                        result_ptr: core::ptr::null_mut(),
-                        reader_ptr: core::ptr::null_mut(),
-                        buf_ptr: core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut(), 0),
-                        read_buffer: alloc::vec![0; 8192].into_boxed_slice(),
-                    })
-                });
+            let mut ctx = if let Some(ctx) = CONTEXT_POOL.with(|pool| pool.borrow_mut().pop()) {
+                ctx
+            } else {
+                // Default 2 MiB usable stack via mmap with guard region.
+                match GuardedStack::new(2 * 1024 * 1024) {
+                    | Ok(stack) => {
+                        Box::new(FiberContext {
+                            stack,
+                            regs: Registers::new(),
+                            executor_regs: Registers::new(),
+                            status: FiberStatus::Initial,
+                            panic_payload: None,
+                            trampoline: fiber_trampoline,
+                            invoke_closure: dummy_invoke,
+                            closure_ptr: core::ptr::null_mut(),
+                            result_ptr: core::ptr::null_mut(),
+                            reader_ptr: core::ptr::null_mut(),
+                            buf_ptr: core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut(), 0),
+                            read_buffer: alloc::vec![0; 8192].into_boxed_slice(),
+                        })
+                    },
+                    | Err(e) => return Poll::Ready(Err(e)),
+                }
+            };
 
             ctx.status = FiberStatus::Initial;
             ctx.panic_payload = None;
@@ -908,16 +934,26 @@ where
             match ctx.status {
                 | FiberStatus::Finished => {
                     // Return context to pool.
-                    CONTEXT_POOL.with(|pool| {
-                        pool.borrow_mut().push(this.ctx.take().unwrap());
-                    });
+                    if let Some(ctx) = this.ctx.take() {
+                        CONTEXT_POOL.with(|pool| {
+                            let mut p = pool.borrow_mut();
+                            if p.len() < MAX_POOLED_CONTEXTS {
+                                p.push(ctx);
+                            }
+                        });
+                    }
                     return Poll::Ready(this.result.take().unwrap());
                 },
                 | FiberStatus::Panicked => {
                     let payload = ctx.panic_payload.take().unwrap();
-                    CONTEXT_POOL.with(|pool| {
-                        pool.borrow_mut().push(this.ctx.take().unwrap());
-                    });
+                    if let Some(ctx) = this.ctx.take() {
+                        CONTEXT_POOL.with(|pool| {
+                            let mut p = pool.borrow_mut();
+                            if p.len() < MAX_POOLED_CONTEXTS {
+                                p.push(ctx);
+                            }
+                        });
+                    }
                     std::panic::resume_unwind(payload);
                 },
                 | FiberStatus::Yielded => {
@@ -952,9 +988,14 @@ where
                             }
                         },
                         | Poll::Ready(Err(e)) => {
-                            CONTEXT_POOL.with(|pool| {
-                                pool.borrow_mut().push(this.ctx.take().unwrap());
-                            });
+                            if let Some(ctx) = this.ctx.take() {
+                                CONTEXT_POOL.with(|pool| {
+                                    let mut p = pool.borrow_mut();
+                                    if p.len() < MAX_POOLED_CONTEXTS {
+                                        p.push(ctx);
+                                    }
+                                });
+                            }
                             return Poll::Ready(crate::error::cold_decode_error_io(e, 1));
                         },
                         | Poll::Pending => return Poll::Pending,
