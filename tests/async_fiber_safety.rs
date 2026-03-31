@@ -45,6 +45,7 @@ mod safety_tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn test_panic_propagation() {
         let rt = tokio::runtime::Builder::new_current_thread()
             .build()
@@ -79,6 +80,7 @@ mod safety_tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn test_fiber_drop_memory_safety() {
         let reader = DummyReader;
         let mut future = Box::pin(decode_async::<SuspendedStruct, _, _>(

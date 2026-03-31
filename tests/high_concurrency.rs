@@ -54,6 +54,7 @@ async fn run_worker(encoded: Vec<u8>) {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+#[cfg_attr(miri, ignore)]
 async fn test_high_concurrency() {
     let payload = BenchPayload {
         id: 123456789,

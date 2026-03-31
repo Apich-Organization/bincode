@@ -95,6 +95,7 @@ impl GuardedStack {
     /// Panics if the OS refuses the `mmap` / `mprotect` calls.
     #[must_use]
     #[inline]
+    #[cfg(unix)]
     pub fn new(usable_size: usize) -> Self {
         let page_size = page_size();
         // Round usable_size up to page boundary.
@@ -115,6 +116,43 @@ impl GuardedStack {
             // Protect the first page as a guard (PROT_NONE → any access faults).
             let rc = libc::mprotect(base, page_size, libc::PROT_NONE);
             assert!(rc == 0, "mprotect failed for guard page");
+
+            Self {
+                base: base.cast::<u8>(),
+                total_len,
+                page_size,
+            }
+        }
+    }
+
+    /// Allocate a new guarded stack on Windows.
+    #[must_use]
+    #[inline]
+    #[cfg(windows)]
+    pub fn new(usable_size: usize) -> Self {
+        let page_size = page_size();
+        let usable_size = (usable_size + page_size - 1) & !(page_size - 1);
+        let total_len = page_size + usable_size;
+
+        unsafe {
+            // Reserve and commit the entire stack
+            let base = winapi_shim::VirtualAlloc(
+                core::ptr::null_mut(),
+                total_len,
+                winapi_shim::MEM_COMMIT | winapi_shim::MEM_RESERVE,
+                winapi_shim::PAGE_READWRITE,
+            );
+            assert!(!base.is_null(), "VirtualAlloc failed for fiber stack");
+
+            // Guard the first page
+            let mut old_protect = 0;
+            let rc = winapi_shim::VirtualProtect(
+                base,
+                page_size,
+                winapi_shim::PAGE_NOACCESS,
+                &mut old_protect,
+            );
+            assert!(rc != 0, "VirtualProtect failed for guard page");
 
             Self {
                 base: base.cast::<u8>(),
@@ -159,10 +197,24 @@ impl GuardedStack {
 #[cfg(feature = "async-fiber")]
 impl Drop for GuardedStack {
     #[inline(always)]
+    #[cfg(unix)]
     fn drop(&mut self) {
         unsafe {
             let rc = libc::munmap(self.base.cast::<libc::c_void>(), self.total_len);
             debug_assert!(rc == 0, "munmap failed for fiber stack");
+        }
+    }
+
+    #[inline(always)]
+    #[cfg(windows)]
+    fn drop(&mut self) {
+        unsafe {
+            let rc = winapi_shim::VirtualFree(
+                self.base.cast::<core::ffi::c_void>(),
+                0, // dwSize must be 0 for MEM_RELEASE
+                winapi_shim::MEM_RELEASE,
+            );
+            debug_assert!(rc != 0, "VirtualFree failed for fiber stack");
         }
     }
 }
@@ -171,12 +223,69 @@ impl Drop for GuardedStack {
 #[cfg(feature = "async-fiber")]
 unsafe impl Send for GuardedStack {}
 
-#[cfg(feature = "async-fiber")]
+#[cfg(all(feature = "async-fiber", unix))]
 #[inline(always)]
 fn page_size() -> usize {
     // Cached via a static to avoid repeated syscalls.
     static PAGE_SIZE: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
     *PAGE_SIZE.get_or_init(|| unsafe { libc::sysconf(libc::_SC_PAGESIZE) as usize })
+}
+
+#[cfg(all(feature = "async-fiber", windows))]
+#[inline(always)]
+fn page_size() -> usize {
+    static PAGE_SIZE: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
+    *PAGE_SIZE.get_or_init(|| {
+        let mut info = core::mem::MaybeUninit::uninit();
+        unsafe {
+            winapi_shim::GetSystemInfo(info.as_mut_ptr());
+            info.assume_init().dwPageSize as usize
+        }
+    })
+}
+
+#[cfg(all(feature = "async-fiber", windows))]
+mod winapi_shim {
+    #[repr(C)]
+    pub struct SYSTEM_INFO {
+        pub wProcessorArchitecture: u16,
+        pub wReserved: u16,
+        pub dwPageSize: u32,
+        pub lpMinimumApplicationAddress: *mut core::ffi::c_void,
+        pub lpMaximumApplicationAddress: *mut core::ffi::c_void,
+        pub dwActiveProcessorMask: usize,
+        pub dwNumberOfProcessors: u32,
+        pub dwProcessorType: u32,
+        pub dwAllocationGranularity: u32,
+        pub wProcessorLevel: u16,
+        pub wProcessorRevision: u16,
+    }
+    pub const MEM_COMMIT: u32 = 0x00001000;
+    pub const MEM_RESERVE: u32 = 0x00002000;
+    pub const MEM_RELEASE: u32 = 0x00008000;
+    pub const PAGE_NOACCESS: u32 = 0x01;
+    pub const PAGE_READWRITE: u32 = 0x04;
+
+    extern "system" {
+        pub fn VirtualAlloc(
+            lpAddress: *mut core::ffi::c_void,
+            dwSize: usize,
+            flAllocationType: u32,
+            flProtect: u32,
+        ) -> *mut core::ffi::c_void;
+        pub fn VirtualFree(
+            lpAddress: *mut core::ffi::c_void,
+            dwSize: usize,
+            dwFreeType: u32,
+        ) -> i32;
+        pub fn VirtualProtect(
+            lpAddress: *mut core::ffi::c_void,
+            dwSize: usize,
+            flNewProtect: u32,
+            lpflOldProtect: *mut u32,
+        ) -> i32;
+        pub fn GetSystemInfo(lpSystemInfo: *mut SYSTEM_INFO);
+    }
 }
 
 /// Context metadata for an executing fiber, managing stacks, registers, and closure passing.
