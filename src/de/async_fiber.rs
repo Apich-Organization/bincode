@@ -266,7 +266,7 @@ mod winapi_shim {
     pub const PAGE_NOACCESS: u32 = 0x01;
     pub const PAGE_READWRITE: u32 = 0x04;
 
-    extern "system" {
+    unsafe extern "system" {
         pub fn VirtualAlloc(
             lpAddress: *mut core::ffi::c_void,
             dwSize: usize,
