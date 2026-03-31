@@ -57,8 +57,8 @@ keywords:
   - Encoding Alignment
   - Decoding algorithms
 license: Apache-2.0
-commit: 4d6c594a98b33ddf8736d9a9008e3e6c328f97f7
-version: v3.0.0-rc.8
+commit: 034da4065c42cb5a9358be0f35a10be5c47efe72
+version: v3.0.0-rc.9
 date-released: '2026-03-31'
 references:
   - type: software
