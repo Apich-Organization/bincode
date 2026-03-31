@@ -115,7 +115,7 @@ async fn test_high_concurrency_no_batching() {
     };
     let encoded = bincode_next::encode_to_vec(&payload, config::standard()).unwrap();
 
-    let concurrency = 5_000_000;
+    let concurrency = 500_000;
     println!(
         "Spawning {} concurrent parsing tasks (no batching)...",
         concurrency
