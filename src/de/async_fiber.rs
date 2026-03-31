@@ -2,6 +2,7 @@
 #![allow(clippy::vec_box)]
 // For Windows Development traditions, we allow non_snake_case
 #![allow(non_snake_case)]
+// PLease notice this module do not support async operations that evolves AVX/AVX2/AVX512
 
 #[cfg(feature = "async-fiber")]
 use alloc::boxed::Box;
