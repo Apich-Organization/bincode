@@ -362,7 +362,7 @@ std::thread_local! {
 
 /// Cap the number of contexts pooled per thread to prevent unbounded mmap accumulation.
 #[cfg(feature = "async-fiber")]
-const MAX_POOLED_CONTEXTS: usize = 1_048_576;
+const MAX_POOLED_CONTEXTS: usize = 8_192;
 
 // x86_64 context switch — System V ABI (Linux, macOS, FreeBSD, …)
 // Arguments: rdi = save, rsi = restore
