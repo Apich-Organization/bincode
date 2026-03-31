@@ -97,6 +97,8 @@ struct Entity { x: f32, y: f32 }
 #[tokio::main]
 #[cfg_attr(miri, ignore)]
 async fn main() {
+    if cfg!(miri) { return; }
+
     let my_entity = Entity { x: 1.0, y: 2.0 };
     let encoded = encode_to_vec(&my_entity, config::standard()).unwrap();
     // You can use any type that implements `futures_io::AsyncRead`.
