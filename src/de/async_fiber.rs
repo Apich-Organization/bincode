@@ -336,10 +336,8 @@ std::thread_local! {
     static CURRENT_FIBER: std::cell::Cell<*mut FiberContext> = const { std::cell::Cell::new(core::ptr::null_mut()) };
 }
 
-// ---------------------------------------------------------------------------
 // x86_64 context switch — System V ABI (Linux, macOS, FreeBSD, …)
 // Arguments: rdi = save, rsi = restore
-// ---------------------------------------------------------------------------
 #[cfg(all(feature = "async-fiber", target_arch = "x86_64", unix))]
 #[unsafe(naked)]
 unsafe extern "C" fn switch_context(
@@ -370,7 +368,6 @@ unsafe extern "C" fn switch_context(
     );
 }
 
-// ---------------------------------------------------------------------------
 // x86_64 context switch — Microsoft x64 ABI (Windows)
 // Arguments: rcx = save, rdx = restore
 // Additional: rdi/rsi are callee-saved; TIB stack bounds must be swapped.
@@ -378,7 +375,6 @@ unsafe extern "C" fn switch_context(
 //   gprs[10] = TIB StackBase      (gs:[0x08])
 //   gprs[11] = TIB StackLimit     (gs:[0x10])
 //   gprs[12] = TIB DeallocationStack (gs:[0x1478])
-// ---------------------------------------------------------------------------
 #[cfg(all(feature = "async-fiber", target_arch = "x86_64", windows))]
 #[unsafe(naked)]
 unsafe extern "C" fn switch_context(
@@ -425,10 +421,8 @@ unsafe extern "C" fn switch_context(
     );
 }
 
-// ---------------------------------------------------------------------------
 // aarch64 context switch — AAPCS64 (Linux, macOS, FreeBSD)
 // Arguments: x0 = save, x1 = restore
-// ---------------------------------------------------------------------------
 #[cfg(all(feature = "async-fiber", target_arch = "aarch64", unix))]
 #[unsafe(naked)]
 unsafe extern "C" fn switch_context(
@@ -464,14 +458,12 @@ unsafe extern "C" fn switch_context(
     );
 }
 
-// ---------------------------------------------------------------------------
 // aarch64 context switch — Windows ARM64
 // Arguments: x0 = save, x1 = restore
 // Additional: TEB is at x18; must swap stack bounds.
 //   gprs[13] = TEB StackBase      (x18 + 0x08)
 //   gprs[14] = TEB StackLimit     (x18 + 0x10)
 //   gprs[15] = TEB DeallocationStack (x18 + 0x1478)
-// ---------------------------------------------------------------------------
 #[cfg(all(feature = "async-fiber", target_arch = "aarch64", windows))]
 #[unsafe(naked)]
 unsafe extern "C" fn switch_context(
@@ -519,9 +511,7 @@ unsafe extern "C" fn switch_context(
     );
 }
 
-// ---------------------------------------------------------------------------
 // riscv64 context switch — unix only (no Windows RISC-V target exists)
-// ---------------------------------------------------------------------------
 #[cfg(all(feature = "async-fiber", target_arch = "riscv64", unix))]
 #[unsafe(naked)]
 unsafe extern "C" fn switch_context(
