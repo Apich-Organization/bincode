@@ -218,6 +218,13 @@ impl GuardedStack {
     pub fn bottom(&self) -> u64 {
         self.base as u64 + self.page_size as u64
     }
+
+    /// The absolute base of the mapping (potentially including guard page).
+    #[inline(always)]
+    #[must_use]
+    pub fn allocation_base(&self) -> u64 {
+        self.base as u64
+    }
 }
 
 #[cfg(feature = "async-fiber")]
@@ -396,6 +403,7 @@ unsafe extern "C" fn switch_context(
 //   gprs[10] = TIB StackBase      (gs:[0x08])
 //   gprs[11] = TIB StackLimit     (gs:[0x10])
 //   gprs[12] = TIB DeallocationStack (gs:[0x1478])
+//   gprs[13] = TIB ExceptionList  (gs:[0x00])
 #[cfg(all(feature = "async-fiber", target_arch = "x86_64", windows))]
 #[unsafe(naked)]
 unsafe extern "C" fn switch_context(
@@ -418,6 +426,8 @@ unsafe extern "C" fn switch_context(
         "mov [rcx + 88], rax",
         "mov rax, gs:[0x1478]",
         "mov [rcx + 96], rax",
+        "mov rax, gs:[0x00]",
+        "mov [rcx + 104], rax",
         "fxsave [rcx + 128]",
         "lea rax, [rip + 1f]",
         "mov [rcx + 56], rax",
@@ -428,6 +438,8 @@ unsafe extern "C" fn switch_context(
         "mov gs:[0x10], rax",
         "mov rax, [rdx + 96]",
         "mov gs:[0x1478], rax",
+        "mov rax, [rdx + 104]",
+        "mov gs:[0x00], rax",
         "mov rsp, [rdx + 0]",
         "mov rbp, [rdx + 8]",
         "mov rbx, [rdx + 16]",
@@ -858,7 +870,8 @@ where
                 ctx.regs.gprs[7] = fiber_trampoline as *const () as u64; // return address
                 ctx.regs.gprs[10] = ctx.stack.top(); // TIB StackBase
                 ctx.regs.gprs[11] = ctx.stack.bottom(); // TIB StackLimit
-                ctx.regs.gprs[12] = ctx.stack.bottom(); // TIB DeallocationStack
+                ctx.regs.gprs[12] = ctx.stack.allocation_base(); // TIB DeallocationStack
+                ctx.regs.gprs[13] = 0xFFFFFFFFFFFFFFFFu64; // ExceptionList = -1 (terminator)
                 ctx.regs.extended_state[24..28].copy_from_slice(&0x1F80u32.to_ne_bytes());
             }
             #[cfg(all(target_arch = "aarch64", unix))]
