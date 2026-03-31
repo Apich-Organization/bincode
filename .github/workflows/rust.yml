@@ -157,9 +157,9 @@ fi",
         {
           "run": "if [ -z \"${{ matrix.features }}\" ]\n
 then\n
-  cargo test --no-default-features --release -- --nocapture\n
+  cargo test --no-default-features\n
 else\n
-  cargo test --no-default-features --features ${{ matrix.features }} --release -- --nocapture\n
+  cargo test --no-default-features --features ${{ matrix.features }}\n
 fi",
           "name": "Run `cargo test` on all features",
           "shell": "bash",
