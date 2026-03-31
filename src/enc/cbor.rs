@@ -18,7 +18,7 @@ fn encode_header<W: Writer>(
     val: u64,
 ) -> Result<(), EncodeError> {
     let major = major << 5;
-    if val <= 23 {
+    if crate::utils::is_likely!(val <= 23) {
         writer.write_u8(major | val as u8)
     } else if val <= 0xFF {
         writer.write_u8(major | 0x0018)?;

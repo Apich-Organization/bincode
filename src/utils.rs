@@ -31,3 +31,52 @@ impl IsPrimitive for u128 {}
 impl IsPrimitive for i128 {}
 impl IsPrimitive for f32 {}
 impl IsPrimitive for f64 {}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! assume {
+    ($cond:expr) => {
+        if !$cond {
+            debug_assert!(false, "Assumption failed: {}", stringify!($cond));
+            unsafe { core::hint::unreachable_unchecked() };
+        }
+    };
+}
+
+pub use assume;
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! is_likely {
+    ($e:expr) => {{
+        #[cfg(is_nightly)]
+        {
+            std::intrinsics::likely($e)
+        }
+        #[cfg(not(is_nightly))]
+        {
+            // Fallback for stable
+            $e
+        }
+    }};
+}
+
+pub use is_likely;
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! is_unlikely {
+    ($e:expr) => {{
+        #[cfg(is_nightly)]
+        {
+            std::intrinsics::unlikely($e)
+        }
+        #[cfg(not(is_nightly))]
+        {
+            // Fallback for stable
+            $e
+        }
+    }};
+}
+
+pub use is_unlikely;

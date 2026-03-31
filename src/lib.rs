@@ -1,5 +1,7 @@
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![allow(internal_features)]
+#![cfg_attr(is_nightly, feature(core_intrinsics))]
 
 //! Bincode-next is a crate for encoding and decoding using a tiny binary
 //! serialization strategy.  Using it, you can easily go from having

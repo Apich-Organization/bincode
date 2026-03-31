@@ -14,7 +14,7 @@ pub fn varint_encode_u16<W: Writer>(
     endian: Endianness,
     val: u16,
 ) -> Result<(), EncodeError> {
-    if val <= SINGLE_BYTE_MAX as _ {
+    if crate::utils::is_likely!(val <= SINGLE_BYTE_MAX as _) {
         writer.write_u8(val as u8)
     } else {
         varint_encode_u16_cold(writer, endian, val)
@@ -44,7 +44,7 @@ pub fn varint_encode_u32<W: Writer>(
     endian: Endianness,
     val: u32,
 ) -> Result<(), EncodeError> {
-    if val <= SINGLE_BYTE_MAX as _ {
+    if crate::utils::is_likely!(val <= SINGLE_BYTE_MAX as _) {
         writer.write_u8(val as u8)
     } else {
         varint_encode_u32_cold(writer, endian, val)
@@ -58,7 +58,7 @@ fn varint_encode_u32_cold<W: Writer>(
     endian: Endianness,
     val: u32,
 ) -> Result<(), EncodeError> {
-    if val <= u16::MAX as _ {
+    if crate::utils::is_likely!(val <= u16::MAX as _) {
         let mut buf = [0u8; 3];
         buf[0] = U16_BYTE;
         let bytes = match endian {
@@ -85,7 +85,7 @@ pub fn varint_encode_u64<W: Writer>(
     endian: Endianness,
     val: u64,
 ) -> Result<(), EncodeError> {
-    if val <= SINGLE_BYTE_MAX as _ {
+    if crate::utils::is_likely!(val <= SINGLE_BYTE_MAX as _) {
         writer.write_u8(val as u8)
     } else {
         varint_encode_u64_cold(writer, endian, val)
@@ -99,7 +99,7 @@ fn varint_encode_u64_cold<W: Writer>(
     endian: Endianness,
     val: u64,
 ) -> Result<(), EncodeError> {
-    if val <= u16::MAX as _ {
+    if crate::utils::is_likely!(val <= u16::MAX as _) {
         let mut buf = [0u8; 3];
         buf[0] = U16_BYTE;
         let bytes = match endian {
@@ -108,7 +108,7 @@ fn varint_encode_u64_cold<W: Writer>(
         };
         buf[1..3].copy_from_slice(&bytes);
         writer.write(&buf)
-    } else if val <= u32::MAX as _ {
+    } else if crate::utils::is_likely!(val <= u32::MAX as _) {
         let mut buf = [0u8; 5];
         buf[0] = U32_BYTE;
         let bytes = match endian {
@@ -135,7 +135,7 @@ pub fn varint_encode_u128<W: Writer>(
     endian: Endianness,
     val: u128,
 ) -> Result<(), EncodeError> {
-    if val <= SINGLE_BYTE_MAX as _ {
+    if crate::utils::is_likely!(val <= SINGLE_BYTE_MAX as _) {
         writer.write_u8(val as u8)
     } else {
         varint_encode_u128_cold(writer, endian, val)
@@ -149,7 +149,7 @@ fn varint_encode_u128_cold<W: Writer>(
     endian: Endianness,
     val: u128,
 ) -> Result<(), EncodeError> {
-    if val <= u16::MAX as _ {
+    if crate::utils::is_likely!(val <= u16::MAX as _) {
         let mut buf = [0u8; 3];
         buf[0] = U16_BYTE;
         let bytes = match endian {
@@ -158,7 +158,7 @@ fn varint_encode_u128_cold<W: Writer>(
         };
         buf[1..3].copy_from_slice(&bytes);
         writer.write(&buf)
-    } else if val <= u32::MAX as _ {
+    } else if crate::utils::is_likely!(val <= u32::MAX as _) {
         let mut buf = [0u8; 5];
         buf[0] = U32_BYTE;
         let bytes = match endian {
@@ -167,7 +167,7 @@ fn varint_encode_u128_cold<W: Writer>(
         };
         buf[1..5].copy_from_slice(&bytes);
         writer.write(&buf)
-    } else if val <= u64::MAX as _ {
+    } else if crate::utils::is_likely!(val <= u64::MAX as _) {
         let mut buf = [0u8; 9];
         buf[0] = U64_BYTE;
         let bytes = match endian {

@@ -14,14 +14,15 @@ use crate::error::cold_decode_error_unexpected_end;
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
+#[allow(unsafe_code)]
 fn decode_header<R: Reader>(reader: &mut R) -> Result<(u8, u64, bool), DecodeError> {
     let first = reader.read_u8()?;
     let major = first >> 5;
     let info = first & 0x1F;
 
-    if info < 24 {
+    if crate::utils::is_likely!(info < 24) {
         Ok((major, u64::from(info), false))
-    } else if info < 28 {
+    } else if crate::utils::is_likely!(info < 28) {
         if major == 7 {
             // Special case for Major Type 7: simple values and floats.
             // Don't consume bytes for Info 24-27 here, let the caller handle it.
@@ -32,7 +33,7 @@ fn decode_header<R: Reader>(reader: &mut R) -> Result<(u8, u64, bool), DecodeErr
             | 25 => u64::from(u16::from_be(reader.read_u16()?)),
             | 26 => u64::from(u32::from_be(reader.read_u32()?)),
             | 27 => u64::from_be(reader.read_u64()?),
-            | _ => unreachable!(),
+            | _ => unsafe { core::hint::unreachable_unchecked() },
         };
         Ok((major, val, false))
     } else if info == 31 {

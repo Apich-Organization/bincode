@@ -231,12 +231,12 @@ impl<W: std::io::Write> Writer for IoWriter<'_, W> {
         &mut self,
         bytes: &[u8],
     ) -> Result<(), EncodeError> {
-        if bytes.len() <= self.buffer.len() - self.buffer_len {
+        if crate::utils::is_likely!(bytes.len() <= self.buffer.len() - self.buffer_len) {
             self.buffer[self.buffer_len..self.buffer_len + bytes.len()].copy_from_slice(bytes);
             self.buffer_len += bytes.len();
         } else {
             self.flush()?;
-            if bytes.len() >= self.buffer.len() {
+            if crate::utils::is_likely!(bytes.len() >= self.buffer.len()) {
                 self.writer.write_all(bytes).map_err(|inner| {
                     crate::error::cold_encode_error_io::<()>(inner, self.bytes_written).unwrap_err()
                 })?;
