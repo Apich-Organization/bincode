@@ -1,5 +1,7 @@
 #![allow(unsafe_code)]
 #![allow(clippy::vec_box)]
+// For Windows Development traditions, we allow non_snake_case
+#![allow(non_snake_case)]
 
 #[cfg(feature = "async-fiber")]
 use alloc::boxed::Box;
@@ -95,6 +97,7 @@ impl GuardedStack {
     /// Panics if the OS refuses the `mmap` / `mprotect` calls.
     #[must_use]
     #[inline]
+    #[cfg(unix)]
     pub fn new(usable_size: usize) -> Self {
         let page_size = page_size();
         // Round usable_size up to page boundary.
@@ -115,6 +118,43 @@ impl GuardedStack {
             // Protect the first page as a guard (PROT_NONE → any access faults).
             let rc = libc::mprotect(base, page_size, libc::PROT_NONE);
             assert!(rc == 0, "mprotect failed for guard page");
+
+            Self {
+                base: base.cast::<u8>(),
+                total_len,
+                page_size,
+            }
+        }
+    }
+
+    /// Allocate a new guarded stack on Windows.
+    #[must_use]
+    #[inline]
+    #[cfg(windows)]
+    pub fn new(usable_size: usize) -> Self {
+        let page_size = page_size();
+        let usable_size = (usable_size + page_size - 1) & !(page_size - 1);
+        let total_len = page_size + usable_size;
+
+        unsafe {
+            // Reserve and commit the entire stack
+            let base = winapi_shim::VirtualAlloc(
+                core::ptr::null_mut(),
+                total_len,
+                winapi_shim::MEM_COMMIT | winapi_shim::MEM_RESERVE,
+                winapi_shim::PAGE_READWRITE,
+            );
+            assert!(!base.is_null(), "VirtualAlloc failed for fiber stack");
+
+            // Guard the first page
+            let mut old_protect = 0;
+            let rc = winapi_shim::VirtualProtect(
+                base,
+                page_size,
+                winapi_shim::PAGE_NOACCESS,
+                &mut old_protect,
+            );
+            assert!(rc != 0, "VirtualProtect failed for guard page");
 
             Self {
                 base: base.cast::<u8>(),
@@ -154,15 +194,36 @@ impl GuardedStack {
         let raw = self.base as u64 + self.total_len as u64;
         raw & !15 // 16-byte align
     }
+
+    /// The bottom of the usable stack (lowest usable address, just above guard page).
+    #[inline(always)]
+    #[must_use]
+    pub fn bottom(&self) -> u64 {
+        self.base as u64 + self.page_size as u64
+    }
 }
 
 #[cfg(feature = "async-fiber")]
 impl Drop for GuardedStack {
     #[inline(always)]
+    #[cfg(unix)]
     fn drop(&mut self) {
         unsafe {
             let rc = libc::munmap(self.base.cast::<libc::c_void>(), self.total_len);
             debug_assert!(rc == 0, "munmap failed for fiber stack");
+        }
+    }
+
+    #[inline(always)]
+    #[cfg(windows)]
+    fn drop(&mut self) {
+        unsafe {
+            let rc = winapi_shim::VirtualFree(
+                self.base.cast::<core::ffi::c_void>(),
+                0, // dwSize must be 0 for MEM_RELEASE
+                winapi_shim::MEM_RELEASE,
+            );
+            debug_assert!(rc != 0, "VirtualFree failed for fiber stack");
         }
     }
 }
@@ -171,12 +232,69 @@ impl Drop for GuardedStack {
 #[cfg(feature = "async-fiber")]
 unsafe impl Send for GuardedStack {}
 
-#[cfg(feature = "async-fiber")]
+#[cfg(all(feature = "async-fiber", unix))]
 #[inline(always)]
 fn page_size() -> usize {
     // Cached via a static to avoid repeated syscalls.
     static PAGE_SIZE: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
     *PAGE_SIZE.get_or_init(|| unsafe { libc::sysconf(libc::_SC_PAGESIZE) as usize })
+}
+
+#[cfg(all(feature = "async-fiber", windows))]
+#[inline(always)]
+fn page_size() -> usize {
+    static PAGE_SIZE: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
+    *PAGE_SIZE.get_or_init(|| {
+        let mut info = core::mem::MaybeUninit::uninit();
+        unsafe {
+            winapi_shim::GetSystemInfo(info.as_mut_ptr());
+            info.assume_init().dwPageSize as usize
+        }
+    })
+}
+
+#[cfg(all(feature = "async-fiber", windows))]
+mod winapi_shim {
+    #[repr(C)]
+    pub struct SYSTEM_INFO {
+        pub wProcessorArchitecture: u16,
+        pub wReserved: u16,
+        pub dwPageSize: u32,
+        pub lpMinimumApplicationAddress: *mut core::ffi::c_void,
+        pub lpMaximumApplicationAddress: *mut core::ffi::c_void,
+        pub dwActiveProcessorMask: usize,
+        pub dwNumberOfProcessors: u32,
+        pub dwProcessorType: u32,
+        pub dwAllocationGranularity: u32,
+        pub wProcessorLevel: u16,
+        pub wProcessorRevision: u16,
+    }
+    pub const MEM_COMMIT: u32 = 0x00001000;
+    pub const MEM_RESERVE: u32 = 0x00002000;
+    pub const MEM_RELEASE: u32 = 0x00008000;
+    pub const PAGE_NOACCESS: u32 = 0x01;
+    pub const PAGE_READWRITE: u32 = 0x04;
+
+    unsafe extern "system" {
+        pub fn VirtualAlloc(
+            lpAddress: *mut core::ffi::c_void,
+            dwSize: usize,
+            flAllocationType: u32,
+            flProtect: u32,
+        ) -> *mut core::ffi::c_void;
+        pub fn VirtualFree(
+            lpAddress: *mut core::ffi::c_void,
+            dwSize: usize,
+            dwFreeType: u32,
+        ) -> i32;
+        pub fn VirtualProtect(
+            lpAddress: *mut core::ffi::c_void,
+            dwSize: usize,
+            flNewProtect: u32,
+            lpflOldProtect: *mut u32,
+        ) -> i32;
+        pub fn GetSystemInfo(lpSystemInfo: *mut SYSTEM_INFO);
+    }
 }
 
 /// Context metadata for an executing fiber, managing stacks, registers, and closure passing.
@@ -212,14 +330,17 @@ pub struct FiberContext {
 // FiberContext is intentionally NOT Send/Sync.
 // It is only accessed through BridgeFuture, which manually implements
 // Send/Sync with the correct safety invariants.
-
 #[cfg(feature = "async-fiber")]
 std::thread_local! {
     static CONTEXT_POOL: RefCell<Vec<Box<FiberContext>>> = const { RefCell::new(Vec::new()) };
     static CURRENT_FIBER: std::cell::Cell<*mut FiberContext> = const { std::cell::Cell::new(core::ptr::null_mut()) };
 }
 
-#[cfg(all(feature = "async-fiber", target_arch = "x86_64"))]
+// ---------------------------------------------------------------------------
+// x86_64 context switch — System V ABI (Linux, macOS, FreeBSD, …)
+// Arguments: rdi = save, rsi = restore
+// ---------------------------------------------------------------------------
+#[cfg(all(feature = "async-fiber", target_arch = "x86_64", unix))]
 #[unsafe(naked)]
 unsafe extern "C" fn switch_context(
     save: *mut Registers,
@@ -249,7 +370,66 @@ unsafe extern "C" fn switch_context(
     );
 }
 
-#[cfg(all(feature = "async-fiber", target_arch = "aarch64"))]
+// ---------------------------------------------------------------------------
+// x86_64 context switch — Microsoft x64 ABI (Windows)
+// Arguments: rcx = save, rdx = restore
+// Additional: rdi/rsi are callee-saved; TIB stack bounds must be swapped.
+//   gprs[8]  = rdi      gprs[9]  = rsi
+//   gprs[10] = TIB StackBase      (gs:[0x08])
+//   gprs[11] = TIB StackLimit     (gs:[0x10])
+//   gprs[12] = TIB DeallocationStack (gs:[0x1478])
+// ---------------------------------------------------------------------------
+#[cfg(all(feature = "async-fiber", target_arch = "x86_64", windows))]
+#[unsafe(naked)]
+unsafe extern "C" fn switch_context(
+    save: *mut Registers,
+    restore: *const Registers,
+) {
+    naked_asm!(
+        "mov [rcx + 0], rsp",
+        "mov [rcx + 8], rbp",
+        "mov [rcx + 16], rbx",
+        "mov [rcx + 24], r12",
+        "mov [rcx + 32], r13",
+        "mov [rcx + 40], r14",
+        "mov [rcx + 48], r15",
+        "mov [rcx + 64], rdi",
+        "mov [rcx + 72], rsi",
+        "mov rax, gs:[0x08]",
+        "mov [rcx + 80], rax",
+        "mov rax, gs:[0x10]",
+        "mov [rcx + 88], rax",
+        "mov rax, gs:[0x1478]",
+        "mov [rcx + 96], rax",
+        "fxsave [rcx + 128]",
+        "lea rax, [rip + 1f]",
+        "mov [rcx + 56], rax",
+        "fxrstor [rdx + 128]",
+        "mov rax, [rdx + 80]",
+        "mov gs:[0x08], rax",
+        "mov rax, [rdx + 88]",
+        "mov gs:[0x10], rax",
+        "mov rax, [rdx + 96]",
+        "mov gs:[0x1478], rax",
+        "mov rsp, [rdx + 0]",
+        "mov rbp, [rdx + 8]",
+        "mov rbx, [rdx + 16]",
+        "mov r12, [rdx + 24]",
+        "mov r13, [rdx + 32]",
+        "mov r14, [rdx + 40]",
+        "mov r15, [rdx + 48]",
+        "mov rdi, [rdx + 64]",
+        "mov rsi, [rdx + 72]",
+        "jmp [rdx + 56]",
+        "1: ret"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// aarch64 context switch — AAPCS64 (Linux, macOS, FreeBSD)
+// Arguments: x0 = save, x1 = restore
+// ---------------------------------------------------------------------------
+#[cfg(all(feature = "async-fiber", target_arch = "aarch64", unix))]
 #[unsafe(naked)]
 unsafe extern "C" fn switch_context(
     save: *mut Registers,
@@ -284,7 +464,65 @@ unsafe extern "C" fn switch_context(
     );
 }
 
-#[cfg(all(feature = "async-fiber", target_arch = "riscv64"))]
+// ---------------------------------------------------------------------------
+// aarch64 context switch — Windows ARM64
+// Arguments: x0 = save, x1 = restore
+// Additional: TEB is at x18; must swap stack bounds.
+//   gprs[13] = TEB StackBase      (x18 + 0x08)
+//   gprs[14] = TEB StackLimit     (x18 + 0x10)
+//   gprs[15] = TEB DeallocationStack (x18 + 0x1478)
+// ---------------------------------------------------------------------------
+#[cfg(all(feature = "async-fiber", target_arch = "aarch64", windows))]
+#[unsafe(naked)]
+unsafe extern "C" fn switch_context(
+    save: *mut Registers,
+    restore: *const Registers,
+) {
+    naked_asm!(
+        "stp x19, x20, [x0, 0]",
+        "stp x21, x22, [x0, 16]",
+        "stp x23, x24, [x0, 32]",
+        "stp x25, x26, [x0, 48]",
+        "stp x27, x28, [x0, 64]",
+        "stp x29, x30, [x0, 80]",
+        "mov x9, sp",
+        "str x9, [x0, 96]",
+        "ldr x9, [x18, #0x08]",
+        "str x9, [x0, #104]",
+        "ldr x9, [x18, #0x10]",
+        "str x9, [x0, #112]",
+        "ldr x9, [x18, #0x1478]",
+        "str x9, [x0, #120]",
+        "stp q8, q9, [x0, 128]",
+        "stp q10, q11, [x0, 160]",
+        "stp q12, q13, [x0, 192]",
+        "stp q14, q15, [x0, 224]",
+        "ldp q8, q9, [x1, 128]",
+        "ldp q10, q11, [x1, 160]",
+        "ldp q12, q13, [x1, 192]",
+        "ldp q14, q15, [x1, 224]",
+        "ldr x9, [x1, #104]",
+        "str x9, [x18, #0x08]",
+        "ldr x9, [x1, #112]",
+        "str x9, [x18, #0x10]",
+        "ldr x9, [x1, #120]",
+        "str x9, [x18, #0x1478]",
+        "ldp x19, x20, [x1, 0]",
+        "ldp x21, x22, [x1, 16]",
+        "ldp x23, x24, [x1, 32]",
+        "ldp x25, x26, [x1, 48]",
+        "ldp x27, x28, [x1, 64]",
+        "ldp x29, x30, [x1, 80]",
+        "ldr x9, [x1, 96]",
+        "mov sp, x9",
+        "ret"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// riscv64 context switch — unix only (no Windows RISC-V target exists)
+// ---------------------------------------------------------------------------
+#[cfg(all(feature = "async-fiber", target_arch = "riscv64", unix))]
 #[unsafe(naked)]
 unsafe extern "C" fn switch_context(
     save: *mut Registers,
@@ -350,13 +588,13 @@ unsafe extern "C" fn switch_context(
 #[cfg(all(
     feature = "async-fiber",
     not(any(
-        target_arch = "x86_64",
-        target_arch = "aarch64",
-        target_arch = "riscv64"
+        all(target_arch = "x86_64", any(unix, windows)),
+        all(target_arch = "aarch64", any(unix, windows)),
+        all(target_arch = "riscv64", unix)
     ))
 ))]
 compile_error!(
-    "Unified Fiber-backed Async (async-fiber) is only supported on x86_64, aarch64, and riscv64 architectures."
+    "Unified Fiber-backed Async (async-fiber) is supported on: x86_64 (unix/windows), aarch64 (unix/windows), riscv64 (unix only)."
 );
 
 /// A synchronus `bincode::de::read::Reader` implementation that runs entirely inside a Fiber stack.
@@ -588,16 +826,39 @@ where
 
             let sp = ctx.stack.top();
 
-            #[cfg(target_arch = "x86_64")]
+            #[cfg(all(target_arch = "x86_64", unix))]
             {
-                // x86_64: RSP is gprs[0], return address slot is gprs[7]
+                // x86_64 SysV: RSP is gprs[0], return address slot is gprs[7]
                 ctx.regs.gprs[0] = sp - 8;
                 ctx.regs.gprs[7] = fiber_trampoline as *const () as u64;
             }
-            #[cfg(target_arch = "aarch64")]
+            #[cfg(all(target_arch = "x86_64", windows))]
+            {
+                // x86_64 Win64: same RSP/RIP layout, plus TIB stack bounds
+                ctx.regs.gprs[0] = sp - 8;
+                ctx.regs.gprs[7] = fiber_trampoline as *const () as u64;
+                // gprs[10] = StackBase (highest address)
+                ctx.regs.gprs[10] = ctx.stack.top();
+                // gprs[11] = StackLimit (lowest usable address, just above guard)
+                ctx.regs.gprs[11] = ctx.stack.bottom();
+                // gprs[12] = DeallocationStack (same as StackLimit for our layout)
+                ctx.regs.gprs[12] = ctx.stack.bottom();
+            }
+            #[cfg(all(target_arch = "aarch64", unix))]
             {
                 ctx.regs.gprs[12] = sp; // SP
                 ctx.regs.gprs[11] = fiber_trampoline as u64; // LR (x30)
+            }
+            #[cfg(all(target_arch = "aarch64", windows))]
+            {
+                ctx.regs.gprs[12] = sp; // SP
+                ctx.regs.gprs[11] = fiber_trampoline as u64; // LR (x30)
+                // gprs[13] = TEB StackBase
+                ctx.regs.gprs[13] = ctx.stack.top();
+                // gprs[14] = TEB StackLimit
+                ctx.regs.gprs[14] = ctx.stack.bottom();
+                // gprs[15] = TEB DeallocationStack
+                ctx.regs.gprs[15] = ctx.stack.bottom();
             }
             #[cfg(target_arch = "riscv64")]
             {
