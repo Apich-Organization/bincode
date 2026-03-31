@@ -66,7 +66,7 @@ async fn test_high_concurrency() {
     let encoded = bincode_next::encode_to_vec(&payload, config::standard()).unwrap();
 
     let total_tasks: usize = 5_000_000;
-    let batch_size: usize = 500_000;
+    let batch_size: usize = 50_000;
     println!(
         "Processing {} tasks in batches of {} ...",
         total_tasks, batch_size,

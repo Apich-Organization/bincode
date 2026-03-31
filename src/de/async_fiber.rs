@@ -856,33 +856,35 @@ where
 
             #[cfg(all(target_arch = "x86_64", unix))]
             {
-                ctx.regs.gprs[0] = sp - 8; // RSP
+                // x86_64 SysV: RSP must be 16-aligned on entry + 8 (for return address).
+                ctx.regs.gprs[0] = sp - 8;
                 ctx.regs.gprs[1] = 0; // RBP (frame pointer) = NULL → end of frame chain
                 ctx.regs.gprs[7] = fiber_trampoline as *const () as u64; // return address
                 // MXCSR default: 0x1F80 = all FP exceptions masked.
-                // fxrstor from zeroed extended_state would set MXCSR=0 (all unmasked) → SIGFPE.
                 ctx.regs.extended_state[24..28].copy_from_slice(&0x1F80u32.to_ne_bytes());
             }
             #[cfg(all(target_arch = "x86_64", windows))]
             {
-                ctx.regs.gprs[0] = sp - 8; // RSP
+                // x86_64 Win64: MUST have 32 bytes of shadow space above the return address.
+                // sp - 8 (return addr) - 32 (shadow) = sp - 40.
+                ctx.regs.gprs[0] = sp - 40;
                 ctx.regs.gprs[1] = 0; // RBP (frame pointer) = NULL
-                ctx.regs.gprs[7] = fiber_trampoline as *const () as u64; // return address
+                ctx.regs.gprs[7] = fiber_trampoline as *const () as u64; // return addr
                 ctx.regs.gprs[10] = ctx.stack.top(); // TIB StackBase
                 ctx.regs.gprs[11] = ctx.stack.bottom(); // TIB StackLimit
                 ctx.regs.gprs[12] = ctx.stack.allocation_base(); // TIB DeallocationStack
-                ctx.regs.gprs[13] = 0xFFFFFFFFFFFFFFFFu64; // ExceptionList = -1 (terminator)
+                ctx.regs.gprs[13] = 0xFFFFFFFFFFFFFFFFu64; // ExceptionList terminator
                 ctx.regs.extended_state[24..28].copy_from_slice(&0x1F80u32.to_ne_bytes());
             }
             #[cfg(all(target_arch = "aarch64", unix))]
             {
-                ctx.regs.gprs[10] = 0; // x29 (frame pointer) = NULL → end of frame chain
+                ctx.regs.gprs[10] = 0; // x29 (frame pointer) = NULL
                 ctx.regs.gprs[11] = fiber_trampoline as u64; // x30 (LR)
                 ctx.regs.gprs[12] = sp; // SP
             }
             #[cfg(all(target_arch = "aarch64", windows))]
             {
-                ctx.regs.gprs[10] = 0; // x29 (frame pointer) = NULL → end of frame chain
+                ctx.regs.gprs[10] = 0; // x29 (frame pointer) = NULL
                 ctx.regs.gprs[11] = fiber_trampoline as u64; // x30 (LR)
                 ctx.regs.gprs[12] = sp; // SP
                 ctx.regs.gprs[13] = ctx.stack.top(); // TEB StackBase
@@ -892,7 +894,7 @@ where
             #[cfg(target_arch = "riscv64")]
             {
                 ctx.regs.gprs[0] = sp; // SP
-                ctx.regs.gprs[1] = 0; // s0/fp (frame pointer) = NULL → end of frame chain
+                ctx.regs.gprs[1] = 0; // s0/fp (frame pointer) = NULL
                 ctx.regs.gprs[13] = fiber_trampoline as u64; // RA
             }
 
