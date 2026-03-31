@@ -1,6 +1,6 @@
 [package]
 name = "bincode_derive-next"
-version = "3.0.0-rc.8"
+version = "3.0.0-rc.9"
 # remember to update bincode
 authors = [
     "Xinyu Yang <xinyu.yang@apich.org>",
