@@ -62,6 +62,49 @@ async fn test_high_concurrency() {
     };
     let encoded = bincode_next::encode_to_vec(&payload, config::standard()).unwrap();
 
+    let total_tasks: usize = 5_000_000;
+    let batch_size: usize = 500_000;
+    println!(
+        "Processing {} tasks in batches of {} ...",
+        total_tasks, batch_size,
+    );
+
+    let start = Instant::now();
+    let mut completed: usize = 0;
+
+    while completed < total_tasks {
+        let this_batch = std::cmp::min(batch_size, total_tasks - completed);
+        let mut handles: Vec<JoinHandle<()>> = Vec::with_capacity(this_batch);
+        for _ in 0..this_batch {
+            let enc_clone = encoded.clone();
+            handles.push(tokio::spawn(async move {
+                run_worker(enc_clone).await;
+            }));
+        }
+        for handle in handles {
+            handle.await.unwrap();
+        }
+        completed += this_batch;
+    }
+
+    let elapsed = start.elapsed();
+    println!(
+        "Successfully processed {} tasks with yields in {:.2?} ({:.2} tasks/sec)",
+        total_tasks,
+        elapsed,
+        total_tasks as f64 / elapsed.as_secs_f64()
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+#[cfg_attr(miri, ignore)]
+async fn test_high_concurrency_no_batching() {
+    let payload = BenchPayload {
+        id: 123456789,
+        data: "High concurrency testing payload".to_string(),
+    };
+    let encoded = bincode_next::encode_to_vec(&payload, config::standard()).unwrap();
+
     let concurrency = 5_000_000;
     println!("Spawning {} concurrent parsing tasks...", concurrency);
 

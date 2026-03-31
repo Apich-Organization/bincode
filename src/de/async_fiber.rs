@@ -818,41 +818,42 @@ where
 
             #[cfg(all(target_arch = "x86_64", unix))]
             {
-                // x86_64 SysV: RSP is gprs[0], return address slot is gprs[7]
-                ctx.regs.gprs[0] = sp - 8;
-                ctx.regs.gprs[7] = fiber_trampoline as *const () as u64;
+                ctx.regs.gprs[0] = sp - 8; // RSP
+                ctx.regs.gprs[1] = 0; // RBP (frame pointer) = NULL → end of frame chain
+                ctx.regs.gprs[7] = fiber_trampoline as *const () as u64; // return address
+                // MXCSR default: 0x1F80 = all FP exceptions masked.
+                // fxrstor from zeroed extended_state would set MXCSR=0 (all unmasked) → SIGFPE.
+                ctx.regs.extended_state[24..28].copy_from_slice(&0x1F80u32.to_ne_bytes());
             }
             #[cfg(all(target_arch = "x86_64", windows))]
             {
-                // x86_64 Win64: same RSP/RIP layout, plus TIB stack bounds
-                ctx.regs.gprs[0] = sp - 8;
-                ctx.regs.gprs[7] = fiber_trampoline as *const () as u64;
-                // gprs[10] = StackBase (highest address)
-                ctx.regs.gprs[10] = ctx.stack.top();
-                // gprs[11] = StackLimit (lowest usable address, just above guard)
-                ctx.regs.gprs[11] = ctx.stack.bottom();
-                // gprs[12] = DeallocationStack (same as StackLimit for our layout)
-                ctx.regs.gprs[12] = ctx.stack.bottom();
+                ctx.regs.gprs[0] = sp - 8; // RSP
+                ctx.regs.gprs[1] = 0; // RBP (frame pointer) = NULL
+                ctx.regs.gprs[7] = fiber_trampoline as *const () as u64; // return address
+                ctx.regs.gprs[10] = ctx.stack.top(); // TIB StackBase
+                ctx.regs.gprs[11] = ctx.stack.bottom(); // TIB StackLimit
+                ctx.regs.gprs[12] = ctx.stack.bottom(); // TIB DeallocationStack
+                ctx.regs.extended_state[24..28].copy_from_slice(&0x1F80u32.to_ne_bytes());
             }
             #[cfg(all(target_arch = "aarch64", unix))]
             {
+                ctx.regs.gprs[10] = 0; // x29 (frame pointer) = NULL → end of frame chain
+                ctx.regs.gprs[11] = fiber_trampoline as u64; // x30 (LR)
                 ctx.regs.gprs[12] = sp; // SP
-                ctx.regs.gprs[11] = fiber_trampoline as u64; // LR (x30)
             }
             #[cfg(all(target_arch = "aarch64", windows))]
             {
+                ctx.regs.gprs[10] = 0; // x29 (frame pointer) = NULL → end of frame chain
+                ctx.regs.gprs[11] = fiber_trampoline as u64; // x30 (LR)
                 ctx.regs.gprs[12] = sp; // SP
-                ctx.regs.gprs[11] = fiber_trampoline as u64; // LR (x30)
-                // gprs[13] = TEB StackBase
-                ctx.regs.gprs[13] = ctx.stack.top();
-                // gprs[14] = TEB StackLimit
-                ctx.regs.gprs[14] = ctx.stack.bottom();
-                // gprs[15] = TEB DeallocationStack
-                ctx.regs.gprs[15] = ctx.stack.bottom();
+                ctx.regs.gprs[13] = ctx.stack.top(); // TEB StackBase
+                ctx.regs.gprs[14] = ctx.stack.bottom(); // TEB StackLimit
+                ctx.regs.gprs[15] = ctx.stack.bottom(); // TEB DeallocationStack
             }
             #[cfg(target_arch = "riscv64")]
             {
                 ctx.regs.gprs[0] = sp; // SP
+                ctx.regs.gprs[1] = 0; // s0/fp (frame pointer) = NULL → end of frame chain
                 ctx.regs.gprs[13] = fiber_trampoline as u64; // RA
             }
 
