@@ -131,10 +131,6 @@ fi",
             "1.91.0"
           ],
           "features": [
-            "std",
-            "std,derive",
-            "std,serde",
-            "std,serde,derive",
             "std,serde,derive,zero-copy,static-size,async-fiber",
           ]
         }
