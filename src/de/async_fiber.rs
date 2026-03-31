@@ -1,5 +1,7 @@
 #![allow(unsafe_code)]
 #![allow(clippy::vec_box)]
+// For Windows Development traditions, we allow non_snake_case
+#![allow(non_snake_case)]
 
 #[cfg(feature = "async-fiber")]
 use alloc::boxed::Box;
