@@ -12,7 +12,7 @@ use crate::utils::Sealed;
 
 /// Bit-level writer for space-optimized packing.
 pub mod bit_writer;
-pub mod cbor;
+pub(crate) mod cbor;
 pub mod write;
 
 pub use self::encoder::EncoderImpl;

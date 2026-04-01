@@ -433,6 +433,7 @@ where
 
 /// Encodes all integer types in big endian.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct BigEndian;
 
 impl InternalEndianConfig for BigEndian {
@@ -441,6 +442,7 @@ impl InternalEndianConfig for BigEndian {
 
 /// Encodes all integer types in little endian.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct LittleEndian;
 
 impl InternalEndianConfig for LittleEndian {
@@ -449,6 +451,7 @@ impl InternalEndianConfig for LittleEndian {
 
 /// Use fixed-size integer encoding.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct Fixint;
 
 impl InternalIntEncodingConfig for Fixint {
@@ -457,6 +460,7 @@ impl InternalIntEncodingConfig for Fixint {
 
 /// Use variable integer encoding.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct Varint;
 
 impl InternalIntEncodingConfig for Varint {
@@ -465,6 +469,7 @@ impl InternalIntEncodingConfig for Varint {
 
 /// Sets an unlimited byte limit.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct NoLimit;
 impl InternalLimitConfig for NoLimit {
     const LIMIT: Option<usize> = None;
@@ -472,6 +477,7 @@ impl InternalLimitConfig for NoLimit {
 
 /// Sets the byte limit to N.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct Limit<const N: usize>;
 impl<const N: usize> InternalLimitConfig for Limit<N> {
     const LIMIT: Option<usize> = Some(N);
@@ -479,6 +485,7 @@ impl<const N: usize> InternalLimitConfig for Limit<N> {
 
 /// Use bit-packing for types that support it.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct AllowBitPacking;
 
 impl InternalBitPackingConfig for AllowBitPacking {
@@ -487,6 +494,7 @@ impl InternalBitPackingConfig for AllowBitPacking {
 
 /// Skip bit-packing.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct SkipBitPacking;
 
 impl InternalBitPackingConfig for SkipBitPacking {
@@ -495,6 +503,7 @@ impl InternalBitPackingConfig for SkipBitPacking {
 
 /// Use MSB-first bit ordering.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct MsbFirst;
 
 impl InternalBitOrderingConfig for MsbFirst {
@@ -503,6 +512,7 @@ impl InternalBitOrderingConfig for MsbFirst {
 
 /// Use LSB-first bit ordering.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct LsbFirst;
 
 impl InternalBitOrderingConfig for LsbFirst {
@@ -511,6 +521,7 @@ impl InternalBitOrderingConfig for LsbFirst {
 
 /// Fingerprinting is disabled.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct FingerprintDisabled;
 
 impl InternalFingerprintConfig for FingerprintDisabled {
@@ -519,6 +530,7 @@ impl InternalFingerprintConfig for FingerprintDisabled {
 
 /// Fingerprinting is enabled with a seed.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct FingerprintEnabled<const SEED: u64>;
 
 impl<const SEED: u64> InternalFingerprintConfig for FingerprintEnabled<SEED> {
@@ -527,6 +539,7 @@ impl<const SEED: u64> InternalFingerprintConfig for FingerprintEnabled<SEED> {
 
 /// Legacy fingerprinting with an expected hash.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct FingerprintLegacy<const EXPECTED: u64>;
 
 impl<const EXPECTED: u64> InternalFingerprintConfig for FingerprintLegacy<EXPECTED> {
@@ -535,6 +548,7 @@ impl<const EXPECTED: u64> InternalFingerprintConfig for FingerprintLegacy<EXPECT
 
 /// The default bincode format.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct BincodeFormat;
 
 impl InternalFormatConfig for BincodeFormat {
@@ -544,6 +558,7 @@ impl InternalFormatConfig for BincodeFormat {
 
 /// Bincode format with deterministic encoding.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct BincodeDeterministicFormat;
 
 impl InternalFormatConfig for BincodeDeterministicFormat {
@@ -553,6 +568,7 @@ impl InternalFormatConfig for BincodeDeterministicFormat {
 
 /// CBOR configuration with const generic options.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct CborConfig<
     const DET: u8,
     const PREF: bool,
@@ -591,9 +607,11 @@ impl<
 }
 
 /// CBOR format with default options.
+#[doc(hidden)]
 pub type CborFormat = CborConfig<0, true, true, false, true, false>;
 
 /// CBOR format with deterministic encoding (Canonical CBOR).
+#[doc(hidden)]
 pub type CborDeterministicFormat = CborConfig<1, true, true, false, false, true>;
 
 /// Endianness of a `Configuration`.

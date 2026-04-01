@@ -1,4 +1,6 @@
 //! CBOR (RFC 8949) decoding implementation.
+#![allow(clippy::extra_unused_type_parameters)]
+#![allow(clippy::redundant_pub_crate)]
 
 use crate::de::read::Reader;
 use crate::error::DecodeError;
@@ -53,7 +55,7 @@ fn decode_header<R: Reader>(reader: &mut R) -> Result<(u8, u64, bool), DecodeErr
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_u8<R: Reader>(reader: &mut R) -> Result<u8, DecodeError> {
+pub(crate) fn decode_u8<R: Reader>(reader: &mut R) -> Result<u8, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     if major != 0 || indefinite {
         return cold_decode_error_unexpected_end(0);
@@ -68,7 +70,7 @@ pub fn decode_u8<R: Reader>(reader: &mut R) -> Result<u8, DecodeError> {
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_u16<R: Reader>(reader: &mut R) -> Result<u16, DecodeError> {
+pub(crate) fn decode_u16<R: Reader>(reader: &mut R) -> Result<u16, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     if major != 0 || indefinite {
         return cold_decode_error_unexpected_end(0);
@@ -83,7 +85,7 @@ pub fn decode_u16<R: Reader>(reader: &mut R) -> Result<u16, DecodeError> {
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_u32<R: Reader>(reader: &mut R) -> Result<u32, DecodeError> {
+pub(crate) fn decode_u32<R: Reader>(reader: &mut R) -> Result<u32, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     if major != 0 || indefinite {
         return cold_decode_error_unexpected_end(0);
@@ -98,7 +100,7 @@ pub fn decode_u32<R: Reader>(reader: &mut R) -> Result<u32, DecodeError> {
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_u64<R: Reader>(reader: &mut R) -> Result<u64, DecodeError> {
+pub(crate) fn decode_u64<R: Reader>(reader: &mut R) -> Result<u64, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     if major != 0 || indefinite {
         return cold_decode_error_unexpected_end(0);
@@ -112,7 +114,7 @@ pub fn decode_u64<R: Reader>(reader: &mut R) -> Result<u64, DecodeError> {
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_u128<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
+pub(crate) fn decode_u128<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     match major {
         | 0 if !indefinite => Ok(u128::from(val)),
@@ -132,7 +134,7 @@ pub fn decode_u128<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_i8<R: Reader>(reader: &mut R) -> Result<i8, DecodeError> {
+pub(crate) fn decode_i8<R: Reader>(reader: &mut R) -> Result<i8, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     if indefinite {
         return cold_decode_error_unexpected_end(0);
@@ -157,7 +159,7 @@ pub fn decode_i8<R: Reader>(reader: &mut R) -> Result<i8, DecodeError> {
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_i16<R: Reader>(reader: &mut R) -> Result<i16, DecodeError> {
+pub(crate) fn decode_i16<R: Reader>(reader: &mut R) -> Result<i16, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     if indefinite {
         return cold_decode_error_unexpected_end(0);
@@ -182,7 +184,7 @@ pub fn decode_i16<R: Reader>(reader: &mut R) -> Result<i16, DecodeError> {
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_i32<R: Reader>(reader: &mut R) -> Result<i32, DecodeError> {
+pub(crate) fn decode_i32<R: Reader>(reader: &mut R) -> Result<i32, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     if indefinite {
         return cold_decode_error_unexpected_end(0);
@@ -207,7 +209,7 @@ pub fn decode_i32<R: Reader>(reader: &mut R) -> Result<i32, DecodeError> {
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_i64<R: Reader>(reader: &mut R) -> Result<i64, DecodeError> {
+pub(crate) fn decode_i64<R: Reader>(reader: &mut R) -> Result<i64, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     if indefinite {
         return cold_decode_error_unexpected_end(0);
@@ -233,7 +235,7 @@ pub fn decode_i64<R: Reader>(reader: &mut R) -> Result<i64, DecodeError> {
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_i128<R: Reader>(reader: &mut R) -> Result<i128, DecodeError> {
+pub(crate) fn decode_i128<R: Reader>(reader: &mut R) -> Result<i128, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     if indefinite {
         return cold_decode_error_unexpected_end(0);
@@ -287,7 +289,7 @@ fn decode_bignum_bytes<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_bool<R: Reader>(reader: &mut R) -> Result<bool, DecodeError> {
+pub(crate) fn decode_bool<R: Reader>(reader: &mut R) -> Result<bool, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     if major != 7 || indefinite {
         return cold_decode_error_invalid_boolean_value(0);
@@ -335,7 +337,7 @@ fn f16_to_f32(bits: u16) -> f32 {
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_f32<R: Reader>(reader: &mut R) -> Result<f32, DecodeError> {
+pub(crate) fn decode_f32<R: Reader>(reader: &mut R) -> Result<f32, DecodeError> {
     let (major, info, indefinite) = decode_header(reader)?;
     if major != 7 || indefinite {
         return cold_decode_error_unexpected_end(4);
@@ -358,7 +360,7 @@ pub fn decode_f32<R: Reader>(reader: &mut R) -> Result<f32, DecodeError> {
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_f64<R: Reader>(reader: &mut R) -> Result<f64, DecodeError> {
+pub(crate) fn decode_f64<R: Reader>(reader: &mut R) -> Result<f64, DecodeError> {
     let (major, info, indefinite) = decode_header(reader)?;
     if major != 7 || indefinite {
         return cold_decode_error_unexpected_end(8);
@@ -377,7 +379,7 @@ pub fn decode_f64<R: Reader>(reader: &mut R) -> Result<f64, DecodeError> {
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_slice_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
+pub(crate) fn decode_slice_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     if major != 4 {
         return cold_decode_error_unexpected_end(0);
@@ -396,7 +398,7 @@ pub fn decode_slice_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError>
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_map_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
+pub(crate) fn decode_map_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     if major != 5 {
         return cold_decode_error_unexpected_end(0);
@@ -414,7 +416,7 @@ pub fn decode_map_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_byte_slice_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
+pub(crate) fn decode_byte_slice_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     if major != 2 {
         return cold_decode_error_unexpected_end(0);
@@ -432,7 +434,7 @@ pub fn decode_byte_slice_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeE
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_byte_slice_or_array_len<R: Reader>(
+pub(crate) fn decode_byte_slice_or_array_len<R: Reader>(
     reader: &mut R
 ) -> Result<(u8, usize), DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
@@ -454,7 +456,7 @@ pub fn decode_byte_slice_or_array_len<R: Reader>(
 ///
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
-pub fn decode_str_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
+pub(crate) fn decode_str_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
     let (major, val, indefinite) = decode_header(reader)?;
     if major != 3 {
         return cold_decode_error_unexpected_end(0);

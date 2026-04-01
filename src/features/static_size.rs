@@ -108,6 +108,7 @@ impl_static_size_tuple!(A, B, C, D, E, F, G, H, I, J, K);
 impl_static_size_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
 
 /// Helper constants for common bincode structures
+#[doc(hidden)]
 pub mod helpers {
     /// The maximum bytes a `usize` (length) can take when encoded as a varint.
     pub const VARINT_MAX_64: usize = 9;

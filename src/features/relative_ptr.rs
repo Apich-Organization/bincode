@@ -51,6 +51,7 @@ unsafe impl<T: ZeroCopy, const N: usize> ZeroCopy for [T; N] {
 }
 
 /// Trait for handling endianness in zero-copy types.
+#[doc(hidden)]
 pub trait Endian {
     /// Converts a u16 from native endianness to the relative pointer's endianness.
     fn from_native_u16(v: u16) -> u16;
@@ -113,6 +114,7 @@ pub trait Endian {
 }
 
 /// Little-endian marker.
+#[doc(hidden)]
 pub struct LittleEndian;
 impl Endian for LittleEndian {
     #[inline(always)]
@@ -197,6 +199,7 @@ impl Endian for LittleEndian {
 }
 
 /// Big-endian marker.
+#[doc(hidden)]
 pub struct BigEndian;
 impl Endian for BigEndian {
     #[inline(always)]
@@ -281,6 +284,7 @@ impl Endian for BigEndian {
 }
 
 /// Native-endian marker.
+#[doc(hidden)]
 pub struct NativeEndian;
 impl Endian for NativeEndian {
     #[inline(always)]
@@ -965,6 +969,7 @@ impl<E: Endian> Encode for ZeroStr<E> {
 /// This is necessary because `Vec<u8>` always deallocates with alignment 1, which is UB
 /// if the memory was allocated with a higher alignment.
 #[cfg(feature = "alloc")]
+#[doc(hidden)]
 pub struct AlignedBuffer {
     ptr: *mut u8,
     len: usize,
@@ -1203,6 +1208,7 @@ pub trait ZeroCopyBuilder<E: Endian = NativeEndian, const ALIGN: usize = 0> {
 
 /// A wrapper for builders that produce a `RelativePtr`.
 #[cfg(feature = "alloc")]
+#[doc(hidden)]
 pub struct RelativeBuilder<B, const ALIGN: usize>(pub B);
 
 #[cfg(feature = "alloc")]
@@ -1227,6 +1233,7 @@ where
 
 /// A wrapper for builders that produce a `ZeroArray`.
 #[cfg(feature = "alloc")]
+#[doc(hidden)]
 pub struct ArrayBuilder<B, const N: usize, const ALIGN: usize>(pub [B; N]);
 
 #[cfg(feature = "alloc")]
@@ -1264,6 +1271,7 @@ where
 
 /// A wrapper for builders that produce a `ZeroSlice`.
 #[cfg(feature = "alloc")]
+#[doc(hidden)]
 pub struct SliceBuilder<B, const ALIGN: usize>(pub Vec<B>);
 
 #[cfg(feature = "alloc")]
@@ -1440,6 +1448,7 @@ impl<E: Endian> ZeroCopyBuilder<E, 0> for String {
 
 /// A wrapper for `String` to build into an inline `ZeroString<CAP>`.
 #[cfg(feature = "alloc")]
+#[doc(hidden)]
 pub struct FixedString<const CAP: usize>(pub String);
 
 #[cfg(feature = "alloc")]

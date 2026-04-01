@@ -25,11 +25,11 @@ use std::task::Poll;
 #[cfg(feature = "async-fiber")]
 #[repr(C, align(64))]
 #[derive(Debug)]
-pub struct Registers {
+pub(crate) struct Registers {
     /// General purpose registers.
-    pub gprs: [u64; 16],
+    pub(crate) gprs: [u64; 16],
     /// Extended state (e.g., FPU/SIMD for `x86_64`, NEON for Aarch64, fp for RISC-V).
-    pub extended_state: [u8; 512],
+    pub(crate) extended_state: [u8; 512],
 }
 
 #[cfg(feature = "async-fiber")]
@@ -37,7 +37,7 @@ impl Registers {
     /// Create a zero-initialized register state.
     #[must_use]
     #[inline(always)]
-    pub const fn new() -> Self {
+    pub(crate) const fn new() -> Self {
         Self {
             gprs: [0; 16],
             extended_state: [0; 512],
@@ -56,7 +56,7 @@ impl Default for Registers {
 #[cfg(feature = "async-fiber")]
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum FiberStatus {
+pub(crate) enum FiberStatus {
     /// Fiber has been allocated but not yet started executing.
     Initial,
     /// Fiber is currently executing or ready to execute.
@@ -81,7 +81,8 @@ pub enum FiberStatus {
 /// trigger a hardware fault (SIGSEGV / SIGBUS) instead of silently corrupting
 /// adjacent heap memory.
 #[cfg(feature = "async-fiber")]
-pub struct GuardedStack {
+#[allow(dead_code)]
+pub(crate) struct GuardedStack {
     /// Base pointer returned by `mmap` (start of guard page).
     base: *mut u8,
     /// Total allocation length (guard + usable).
@@ -99,7 +100,7 @@ impl GuardedStack {
     /// Returns an error if `mmap` or `mprotect` fails.
     #[inline]
     #[cfg(unix)]
-    pub fn new(usable_size: usize) -> core::result::Result<Self, crate::error::DecodeError> {
+    pub(crate) fn new(usable_size: usize) -> core::result::Result<Self, crate::error::DecodeError> {
         let page_size = page_size();
         // Round usable_size up to page boundary.
         let usable_size = (usable_size + page_size - 1) & !(page_size - 1);
@@ -140,7 +141,7 @@ impl GuardedStack {
     /// Returns an error if `VirtualAlloc` or `VirtualProtect` fails.
     #[inline]
     #[cfg(windows)]
-    pub fn new(usable_size: usize) -> core::result::Result<Self, crate::error::DecodeError> {
+    pub(crate) fn new(usable_size: usize) -> core::result::Result<Self, crate::error::DecodeError> {
         let page_size = page_size();
         let usable_size = (usable_size + page_size - 1) & !(page_size - 1);
         let total_len = page_size + usable_size;
@@ -185,7 +186,8 @@ impl GuardedStack {
     /// Usable stack region (excludes guard page).
     #[inline(always)]
     #[must_use]
-    pub const fn usable(&self) -> &[u8] {
+    #[allow(dead_code)]
+    pub(crate) const fn usable(&self) -> &[u8] {
         unsafe {
             core::slice::from_raw_parts(
                 self.base.add(self.page_size),
@@ -196,7 +198,8 @@ impl GuardedStack {
 
     /// Usable stack region (mutable).
     #[inline(always)]
-    pub const fn usable_mut(&mut self) -> &mut [u8] {
+    #[allow(dead_code)]
+    pub(crate) const fn usable_mut(&mut self) -> &mut [u8] {
         unsafe {
             core::slice::from_raw_parts_mut(
                 self.base.add(self.page_size),
@@ -208,7 +211,8 @@ impl GuardedStack {
     /// The top of the usable stack (highest address), 16-byte aligned.
     #[inline(always)]
     #[must_use]
-    pub fn top(&self) -> u64 {
+    #[allow(dead_code)]
+    pub(crate) fn top(&self) -> u64 {
         let raw = self.base as u64 + self.total_len as u64;
         raw & !15 // 16-byte align
     }
@@ -216,14 +220,16 @@ impl GuardedStack {
     /// The bottom of the usable stack (lowest usable address, just above guard page).
     #[inline(always)]
     #[must_use]
-    pub fn bottom(&self) -> u64 {
+    #[allow(dead_code)]
+    pub(crate) fn bottom(&self) -> u64 {
         self.base as u64 + self.page_size as u64
     }
 
     /// The absolute base of the mapping (potentially including guard page).
     #[inline(always)]
     #[must_use]
-    pub fn allocation_base(&self) -> u64 {
+    #[allow(dead_code)]
+    pub(crate) fn allocation_base(&self) -> u64 {
         self.base as u64
     }
 }
@@ -281,75 +287,75 @@ fn page_size() -> usize {
 #[cfg(all(feature = "async-fiber", windows))]
 mod winapi_shim {
     #[repr(C)]
-    pub struct SYSTEM_INFO {
-        pub wProcessorArchitecture: u16,
-        pub wReserved: u16,
-        pub dwPageSize: u32,
-        pub lpMinimumApplicationAddress: *mut core::ffi::c_void,
-        pub lpMaximumApplicationAddress: *mut core::ffi::c_void,
-        pub dwActiveProcessorMask: usize,
-        pub dwNumberOfProcessors: u32,
-        pub dwProcessorType: u32,
-        pub dwAllocationGranularity: u32,
-        pub wProcessorLevel: u16,
-        pub wProcessorRevision: u16,
+    pub(crate) struct SYSTEM_INFO {
+        pub(crate) wProcessorArchitecture: u16,
+        pub(crate) wReserved: u16,
+        pub(crate) dwPageSize: u32,
+        pub(crate) lpMinimumApplicationAddress: *mut core::ffi::c_void,
+        pub(crate) lpMaximumApplicationAddress: *mut core::ffi::c_void,
+        pub(crate) dwActiveProcessorMask: usize,
+        pub(crate) dwNumberOfProcessors: u32,
+        pub(crate) dwProcessorType: u32,
+        pub(crate) dwAllocationGranularity: u32,
+        pub(crate) wProcessorLevel: u16,
+        pub(crate) wProcessorRevision: u16,
     }
-    pub const MEM_COMMIT: u32 = 0x00001000;
-    pub const MEM_RESERVE: u32 = 0x00002000;
-    pub const MEM_RELEASE: u32 = 0x00008000;
-    pub const PAGE_NOACCESS: u32 = 0x01;
-    pub const PAGE_READWRITE: u32 = 0x04;
+    pub(crate) const MEM_COMMIT: u32 = 0x00001000;
+    pub(crate) const MEM_RESERVE: u32 = 0x00002000;
+    pub(crate) const MEM_RELEASE: u32 = 0x00008000;
+    pub(crate) const PAGE_NOACCESS: u32 = 0x01;
+    pub(crate) const PAGE_READWRITE: u32 = 0x04;
 
     unsafe extern "system" {
-        pub fn VirtualAlloc(
+        pub(crate) fn VirtualAlloc(
             lpAddress: *mut core::ffi::c_void,
             dwSize: usize,
             flAllocationType: u32,
             flProtect: u32,
         ) -> *mut core::ffi::c_void;
-        pub fn VirtualFree(
+        pub(crate) fn VirtualFree(
             lpAddress: *mut core::ffi::c_void,
             dwSize: usize,
             dwFreeType: u32,
         ) -> i32;
-        pub fn VirtualProtect(
+        pub(crate) fn VirtualProtect(
             lpAddress: *mut core::ffi::c_void,
             dwSize: usize,
             flNewProtect: u32,
             lpflOldProtect: *mut u32,
         ) -> i32;
-        pub fn GetSystemInfo(lpSystemInfo: *mut SYSTEM_INFO);
+        pub(crate) fn GetSystemInfo(lpSystemInfo: *mut SYSTEM_INFO);
     }
 }
 
 /// Context metadata for an executing fiber, managing stacks, registers, and closure passing.
 #[cfg(feature = "async-fiber")]
 #[repr(C, align(16))]
-pub struct FiberContext {
+pub(crate) struct FiberContext {
     /// The `GuardedStack` which maps the actual stack space in memory.
-    pub stack: GuardedStack,
+    pub(crate) stack: GuardedStack,
     /// Registers for the fiber state.
-    pub regs: Registers,
+    pub(crate) regs: Registers,
     /// Registers for the executor state (where the fiber yields back to).
-    pub executor_regs: Registers,
+    pub(crate) executor_regs: Registers,
     /// The lifecycle status of the fiber.
-    pub status: FiberStatus,
+    pub(crate) status: FiberStatus,
     /// Holds panic payload if a panic occurred within the fiber.
-    pub panic_payload: Option<Box<dyn std::any::Any + Send>>,
+    pub(crate) panic_payload: Option<Box<dyn std::any::Any + Send>>,
     /// Fixed landing assembly to launch closures.
-    pub trampoline: unsafe extern "C" fn(),
+    pub(crate) trampoline: unsafe extern "C" fn(),
     /// Closure thunk invocation pointer.
-    pub invoke_closure: unsafe fn(*mut ()),
+    pub(crate) invoke_closure: unsafe fn(*mut ()),
     /// Opaque pointer to closure state.
-    pub closure_ptr: *mut (),
+    pub(crate) closure_ptr: *mut (),
     /// Opaque pointer to the result slot.
-    pub result_ptr: *mut (),
+    pub(crate) result_ptr: *mut (),
     /// Opaque pointer to the `AsyncRead` structure.
-    pub reader_ptr: *mut (),
+    pub(crate) reader_ptr: *mut (),
     /// Byte slice actively being used as data source for parsing.
-    pub buf_ptr: *mut [u8],
+    pub(crate) buf_ptr: *mut [u8],
     /// 8KB heap-allocated IO staging buffer.
-    pub read_buffer: Box<[u8]>,
+    pub(crate) read_buffer: Box<[u8]>,
 }
 
 // FiberContext is intentionally NOT Send/Sync.
@@ -624,11 +630,11 @@ compile_error!(
 /// A synchronus `bincode::de::read::Reader` implementation that runs entirely inside a Fiber stack.
 /// Implicitly yields execution back to the root event loop context if not enough bytes are available.
 #[cfg(feature = "async-fiber")]
-pub struct FiberReader<'a, R: futures_io::AsyncRead + Unpin> {
+pub(crate) struct FiberReader<'a, R: futures_io::AsyncRead + Unpin> {
     /// Phanton marker tracking the inner lifetime.
-    pub inner: std::marker::PhantomData<&'a mut R>,
+    pub(crate) inner: std::marker::PhantomData<&'a mut R>,
     /// Context pointer to read bounds or swap threads.
-    pub ctx: *mut FiberContext,
+    pub(crate) ctx: *mut FiberContext,
 }
 
 #[cfg(feature = "async-fiber")]
@@ -699,22 +705,22 @@ impl<R: futures_io::AsyncRead + Unpin> crate::de::read::Reader for FiberReader<'
 /// Thread **A**'s memory buffer, resulting in **Undefined Behavior**, panicking, or
 /// silent memory corruption.
 #[cfg(feature = "async-fiber")]
-pub struct AsyncFiberBridge<R: futures_io::AsyncRead + Unpin> {
+pub(crate) struct AsyncFiberBridge<R: futures_io::AsyncRead + Unpin> {
     /// Underlying futures_io-based `AsyncRead` source.
-    pub reader: R,
+    pub(crate) reader: R,
 }
 
 #[cfg(feature = "async-fiber")]
 impl<R: futures_io::AsyncRead + Unpin> AsyncFiberBridge<R> {
     /// Constructs a new asynchronous bridge mapping `futures_io`'s `AsyncRead`.
     #[inline(always)]
-    pub const fn new(reader: R) -> Self {
+    pub(crate) const fn new(reader: R) -> Self {
         Self { reader }
     }
 
     /// Spawns the parsing process, converting the synchronous Decode traits to a Future.
     #[inline(always)]
-    pub fn run<F, T>(
+    pub(crate) fn run<F, T>(
         self,
         f: F,
     ) -> impl Future<Output = Result<T, crate::error::DecodeError>>
@@ -1041,7 +1047,7 @@ impl<R, F, T> Drop for BridgeFuture<R, F, T> {
 
 /// A lightweight adapter to use `tokio::io::AsyncRead` with `AsyncFiberBridge`.
 #[cfg(all(feature = "tokio", feature = "async-fiber"))]
-pub struct TokioReader<R>(pub R);
+pub(crate) struct TokioReader<R>(pub(crate) R);
 
 #[cfg(all(feature = "tokio", feature = "async-fiber"))]
 impl<R: tokio::io::AsyncRead + Unpin> futures_io::AsyncRead for TokioReader<R> {

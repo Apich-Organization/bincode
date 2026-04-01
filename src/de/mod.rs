@@ -138,6 +138,7 @@ pub trait BorrowDecode<'de, Context>: Sized {
 
 /// Helper macro to implement `BorrowDecode` for any type that implements `Decode`.
 #[macro_export]
+#[doc(hidden)]
 macro_rules! impl_borrow_decode {
     ($ty:ty $(, $param:tt)*) => {
         impl<'de $(, $param)*, __Context> $crate::BorrowDecode<'de, __Context> for $ty {
@@ -153,6 +154,7 @@ macro_rules! impl_borrow_decode {
 
 /// Helper macro to implement `BorrowDecode` for any type that implements `Decode`.
 #[macro_export]
+#[doc(hidden)]
 macro_rules! impl_borrow_decode_with_context {
     ($ty:ty, $context:ty $(, $param:tt)*) => {
         impl<'de $(, $param)*> $crate::BorrowDecode<'de, $context> for $ty {
