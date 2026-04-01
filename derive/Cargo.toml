@@ -1,6 +1,6 @@
 [package]
 name = "bincode_derive-next"
-version = "3.0.0-rc.9"
+version = "3.0.0-rc.10"
 # remember to update bincode
 authors = [
     "Xinyu Yang <xinyu.yang@apich.org>",
@@ -9,7 +9,7 @@ authors = [
     "The bincode-next & bincode developers",
 ]
 edition = "2024"
-rust-version = "1.91.0"
+rust-version = "1.91.1"
 
 repository = "https://github.com/Apich-Organization/bincode"
 documentation = "https://docs.rs/bincode_derive_next"

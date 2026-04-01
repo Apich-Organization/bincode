@@ -3,7 +3,7 @@ members = ["derive", "compatibility"]
 
 [package]
 name = "bincode-next"
-version = "3.0.0-rc.9"
+version = "3.0.0-rc.10"
 # Remember to update html_root_url and bincode_derive
 authors = [
     "Xinyu Yang <xinyu.yang@apich.org>",
@@ -29,7 +29,7 @@ exclude = [
     ".gitignore",
     ".github/",
 ]
-rust-version = "1.91.0"
+rust-version = "1.91.1"
 
 publish = true
 
@@ -60,7 +60,7 @@ tokio = ["dep:tokio", "async-fiber"]
 # And for loom: 'RUSTFLAGS="--cfg loom" cargo test --test async_fiber_loom --features "async-fiber, tokio/full" --release'
 
 [dependencies]
-bincode_derive-next = { path = "derive", version = "3.0.0-rc.9", optional = true }
+bincode_derive-next = { path = "derive", version = "3.0.0-rc.10", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
 unty = { version = "0.1.1", package = "unty-next" }
 rapidhash = { version = "4.4", default-features = false }
