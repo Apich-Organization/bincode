@@ -22,7 +22,7 @@ use crate::features::IoReader;
 
 /// Serde decoder encapsulating an owned reader.
 pub struct OwnedSerdeDecoder<DE: Decoder> {
-    pub(super) de: DE,
+    pub(crate) de: DE,
 }
 
 impl<DE: Decoder> OwnedSerdeDecoder<DE> {

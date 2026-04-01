@@ -1038,3 +1038,24 @@ impl<R, F, T> Drop for BridgeFuture<R, F, T> {
         }
     }
 }
+
+/// A lightweight adapter to use `tokio::io::AsyncRead` with `AsyncFiberBridge`.
+#[cfg(all(feature = "tokio", feature = "async-fiber"))]
+pub struct TokioReader<R>(pub R);
+
+#[cfg(all(feature = "tokio", feature = "async-fiber"))]
+impl<R: tokio::io::AsyncRead + Unpin> futures_io::AsyncRead for TokioReader<R> {
+    #[inline]
+    fn poll_read(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut [u8],
+    ) -> Poll<std::io::Result<usize>> {
+        let mut read_buf = tokio::io::ReadBuf::new(buf);
+        match Pin::new(&mut self.0).poll_read(cx, &mut read_buf) {
+            | Poll::Ready(Ok(())) => Poll::Ready(Ok(read_buf.filled().len())),
+            | Poll::Ready(Err(e)) => Poll::Ready(Err(e)),
+            | Poll::Pending => Poll::Pending,
+        }
+    }
+}

@@ -54,6 +54,7 @@ serde = ["dep:serde"]
 zero-copy = ["bincode_derive-next?/zero-copy"]
 static-size = ["bincode_derive-next?/static-size"]
 async-fiber = ["dep:futures-io", "dep:libc", "std"]
+tokio = ["dep:tokio", "async-fiber"]
 # Remember to run 'MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --all-features --no-fail-fast'
 # And remeber 'sudo chrt -f 99 cargo +nightly bench --bench complex' also.
 # And for loom: 'RUSTFLAGS="--cfg loom" cargo test --test async_fiber_loom --features "async-fiber, tokio/full" --release'
@@ -67,6 +68,7 @@ pastey = "0.2"
 futures-io = { version = "0.3", optional = true }
 libc = { version = "0.2", optional = true }
 panic-halt = { version = "1.0", optional = true }
+tokio = { version = "1.50", default-features = false, optional = true }
 
 # Used for tests
 [dev-dependencies]
