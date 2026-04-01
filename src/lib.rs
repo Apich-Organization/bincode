@@ -638,7 +638,7 @@ where
 /// [config]: config/index.html
 #[cfg(all(feature = "tokio", feature = "async-fiber"))]
 #[inline(always)]
-pub async fn decode_tokio_async<T, R, C>(
+pub async fn decode_async_tokio<T, R, C>(
     config: C,
     reader: R,
 ) -> Result<T, crate::error::DecodeError>
