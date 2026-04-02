@@ -138,7 +138,7 @@ pub const fn legacy() -> Configuration<
     SkipBitPacking,
     LsbFirst,
     FingerprintDisabled,
-    BincodeFormat,
+    BincodeLegacyFormat,
 > {
     generate()
 }
@@ -379,6 +379,9 @@ pub trait Config:
     /// Returns the CBOR options of this configuration.
     /// Returns default options if the format is not CBOR.
     fn cbor_options(&self) -> CborOptions;
+
+    /// Returns true if this configuration uses compact network encoding (omitting flowinfo/scope_id).
+    fn is_compact_net(&self) -> bool;
 }
 
 impl<T> Config for T
@@ -428,6 +431,10 @@ where
 
     fn cbor_options(&self) -> CborOptions {
         <T as InternalFormatConfig>::CBOR_OPTIONS
+    }
+
+    fn is_compact_net(&self) -> bool {
+        <T as InternalFormatConfig>::IS_COMPACT_NET
     }
 }
 
@@ -554,6 +561,7 @@ pub struct BincodeFormat;
 impl InternalFormatConfig for BincodeFormat {
     const CBOR_OPTIONS: CborOptions = CborOptions::DEFAULT;
     const FORMAT: Format = Format::Bincode;
+    const IS_COMPACT_NET: bool = false;
 }
 
 /// Bincode format with deterministic encoding.
@@ -564,6 +572,7 @@ pub struct BincodeDeterministicFormat;
 impl InternalFormatConfig for BincodeDeterministicFormat {
     const CBOR_OPTIONS: CborOptions = CborOptions::DEFAULT;
     const FORMAT: Format = Format::BincodeDeterministic;
+    const IS_COMPACT_NET: bool = false;
 }
 
 /// CBOR configuration with const generic options.
@@ -604,6 +613,18 @@ impl<
     } else {
         Format::CborDeterministic
     };
+    const IS_COMPACT_NET: bool = false;
+}
+
+/// Bincode format for legacy compatibility (omitting flowinfo/scope_id).
+#[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
+pub struct BincodeLegacyFormat;
+
+impl InternalFormatConfig for BincodeLegacyFormat {
+    const CBOR_OPTIONS: CborOptions = CborOptions::DEFAULT;
+    const FORMAT: Format = Format::Bincode;
+    const IS_COMPACT_NET: bool = true;
 }
 
 /// CBOR format with default options.
@@ -875,6 +896,7 @@ pub mod internal {
     pub trait InternalFormatConfig {
         const FORMAT: super::Format;
         const CBOR_OPTIONS: super::CborOptions;
+        const IS_COMPACT_NET: bool;
     }
 
     impl<E, I, L, B, O, F, FO: InternalFormatConfig> InternalFormatConfig
@@ -882,5 +904,6 @@ pub mod internal {
     {
         const CBOR_OPTIONS: super::CborOptions = FO::CBOR_OPTIONS;
         const FORMAT: super::Format = FO::FORMAT;
+        const IS_COMPACT_NET: bool = FO::IS_COMPACT_NET;
     }
 }

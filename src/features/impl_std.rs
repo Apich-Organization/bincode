@@ -583,8 +583,11 @@ impl Encode for SocketAddrV6 {
     ) -> Result<(), EncodeError> {
         self.ip().encode(encoder)?;
         self.port().encode(encoder)?;
-        self.flowinfo().encode(encoder)?;
-        self.scope_id().encode(encoder)
+        if !encoder.config().is_compact_net() {
+            self.flowinfo().encode(encoder)?;
+            self.scope_id().encode(encoder)?;
+        }
+        Ok(())
     }
 }
 
@@ -593,9 +596,13 @@ impl<Context> Decode<Context> for SocketAddrV6 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let ip = Ipv6Addr::decode(decoder)?;
         let port = u16::decode(decoder)?;
-        let flowinfo = u32::decode(decoder)?;
-        let scope_id = u32::decode(decoder)?;
-        Ok(Self::new(ip, port, flowinfo, scope_id))
+        if decoder.config().is_compact_net() {
+            Ok(Self::new(ip, port, 0, 0))
+        } else {
+            let flowinfo = u32::decode(decoder)?;
+            let scope_id = u32::decode(decoder)?;
+            Ok(Self::new(ip, port, flowinfo, scope_id))
+        }
     }
 }
 impl_borrow_decode!(SocketAddrV6);
