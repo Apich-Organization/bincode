@@ -177,6 +177,7 @@ where
 
         let mut map = Self::new();
         for _ in 0..len {
+            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
             let key = K::decode(decoder)?;
             let value = V::decode(decoder)?;
             if is_deterministic {
@@ -222,6 +223,7 @@ where
 
         let mut map = Self::new();
         for _ in 0..len {
+            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
             let key = K::borrow_decode(decoder)?;
             let value = V::borrow_decode(decoder)?;
             if is_deterministic {
@@ -299,6 +301,7 @@ where
 
         let mut map = Self::new();
         for _ in 0..len {
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
             let key = T::decode(decoder)?;
             if is_deterministic {
                 if !map.insert(key) {
@@ -341,6 +344,7 @@ where
 
         let mut map = Self::new();
         for _ in 0..len {
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
             let key = T::borrow_decode(decoder)?;
             if is_deterministic {
                 if !map.insert(key) {
@@ -702,6 +706,7 @@ where
             }
 
             for _ in i..len {
+                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
                 vec.push(T::decode(decoder)?);
             }
             Ok(vec)

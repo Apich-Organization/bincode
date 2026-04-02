@@ -115,6 +115,7 @@ pub trait Endian {
 
 /// Little-endian marker.
 #[doc(hidden)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
 pub struct LittleEndian;
 impl Endian for LittleEndian {
     #[inline(always)]
@@ -200,6 +201,7 @@ impl Endian for LittleEndian {
 
 /// Big-endian marker.
 #[doc(hidden)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
 pub struct BigEndian;
 impl Endian for BigEndian {
     #[inline(always)]
@@ -285,6 +287,7 @@ impl Endian for BigEndian {
 
 /// Native-endian marker.
 #[doc(hidden)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
 pub struct NativeEndian;
 impl Endian for NativeEndian {
     #[inline(always)]
@@ -371,6 +374,7 @@ impl Endian for NativeEndian {
 /// A relative pointer that stores the offset from its own address to the target data.
 /// This allows zero-copy deserialization without runtime allocations.
 #[repr(transparent)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct RelativePtr<T, const ALIGN: usize, E: Endian = NativeEndian> {
     offset: i32,
     _marker: PhantomData<(T, E)>,
@@ -461,6 +465,13 @@ impl<T, const ALIGN: usize, E: Endian> RelativePtr<T, ALIGN, E> {
     }
 }
 
+#[cfg(feature = "fuzzing")]
+impl<'a, T, const ALIGN: usize, E: Endian> arbitrary::Arbitrary<'a> for RelativePtr<T, ALIGN, E> {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self::new(i32::arbitrary(u)?))
+    }
+}
+
 impl<T, const ALIGN: usize, E: Endian> StaticSize for RelativePtr<T, ALIGN, E> {
     const SIZE: usize = core::mem::size_of::<Self>();
 }
@@ -471,6 +482,7 @@ unsafe impl<T, const ALIGN: usize, E: Endian> ZeroCopy for RelativePtr<T, ALIGN,
 
 /// A zero-copy array collection equivalent to `[T; N]`.
 #[repr(transparent)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ZeroArray<T, const N: usize, const ALIGN: usize, E: Endian = NativeEndian> {
     ptr: RelativePtr<[T; N], ALIGN, E>,
 }
@@ -483,6 +495,17 @@ impl<T: ZeroCopy, const N: usize, const ALIGN: usize, E: Endian> ZeroArray<T, N,
         buffer: &'a [u8],
     ) -> Option<&'a [T; N]> {
         self.ptr.get(buffer)
+    }
+}
+
+#[cfg(feature = "fuzzing")]
+impl<'a, T: ZeroCopy, const N: usize, const ALIGN: usize, E: Endian> arbitrary::Arbitrary<'a>
+    for ZeroArray<T, N, ALIGN, E>
+{
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self {
+            ptr: arbitrary::Arbitrary::arbitrary(u)?,
+        })
     }
 }
 
@@ -499,6 +522,7 @@ unsafe impl<T: ZeroCopy, const N: usize, const ALIGN: usize, E: Endian> ZeroCopy
 
 /// A zero-copy string type with compile-time known max capacity, stored inline.
 #[repr(C)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ZeroString<const CAP: usize, E: Endian = NativeEndian> {
     len: u32,
     data: [u8; CAP],
@@ -516,6 +540,20 @@ impl<const CAP: usize, E: Endian> ZeroString<CAP, E> {
     }
 }
 
+#[cfg(feature = "fuzzing")]
+impl<'a, const CAP: usize, E: Endian> arbitrary::Arbitrary<'a> for ZeroString<CAP, E> {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let len = u32::arbitrary(u)? % (CAP as u32 + 1);
+        let mut data = [0u8; CAP];
+        u.fill_buffer(&mut data[..len as usize])?;
+        Ok(Self {
+            len: E::from_native_u32(len),
+            data,
+            _marker: PhantomData,
+        })
+    }
+}
+
 impl<const CAP: usize, E: Endian> StaticSize for ZeroString<CAP, E> {
     const SIZE: usize = core::mem::size_of::<Self>();
 }
@@ -526,6 +564,7 @@ unsafe impl<const CAP: usize, E: Endian> ZeroCopy for ZeroString<CAP, E> {
 
 /// A zero-copy slice collection conceptually equivalent to `&[T]` or `Vec<T>`.
 #[repr(C)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ZeroSlice<T, const ALIGN: usize, E: Endian = NativeEndian> {
     len: u32,
     ptr: RelativePtr<T, ALIGN, E>,
@@ -582,6 +621,15 @@ impl<T: ZeroCopy, const ALIGN: usize, E: Endian> ZeroSlice<T, ALIGN, E> {
     }
 }
 
+#[cfg(feature = "fuzzing")]
+impl<'a, T: ZeroCopy, const ALIGN: usize, E: Endian> arbitrary::Arbitrary<'a>
+    for ZeroSlice<T, ALIGN, E>
+{
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self::new(u32::arbitrary(u)?, i32::arbitrary(u)?))
+    }
+}
+
 impl<T, const ALIGN: usize, E: Endian> StaticSize for ZeroSlice<T, ALIGN, E> {
     const SIZE: usize = core::mem::size_of::<Self>();
 }
@@ -592,6 +640,7 @@ unsafe impl<T: ZeroCopy, const ALIGN: usize, E: Endian> ZeroCopy for ZeroSlice<T
 
 /// A dynamically sized zero-copy string conceptually equivalent to `&str` or `String`.
 #[repr(transparent)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ZeroStr<E: Endian = NativeEndian> {
     slice: ZeroSlice<u8, 0, E>,
 }
@@ -616,6 +665,15 @@ impl<E: Endian> ZeroStr<E> {
     ) -> Option<&'a str> {
         let bytes = self.slice.get(buffer)?;
         core::str::from_utf8(bytes).ok()
+    }
+}
+
+#[cfg(feature = "fuzzing")]
+impl<'a, E: Endian> arbitrary::Arbitrary<'a> for ZeroStr<E> {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self {
+            slice: arbitrary::Arbitrary::arbitrary(u)?,
+        })
     }
 }
 
@@ -1544,7 +1602,7 @@ where
     /// The builder type associated with this trait.
     type Builder = [<T as ZeroCopyType<E>>::Builder; N];
 }
-impl<E: Endian, T, B, const N: usize, const ALIGN: usize> ZeroCopyBuilder<E, ALIGN> for [B; N]
+impl<E: Endian, T, B, const N: usize> ZeroCopyBuilder<E, 0> for [B; N]
 where
     B: ZeroCopyBuilder<E, 0, Target = T>,
     T: ZeroCopy,
