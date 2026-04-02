@@ -1526,7 +1526,11 @@ impl<E: Endian, const CAP: usize> ZeroCopyBuilder<E, 0> for FixedString<CAP> {
         _offset: usize,
     ) -> Self::Target {
         let bytes = self.0.as_bytes();
-        let len = bytes.len().min(CAP);
+        let mut len = bytes.len().min(CAP);
+        // Ensure truncation happens at a valid UTF-8 boundary
+        while len > 0 && !self.0.is_char_boundary(len) {
+            len -= 1;
+        }
         let mut data = [0u8; CAP];
         data[..len].copy_from_slice(&bytes[..len]);
         ZeroString {
