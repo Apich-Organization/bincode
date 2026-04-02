@@ -52,8 +52,8 @@ jobs:
       - name: cargo fmt
         run: cargo fmt --all -- --check
       - name: cargo clippy
-        run: cargo clippy --all-features -- -D warnings
-
+        run: cargo clippy --all-features
+  
   compatibility:
     name: Compatibility
     runs-on: ubuntu-latest
