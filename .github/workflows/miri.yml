@@ -1,42 +1,26 @@
-{
-  "name": "miri",
-  "on": {
-    "push": {
-      "branches": [
-        "trunk",
-        "main",
-        "v*.x",
-        "ci/*"
-      ]
-    },
-    "pull_request": {
-      "branches": [
-        "trunk",
-        "main",
-        "v*.x"
-      ]
-    }
-  },
-  "jobs": {
-    "miri": {
-      "name": "MIRI",
-      "runs-on": "ubuntu-latest",
-      "steps": [
-        {
-          "uses": "actions/checkout@v2",
-          "name": "Checkout"
-        },
-        {
-          "run": "rustup toolchain install nightly --component miri \n
-rustup override set nightly \n
-cargo miri setup",
-          "name": "Install Rust nightly"
-        },
-        {
-          "run": "MIRIFLAGS='-Zmiri-disable-isolation' cargo +nightly miri test --all-features --no-fail-fast",
-          "name": "All features"
-        }
-      ]
-    }
-  }
-}
+name: Miri
+
+on:
+  push:
+    branches: [trunk, main, 'v*.x', 'ci/*']
+  pull_request:
+    branches: [trunk, main, 'v*.x']
+
+env:
+  CARGO_TERM_COLOR: always
+  MIRIFLAGS: "-Zmiri-disable-isolation"
+
+jobs:
+  miri:
+    name: Miri
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo miri setup
+        run: cargo miri setup
+      - name: cargo miri test
+        run: cargo miri test --all-features --no-fail-fast

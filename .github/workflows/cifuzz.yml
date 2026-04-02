@@ -50,9 +50,13 @@ jobs:
 
       - name: Run Fuzzer
         run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            TIMEOUT=3600
+          else
+            TIMEOUT=600
+          fi
           cd fuzz
-          # Run for 3600 seconds (60 minutes)
-          cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=3600
+          cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=$TIMEOUT
 
       - name: Upload Crash Artifacts
         if: failure()

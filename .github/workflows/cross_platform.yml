@@ -1,272 +1,35 @@
-{
-  "name": "Cross platform tests",
-  "on": {
-    "push": {
-      "branches": [
-        "trunk",
-        "main",
-        "v*.x",
-        "ci/*"
-      ]
-    },
-    "pull_request": {
-      "branches": [
-        "trunk",
-        "main",
-        "v*.x"
-      ]
-    }
-  },
-  "jobs": {
-    "test_cross_std": {
-      "name": "Cross platform test (platforms with standard library)",
-      "runs-on": "ubuntu-latest",
-      "strategy": {
-        "fail-fast": false,
-        "matrix": {
-          "platform": [
-            # Tier 1
-            "aarch64-unknown-linux-gnu",
-            # 0050:err:winediag:nodrv_CreateWindow Application tried to create a window, but no driver could be loaded.
-            # 0050:err:winediag:nodrv_CreateWindow Make sure that your X server is running and that $DISPLAY is set correctly.
-            # 0050:err:systray:initialize_systray Could not create tray window
-            # 0024:err:module:import_dll Library bcryptprimitives.dll (which is needed by L"Z:\\target\\i686-pc-windows-gnu\\debug\\deps\\bincode-569310bd32491256.exe") not found
-            # 0024:err:module:LdrInitializeThunk Importing dlls for L"Z:\\target\\i686-pc-windows-gnu\\debug\\deps\\bincode-569310bd32491256.exe" failed, status c0000135
-            # "i686-pc-windows-gnu",
+name: Cross-Platform CI
 
-            # `cross` does not provide a Docker image for target i686-pc-windows-msvc
-            # "i686-pc-windows-msvc",
-            # compile problems relating to cross-rs
-            # "i686-unknown-linux-gnu",
-            # `cross` does not provide a Docker image for target x86_64-apple-darwin
-            # "x86_64-apple-darwin",
+on:
+  push:
+    branches: [trunk, main, 'v*.x', 'ci/*']
+  pull_request:
+    branches: [trunk, main, 'v*.x']
 
-            # 0050:err:winediag:nodrv_CreateWindow Application tried to create a window, but no driver could be loaded.
-            # 0050:err:winediag:nodrv_CreateWindow Make sure that your X server is running and that $DISPLAY is set correctly.
-            # 0050:err:systray:initialize_systray Could not create tray window
-            # 00f4:err:module:import_dll Library bcryptprimitives.dll (which is needed by L"Z:\\target\\x86_64-pc-windows-gnu\\debug\\deps\\bincode-b91af23bf3efc9f3.exe") not found
-            # 00f4:err:module:LdrInitializeThunk Importing dlls for L"Z:\\target\\x86_64-pc-windows-gnu\\debug\\deps\\bincode-b91af23bf3efc9f3.exe" failed, status c0000135
-            # "x86_64-pc-windows-gnu",
+env:
+  CARGO_TERM_COLOR: always
 
-            # `cross` does not provide a Docker image for target x86_64-pc-windows-msvc
-            # "x86_64-pc-windows-msvc",
-            "x86_64-unknown-linux-gnu",
-
-            # Tier 2
-            # `cross` does not provide a Docker image for target aarch64-apple-darwin
-            # "aarch64-apple-darwin",
-            # `cross` does not provide a Docker image for target aarch64-pc-windows-msvc
-            # "aarch64-pc-windows-msvc",
-            "aarch64-unknown-linux-musl",
-            # compile problems relating to cross-rs
-            # "arm-unknown-linux-gnueabi",
-            # compile problems relating to cross-rs
-            # "arm-unknown-linux-gnueabihf",
-            # compile problems relating to cross-rs
-            # "armv7-unknown-linux-gnueabihf",
-            # `cross` does not provide a Docker image for target loongarch64-unknown-linux-gnu
-            # "loongarch64-unknown-linux-gnu",
-            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
-            # "mips-unknown-linux-gnu",
-            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
-            # "mips64-unknown-linux-gnuabi64",
-            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
-            # "mips64el-unknown-linux-gnuabi64",
-            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
-            # "mipsel-unknown-linux-gnu",
-            # compile problems relating to cross-rs
-            # "powerpc-unknown-linux-gnu",
-            # compile problems relating to cross-rs
-            # "powerpc64-unknown-linux-gnu",
-            # compile problems relating to cross-rs
-            # "powerpc64le-unknown-linux-gnu",
-            "riscv64gc-unknown-linux-gnu",
-            # compile problems relating to cross-rs
-            # "s390x-unknown-linux-gnu",
-            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
-            # "x86_64-unknown-freebsd",
-            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
-            # "x86_64-unknown-illumos",
-            "x86_64-unknown-linux-musl",
-            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
-            # "x86_64-unknown-netbsd",
-
-            # Tier 3, only those that have std
-            # `cross` does not provide a Docker image for target aarch64-apple-ios
-            # "aarch64-apple-ios",
-            # `cross` does not provide a Docker image for target aarch64-apple-ios-sim
-            # "aarch64-apple-ios-sim",
-            # `cross` does not provide a Docker image for target aarch64-fuchsia
-            # "aarch64-fuchsia",
-            # `cross` does not provide a Docker image for target aarch64-unknown-fuchsia
-            # "aarch64-unknown-fuchsia",
-            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/1222): currently broken
-            # "aarch64-linux-android",
-            # compile problems relating to cross-rs
-            # "arm-linux-androideabi",
-            # compile problems relating to cross-rs
-            # "arm-unknown-linux-musleabi",
-            # compile problems relating to cross-rs
-            # "arm-unknown-linux-musleabihf",
-            # compile problems relating to cross-rs
-            # "armv5te-unknown-linux-gnueabi",
-            # compile problems relating to cross-rs
-            # "armv5te-unknown-linux-musleabi",
-            # compile problems relating to cross-rs
-            # "armv7-linux-androideabi",
-            # compile problems relating to cross-rs
-            # "armv7-unknown-linux-gnueabi",
-            # compile problems relating to cross-rs
-            # "armv7-unknown-linux-musleabi",
-            # compile problems relating to cross-rs
-            # "armv7-unknown-linux-musleabihf",
-            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/634): broken
-            # "asmjs-unknown-emscripten",
-            # compile problems relating to cross-rs
-            # "i586-unknown-linux-gnu",
-            # compile problems relating to cross-rs
-            # "i586-unknown-linux-musl",
-            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/1222): currently broken
-            # "i686-linux-android",
-            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
-            # "i686-unknown-freebsd",
-            # compile problems relating to cross-rs
-            # "i686-unknown-linux-musl",
-            # "mips-unknown-linux-musl",
-            # "mips64-unknown-linux-muslabi64",
-            # "mips64el-unknown-linux-muslabi64",
-            # "mipsel-unknown-linux-musl",
-            # Could not link to `getrandom`
-            # "sparc64-unknown-linux-gnu",
-            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
-            # "sparcv9-sun-solaris",
-            # compile problems relating to cross-rs
-            # "thumbv7neon-linux-androideabi",
-            # compile problems relating to cross-rs
-            # "thumbv7neon-unknown-linux-gnueabihf",
-            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
-            # "wasm32-unknown-emscripten",
-            # `cross` does not provide a Docker image for target wasm32-unknown-unknown
-            # "wasm32-unknown-unknown",
-            # `cross` does not provide a Docker image for target wasm32-wasi
-            # "wasm32-wasi",
-            # `cross` does not provide a Docker image for target x86_64-apple-ios
-            # "x86_64-apple-ios",
-            # `cross` does not provide a Docker image for target x86_64-fortanix-unknown-sgx
-            # "x86_64-fortanix-unknown-sgx",
-            # `cross` does not provide a Docker image for target x86_64-fuchsia
-            # "x86_64-fuchsia",
-            # `cross` does not provide a Docker image for target x86_64-unknown-fuchsia
-            # "x86_64-unknown-fuchsia",
-            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
-            # "x86_64-linux-android",
-            # `cross` does not provide a Docker image for target x86_64-pc-solaris
-            # "x86_64-pc-solaris",
-            # `cross` does not provide a Docker image for target x86_64-unknown-linux-gnux32
-            # "x86_64-unknown-linux-gnux32",
-            # `cross` does not provide a Docker image for target x86_64-unknown-redox
-            # "x86_64-unknown-redox",
-          ]
-        }
-      },
-      "steps": [
-        {
-          "uses": "actions/checkout@v4",
-          "name": "Checkout"
-        },
-        {
-          "uses": "actions-rs/toolchain@v1",
-          "with": {
-            "profile": "minimal",
-            "toolchain": "stable",
-            "override": true
-          },
-          "name": "Install Rust stable"
-        },
-        {
-          "uses": "actions-rs/install@v0.1",
-          "with": {
-            "crate": "cross"
-          },
-          "name": "Install cargo cross"
-        },
-        {
-          "run": "cross test --target ${{ matrix.platform }} --all-features",
-          "name": "Run tests",
-          "env": {
-            "RUST_BACKTRACE": "1",
-            "CROSS_CUSTOM_DOCKER_INSTALL_STEPS": "apt-get update && apt-get install -y gcc-multilib g++-multilib"
-          }
-        }
-      ]
-    },
-    # None of these work, needs more investigation
-    # "test_cross_no_std": {
-    #   "name": "Cross platform test (no_std, platforms without standard library)",
-    #   "runs-on": "ubuntu-latest",
-    #   "strategy": {
-    #     "fail-fast": false,
-    #     "matrix": {
-    #       "platform": [
-    #         # Tier 3
-    #         "aarch64-unknown-none-softfloat",
-    #         "aarch64-unknown-none",
-    #         "aarch64-unknown-uefi",
-    #         "armebv7r-none-eabi",
-    #         "armebv7r-none-eabihf",
-    #         "armv7a-none-eabi",
-    #         "armv7r-none-eabi",
-    #         "armv7r-none-eabihf",
-    #         "i586-pc-windows-msvc",
-    #         "i686-unknown-uefi",
-    #         "nvptx64-nvidia-cuda",
-    #         "riscv32i-unknown-none-elf",
-    #         "riscv32imac-unknown-none-elf",
-    #         "riscv32imc-unknown-none-elf",
-    #         "riscv64gc-unknown-none-elf",
-    #         "riscv64imac-unknown-none-elf",
-    #         "thumbv6m-none-eabi",
-    #         "thumbv7em-none-eabi",
-    #         "thumbv7em-none-eabihf",
-    #         "thumbv7m-none-eabi",
-    #         "thumbv8m.base-none-eabi",
-    #         "thumbv8m.main-none-eabi",
-    #         "thumbv8m.main-none-eabihf",
-    #         "x86_64-unknown-none",
-    #         "x86_64-unknown-uefi",
-    #       ]
-    #     }
-    #   },
-    #   "steps": [
-    #     {
-    #       "uses": "actions/checkout@v4",
-    #       "name": "Checkout"
-    #     },
-    #     {
-    #       "uses": "actions-rs/toolchain@v1",
-    #       "with": {
-    #         "profile": "minimal",
-    #         "toolchain": "stable",
-    #         "override": true
-    #       },
-    #       "name": "Install Rust stable"
-    #     },
-    #     {
-    #       "uses": "actions-rs/install@v0.1",
-    #       "with": {
-    #         "crate": "cross"
-    #       },
-    #       "name": "Install cargo cross"
-    #     },
-    #     {
-    #       "run": "cross test --target ${{ matrix.platform }} --no-default-features --features alloc,derive",
-    #       "name": "Run tests",
-    #       "env": {
-    #         "RUSTFLAGS": "-D warnings",
-    #         "RUST_BACKTRACE": "1",
-    #       }
-    #     }
-    #   ]
-    # }
-  }
-}
+jobs:
+  test-cross-std:
+    name: Cross-platform std (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - aarch64-unknown-linux-gnu
+          - aarch64-unknown-linux-musl
+          - riscv64gc-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform }}
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@cross
+      - name: cross test
+        run: cross test --target ${{ matrix.platform }} --all-features
+        env:
+          RUST_BACKTRACE: 1
+          CROSS_CUSTOM_DOCKER_INSTALL_STEPS: apt-get update && apt-get install -y gcc-multilib g++-multilib
