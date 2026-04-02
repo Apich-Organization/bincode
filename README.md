@@ -26,7 +26,7 @@ Add `bincode-next` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bincode-next = "3.0.0-rc.5"
+bincode-next = "3.0.0-rc.11"
 ```
 
 ### Basic Example
