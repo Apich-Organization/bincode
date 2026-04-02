@@ -33,3 +33,6 @@ jobs:
         env:
           RUST_BACKTRACE: 1
           CROSS_CUSTOM_DOCKER_INSTALL_STEPS: apt-get update && apt-get install -y gcc-multilib g++-multilib
+
+CROSS_CONTAINER_OPTS: "--pull always" 
+          CROSS_TARGET_AARCH64_UNKNOWN_LINUX_GNU_IMAGE: ghcr.io/cross-rs/aarch64-unknown-linux-gnu:edge
