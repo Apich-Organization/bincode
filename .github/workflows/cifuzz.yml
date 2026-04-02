@@ -35,6 +35,14 @@ jobs:
         if: steps.cache-cargo-bin.outputs.cache-hit != 'true'
         run: cargo install cargo-fuzz
 
+      - name: Cache Fuzzing Corpus
+        uses: actions/cache@v4
+        with:
+          path: fuzz/corpus/${{ matrix.target }}
+          key: ${{ runner.os }}-fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-fuzz-corpus-${{ matrix.target }}-
+
       - name: Cache build artifacts
         uses: actions/cache@v4
         with:
