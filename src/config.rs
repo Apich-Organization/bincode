@@ -380,7 +380,7 @@ pub trait Config:
     /// Returns default options if the format is not CBOR.
     fn cbor_options(&self) -> CborOptions;
 
-    /// Returns true if this configuration uses compact network encoding (omitting flowinfo/scope_id).
+    /// Returns true if this configuration uses compact network encoding (omitting `flowinfo/scope_id`).
     fn is_compact_net(&self) -> bool;
 }
 
