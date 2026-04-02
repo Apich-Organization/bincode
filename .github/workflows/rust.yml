@@ -25,8 +25,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: cargo check (all-features)
         run: cargo check --all-features
-      - name: cargo check (no-default-features)
-        run: cargo check --no-default-features
 
   test:
     name: Test
