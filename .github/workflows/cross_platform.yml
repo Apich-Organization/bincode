@@ -41,7 +41,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          sudo pip3 install ziglang
+          pip3 install ziglang
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
           cargo install cargo-zigbuild --locked
           sudo apt-get update && sudo apt-get install -y qemu-user-static
 
@@ -50,6 +51,8 @@ jobs:
       - name: Run Tests
         shell: bash
         run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          
           export CC="zig cc -target ${{ matrix.zig_target }}"
           export CXX="zig c++ -target ${{ matrix.zig_target }}"
           
