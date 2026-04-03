@@ -6,32 +6,55 @@ on:
   pull_request:
     branches: [trunk, main, 'v*.x']
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
-  test-cross-std:
-    name: Cross-platform std (${{ matrix.platform }})
+  test-zig:
+    name: Test (${{ matrix.platform }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - aarch64-unknown-linux-gnu
-          - aarch64-unknown-linux-musl
-          - riscv64gc-unknown-linux-gnu
-          - x86_64-unknown-linux-musl
+        include:
+          - platform: aarch64-unknown-linux-gnu
+            zig_target: aarch64-unknown-linux-gnu.2.28
+            qemu_arch: aarch64
+          - platform: aarch64-unknown-linux-musl
+            zig_target: aarch64-unknown-linux-musl
+            qemu_arch: aarch64
+          - platform: riscv64gc-unknown-linux-gnu
+            zig_target: riscv64-unknown-linux-gnu.2.28
+            qemu_arch: riscv64
+          - platform: x86_64-unknown-linux-musl
+            zig_target: x86_64-unknown-linux-musl
+            qemu_arch: ""
+
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.91.1
           targets: ${{ matrix.platform }}
+
+      - name: Install Zig & cargo-zigbuild
+        run: |
+          sudo pip3 install ziglang
+          cargo install cargo-zigbuild
+
+      - name: Install QEMU
+        if: matrix.qemu_arch != ''
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static
+
       - uses: Swatinem/rust-cache@v2
-      - uses: taiki-e/install-action@cross
-      - name: cross test
-        run: cross test --target ${{ matrix.platform }} --all-features
-        env:
-          RUST_BACKTRACE: 1
-          CROSS_CUSTOM_DOCKER_INSTALL_STEPS: apt-get update && apt-get install -y gcc-multilib g++-multilib
-          CROSS_CONTAINER_OPTS: "--pull always"                                                                
+
+      - name: Run Tests
+        shell: bash
+        run: |
+          if [ -n "${{ matrix.qemu_arch }}" ]; then
+            export CARGO_TARGET_$(echo ${{ matrix.platform }} | tr '[:lower:]-' '[:upper:]_')_RUNNER="qemu-${{ matrix.qemu_arch }}-static"
+          fi
+
+          cargo zigbuild --target ${{ matrix.zig_target }} --all-features
+          cargo test --target ${{ matrix.zig_target }} --all-features
