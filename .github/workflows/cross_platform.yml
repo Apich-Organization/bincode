@@ -28,8 +28,8 @@ jobs:
           targets: ${{ matrix.platform }}
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@cross
-      - name: cross build
-        run: cross build --target ${{ matrix.platform }} --all-features
+      - name: cross test
+        run: cross test --target ${{ matrix.platform }} --all-features
         env:
           RUST_BACKTRACE: 1
           CROSS_CUSTOM_DOCKER_INSTALL_STEPS: apt-get update && apt-get install -y gcc-multilib g++-multilib
