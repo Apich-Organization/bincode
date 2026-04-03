@@ -23,8 +23,9 @@ jobs:
           - x86_64-unknown-linux-musl
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: 1.91.1
           targets: ${{ matrix.platform }}
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@cross
