@@ -49,7 +49,7 @@ pub use assume;
 #[macro_export]
 macro_rules! is_likely {
     ($e:expr) => {{
-        #[cfg(is_nightly)]
+        #[cfg(all(is_nightly, feature = "std"))]
         {
             std::intrinsics::likely($e)
         }
@@ -67,7 +67,7 @@ pub use is_likely;
 #[macro_export]
 macro_rules! is_unlikely {
     ($e:expr) => {{
-        #[cfg(is_nightly)]
+        #[cfg(all(is_nightly, feature = "std"))]
         {
             std::intrinsics::unlikely($e)
         }
