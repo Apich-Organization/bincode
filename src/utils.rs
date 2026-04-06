@@ -53,7 +53,7 @@ macro_rules! is_likely {
         {
             std::intrinsics::likely($e)
         }
-        #[cfg(not(is_nightly))]
+        #[cfg(not(all(is_nightly, feature = "std")))]
         {
             // Fallback for stable
             $e
@@ -71,7 +71,7 @@ macro_rules! is_unlikely {
         {
             std::intrinsics::unlikely($e)
         }
-        #[cfg(not(is_nightly))]
+        #[cfg(not(all(is_nightly, feature = "std")))]
         {
             // Fallback for stable
             $e
