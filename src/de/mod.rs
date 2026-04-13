@@ -327,10 +327,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_decode_u16(
-                        self.reader(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_decode_u16(
+                            self.reader(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         let val = self.reader().read_u16()?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -354,10 +356,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_decode_u32(
-                        self.reader(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_decode_u32(
+                            self.reader(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         let val = self.reader().read_u32()?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -381,10 +385,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_decode_u64(
-                        self.reader(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_decode_u64(
+                            self.reader(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         let val = self.reader().read_u64()?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -408,10 +414,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_decode_u128(
-                        self.reader(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_decode_u128(
+                            self.reader(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         let val = self.reader().read_u128()?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -463,10 +471,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_decode_i16(
-                        self.reader(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_decode_i16(
+                            self.reader(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         let val = self.reader().read_u16()?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -490,10 +500,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_decode_i32(
-                        self.reader(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_decode_i32(
+                            self.reader(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         let val = self.reader().read_u32()?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -517,10 +529,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_decode_i64(
-                        self.reader(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_decode_i64(
+                            self.reader(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         let val = self.reader().read_u64()?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -544,10 +558,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_decode_i128(
-                        self.reader(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_decode_i128(
+                            self.reader(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         let val = self.reader().read_u128()?;
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
@@ -624,10 +640,12 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     #[inline(always)]
     fn decode_bool(&mut self) -> Result<bool, DecodeError> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode | Format::BincodeDeterministic => match self.reader().read_u8()? {
-                | 0 => Ok(false),
-                | 1 => Ok(true),
-                | x => crate::error::cold_decode_error_invalid_boolean_value(x),
+            | Format::Bincode | Format::BincodeDeterministic => {
+                match self.reader().read_u8()? {
+                    | 0 => Ok(false),
+                    | 1 => Ok(true),
+                    | x => crate::error::cold_decode_error_invalid_boolean_value(x),
+                }
             },
             | Format::Cbor | Format::CborDeterministic => cbor::decode_bool(self.reader()),
         }
@@ -969,11 +987,13 @@ pub(crate) fn decode_option_variant<D: Decoder>(
     match is_some {
         | 0 => Ok(None),
         | 1 => Ok(Some(())),
-        | x => crate::error::cold_decode_error_unexpected_variant(
-            type_name,
-            &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
-            u32::from(x),
-        ),
+        | x => {
+            crate::error::cold_decode_error_unexpected_variant(
+                type_name,
+                &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
+                u32::from(x),
+            )
+        },
     }
 }
 
