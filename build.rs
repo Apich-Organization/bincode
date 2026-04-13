@@ -10,4 +10,12 @@ fn main() {
             println!("cargo:rustc-cfg=is_nightly");
         }
     }
+
+    // Add cdylib and staticlib crate types for no-std (embedded/FFI) builds.
+    // These are not included by default so that `cargo test --no-default-features`
+    // works without requiring a panic handler or -Zbuild-std.
+    if std::env::var("CARGO_FEATURE_NO_STD").is_ok() {
+        println!("cargo:rustc-crate-type=cdylib");
+        println!("cargo:rustc-crate-type=staticlib");
+    }
 }

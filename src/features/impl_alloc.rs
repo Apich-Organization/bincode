@@ -14,9 +14,7 @@ use crate::enc::Encode;
 use crate::enc::Encoder;
 use crate::enc::write::SizeWriter;
 use crate::enc::write::Writer;
-use crate::enc::{
-    self,
-};
+use crate::enc::{self};
 use crate::error::DecodeError;
 use crate::error::EncodeError;
 use crate::impl_borrow_decode;
@@ -714,7 +712,6 @@ where
     }
 }
 
-
 impl<'de, T, Context> BorrowDecode<'de, Context> for Vec<T>
 where
     T: BorrowDecode<'de, Context>,
@@ -956,7 +953,6 @@ where
     }
 }
 
-
 impl<T> Encode for Vec<T>
 where
     T: Encode,
@@ -1008,7 +1004,6 @@ where
         Ok(())
     }
 }
-
 
 impl<Context> Decode<Context> for String {
     #[inline(always)]

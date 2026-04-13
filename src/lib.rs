@@ -874,7 +874,6 @@ where
     decode_serde_async_with_context::<'de, T, _, C, Context>(config, reader, context).await
 }
 
-
 #[cfg(all(feature = "alloc", feature = "derive", doc))]
 pub mod spec {
     #![doc = include_str!("../docs/spec.md")]

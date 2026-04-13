@@ -6,7 +6,6 @@ use crate::utils::Sealed;
 
 impl<W: Writer, C: Config> BincodeErrorPathCovered<1> for EncoderImpl<W, C> {}
 
-
 /// An Encoder that writes bytes into a given writer `W`.
 ///
 /// This struct should rarely be used.

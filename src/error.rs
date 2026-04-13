@@ -40,7 +40,6 @@ macro_rules! bincode_error {
     };
 }
 
-
 bincode_error! {
     /// Errors that can be encountered by encoding a type
     #[non_exhaustive]
@@ -304,11 +303,9 @@ impl DecodeError {
     #[inline(never)]
     pub(crate) fn change_integer_type_to_signed(self) -> Self {
         match self {
-            | Self::InvalidIntegerType { expected, found } => {
-                Self::InvalidIntegerType {
-                    expected: expected.into_signed(),
-                    found: found.into_signed(),
-                }
+            | Self::InvalidIntegerType { expected, found } => Self::InvalidIntegerType {
+                expected: expected.into_signed(),
+                found: found.into_signed(),
             },
             | other => other,
         }
