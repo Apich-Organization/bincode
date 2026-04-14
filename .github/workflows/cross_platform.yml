@@ -92,6 +92,7 @@ jobs:
           # We also disable self-contained linking so Rust doesn't duplicate zig's libc components.
           if [[ "${{ matrix.platform }}" == *"-musl" ]]; then
             export RUSTFLAGS="-C target-feature=+crt-static -C link-self-contained=no"
+            export RUSTDOCFLAGS="-C target-feature=+crt-static -C link-self-contained=no"
           fi
           
           ENV_NAME=$(echo ${{ matrix.platform }} | tr '[:lower:]-' '[:upper:]_')
