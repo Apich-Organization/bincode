@@ -89,8 +89,9 @@ jobs:
           
           # Musl targets must be fully static because zig cc does not support
           # dynamically linking musl libc, which is what `cargo test` does by default.
+          # We also disable self-contained linking so Rust doesn't duplicate zig's libc components.
           if [[ "${{ matrix.platform }}" == *"-musl" ]]; then
-            export RUSTFLAGS="-C target-feature=+crt-static"
+            export RUSTFLAGS="-C target-feature=+crt-static -C link-self-contained=no"
           fi
           
           ENV_NAME=$(echo ${{ matrix.platform }} | tr '[:lower:]-' '[:upper:]_')
