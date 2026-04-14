@@ -54,43 +54,44 @@ jobs:
       - name: Run Tests
         shell: bash
         run: |
-          # Create zig CC/CXX wrappers that translate Rust target triples to zig format
-          # (e.g. x86_64-unknown-linux-musl -> x86_64-linux-musl)
-          # This is needed because cc-rs adds --target=<rust-triple> which zig can't parse
-          cat > /tmp/zig-cc << 'WRAPPER'
+          ZIG_TARGET=$(echo "${{ matrix.zig_target }}" | sed 's/-unknown//')
+          
+          # Create zig wrappers that remove any `--target=` injected by cc-rs
+          # and strictly enforce the target architecture.
+          cat > /tmp/zig-cc << WRAPPER
           #!/bin/bash
           args=()
-          for arg in "$@"; do
-            if [[ "$arg" == --target=* ]]; then
-              target="${arg#--target=}"
-              target="$(echo "$target" | sed 's/-unknown//')"
-              args+=("--target=$target")
-            else
-              args+=("$arg")
+          for arg in "\$@"; do
+            if [[ "\$arg" == --target=* ]]; then
+              continue
             fi
+            args+=("\$arg")
           done
-          exec zig cc "${args[@]}"
+          exec zig cc -target $ZIG_TARGET "\${args[@]}"
           WRAPPER
           chmod +x /tmp/zig-cc
 
-          cat > /tmp/zig-cxx << 'WRAPPER'
+          cat > /tmp/zig-cxx << WRAPPER
           #!/bin/bash
           args=()
-          for arg in "$@"; do
-            if [[ "$arg" == --target=* ]]; then
-              target="${arg#--target=}"
-              target="$(echo "$target" | sed 's/-unknown//')"
-              args+=("--target=$target")
-            else
-              args+=("$arg")
+          for arg in "\$@"; do
+            if [[ "\$arg" == --target=* ]]; then
+              continue
             fi
+            args+=("\$arg")
           done
-          exec zig c++ "${args[@]}"
+          exec zig c++ -target $ZIG_TARGET "\${args[@]}"
           WRAPPER
           chmod +x /tmp/zig-cxx
 
           export CC="/tmp/zig-cc"
           export CXX="/tmp/zig-cxx"
+          
+          # Musl targets must be fully static because zig cc does not support
+          # dynamically linking musl libc, which is what `cargo test` does by default.
+          if [[ "${{ matrix.platform }}" == *"-musl" ]]; then
+            export RUSTFLAGS="-C target-feature=+crt-static"
+          fi
           
           ENV_NAME=$(echo ${{ matrix.platform }} | tr '[:lower:]-' '[:upper:]_')
           export CARGO_TARGET_${ENV_NAME}_LINKER="/tmp/zig-cc"
