@@ -95,13 +95,16 @@ jobs:
             export RUSTDOCFLAGS="-C target-feature=+crt-static -C link-self-contained=no"
           fi
           
-          # Zig's bundled glibc missing riscv64 lp64d stubs; fallback to the system ones
-          if [[ "${{ matrix.platform }}" == *"riscv64"* ]]; then
-            export CFLAGS="-I/usr/riscv64-linux-gnu/include"
-          fi
-          
           ENV_NAME=$(echo ${{ matrix.platform }} | tr '[:lower:]-' '[:upper:]_')
           export CARGO_TARGET_${ENV_NAME}_LINKER="/tmp/zig-cc"
+
+          # Zig's assembler has a bug with riscv64 glibc startup assembly (.cfi_label).
+          # Skip zig and use the native ubuntu GNU cross compiler for riscv.
+          if [[ "${{ matrix.platform }}" == *"riscv64"* ]]; then
+            export CC="riscv64-linux-gnu-gcc"
+            export CXX="riscv64-linux-gnu-g++"
+            export CARGO_TARGET_${ENV_NAME}_LINKER="riscv64-linux-gnu-gcc"
+          fi
 
           if [ -n "${{ matrix.qemu_arch }}" ]; then
             export CARGO_TARGET_${ENV_NAME}_RUNNER="qemu-${{ matrix.qemu_arch }}-static"
