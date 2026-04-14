@@ -188,7 +188,6 @@ fn varint_encode_u128_cold<W: Writer>(
     }
 }
 
-
 #[test]
 fn test_encode_u16() {
     use crate::enc::write::SliceWriter;

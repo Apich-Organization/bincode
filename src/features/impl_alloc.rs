@@ -714,7 +714,6 @@ where
     }
 }
 
-
 impl<'de, T, Context> BorrowDecode<'de, Context> for Vec<T>
 where
     T: BorrowDecode<'de, Context>,
@@ -956,7 +955,6 @@ where
     }
 }
 
-
 impl<T> Encode for Vec<T>
 where
     T: Encode,
@@ -1008,7 +1006,6 @@ where
         Ok(())
     }
 }
-
 
 impl<Context> Decode<Context> for String {
     #[inline(always)]

@@ -434,7 +434,6 @@ where
     }
 }
 
-
 impl<'de, T, const N: usize, Context> BorrowDecode<'de, Context> for [T; N]
 where
     T: BorrowDecode<'de, Context>,
@@ -520,7 +519,6 @@ where
         }
     }
 }
-
 
 impl<Context> Decode<Context> for () {
     fn decode<D: Decoder<Context = Context>>(_: &mut D) -> Result<Self, DecodeError> {

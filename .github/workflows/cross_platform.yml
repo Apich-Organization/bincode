@@ -47,19 +47,73 @@ jobs:
       - name: Install Dependencies
         run: |
           cargo install cargo-zigbuild --locked
-          sudo apt-get update && sudo apt-get install -y qemu-user-static
+          sudo apt-get update && sudo apt-get install -y qemu-user-static libc6-arm64-cross libc6-riscv64-cross gcc-riscv64-linux-gnu
 
       - uses: Swatinem/rust-cache@v2
 
       - name: Run Tests
         shell: bash
         run: |
-          export CC="zig cc -target ${{ matrix.zig_target }}"
-          export CXX="zig c++ -target ${{ matrix.zig_target }}"
+          ZIG_TARGET=$(echo "${{ matrix.zig_target }}" | sed 's/-unknown//' | sed 's/riscv64gc/riscv64/')
           
+          # Create zig wrappers that remove any `--target=` injected by cc-rs
+          # and strictly enforce the target architecture.
+          cat > /tmp/zig-cc << WRAPPER
+          #!/bin/bash
+          args=()
+          for arg in "\$@"; do
+            if [[ "\$arg" == --target=* ]]; then
+              continue
+            fi
+            args+=("\$arg")
+          done
+          exec zig cc -target $ZIG_TARGET "\${args[@]}"
+          WRAPPER
+          chmod +x /tmp/zig-cc
+
+          cat > /tmp/zig-cxx << WRAPPER
+          #!/bin/bash
+          args=()
+          for arg in "\$@"; do
+            if [[ "\$arg" == --target=* ]]; then
+              continue
+            fi
+            args+=("\$arg")
+          done
+          exec zig c++ -target $ZIG_TARGET "\${args[@]}"
+          WRAPPER
+          chmod +x /tmp/zig-cxx
+
+          export CC="/tmp/zig-cc"
+          export CXX="/tmp/zig-cxx"
+          
+          # Musl targets must be fully static because zig cc does not support
+          # dynamically linking musl libc, which is what `cargo test` does by default.
+          # We also disable self-contained linking so Rust doesn't duplicate zig's libc components.
+          if [[ "${{ matrix.platform }}" == *"-musl" ]]; then
+            export RUSTFLAGS="-C target-feature=+crt-static -C link-self-contained=no"
+            export RUSTDOCFLAGS="-C target-feature=+crt-static -C link-self-contained=no"
+          fi
+          
+          ENV_NAME=$(echo ${{ matrix.platform }} | tr '[:lower:]-' '[:upper:]_')
+          export CARGO_TARGET_${ENV_NAME}_LINKER="/tmp/zig-cc"
+
+          # Zig's assembler has a bug with riscv64 glibc startup assembly (.cfi_label).
+          # Skip zig and use the native ubuntu GNU cross compiler for riscv.
+          if [[ "${{ matrix.platform }}" == *"riscv64"* ]]; then
+            export CC="riscv64-linux-gnu-gcc"
+            export CXX="riscv64-linux-gnu-g++"
+            export CARGO_TARGET_${ENV_NAME}_LINKER="riscv64-linux-gnu-gcc"
+          fi
+
           if [ -n "${{ matrix.qemu_arch }}" ]; then
-            ENV_NAME=$(echo ${{ matrix.platform }} | tr '[:lower:]-' '[:upper:]_')
             export CARGO_TARGET_${ENV_NAME}_RUNNER="qemu-${{ matrix.qemu_arch }}-static"
+            # QEMU needs the path to the cross-compiled dynamic libraries
+            if [[ "${{ matrix.platform }}" == *"aarch64"* ]]; then
+              export QEMU_LD_PREFIX=/usr/aarch64-linux-gnu
+            elif [[ "${{ matrix.platform }}" == *"riscv64"* ]]; then
+              export QEMU_LD_PREFIX=/usr/riscv64-linux-gnu
+            fi
           fi
           
           cargo zigbuild --target ${{ matrix.zig_target }} --all-features

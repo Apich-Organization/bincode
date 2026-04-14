@@ -165,7 +165,7 @@ debug = true
 empty-line-after-doc-comments = "allow"
 
 [lib]
-crate-type = ["cdylib", "rlib", "staticlib"]
+crate-type = ["rlib"]
 
 [package.metadata.docs.rs]
 all-features = true
