@@ -92,8 +92,10 @@ jobs:
           export CC="/tmp/zig-cc"
           export CXX="/tmp/zig-cxx"
           
+          ENV_NAME=$(echo ${{ matrix.platform }} | tr '[:lower:]-' '[:upper:]_')
+          export CARGO_TARGET_${ENV_NAME}_LINKER="/tmp/zig-cc"
+
           if [ -n "${{ matrix.qemu_arch }}" ]; then
-            ENV_NAME=$(echo ${{ matrix.platform }} | tr '[:lower:]-' '[:upper:]_')
             export CARGO_TARGET_${ENV_NAME}_RUNNER="qemu-${{ matrix.qemu_arch }}-static"
           fi
           
