@@ -54,7 +54,7 @@ jobs:
       - name: Run Tests
         shell: bash
         run: |
-          ZIG_TARGET=$(echo "${{ matrix.zig_target }}" | sed 's/-unknown//')
+          ZIG_TARGET=$(echo "${{ matrix.zig_target }}" | sed 's/-unknown//' | sed 's/riscv64gc/riscv64/')
           
           # Create zig wrappers that remove any `--target=` injected by cc-rs
           # and strictly enforce the target architecture.
