@@ -54,12 +54,48 @@ jobs:
       - name: Run Tests
         shell: bash
         run: |
-          export CC="zig cc -target ${{ matrix.zig_target }}"
-          export CXX="zig c++ -target ${{ matrix.zig_target }}"
+          # Create zig CC/CXX wrappers that translate Rust target triples to zig format
+          # (e.g. x86_64-unknown-linux-musl -> x86_64-linux-musl)
+          # This is needed because cc-rs adds --target=<rust-triple> which zig can't parse
+          cat > /tmp/zig-cc << 'WRAPPER'
+          #!/bin/bash
+          args=()
+          for arg in "$@"; do
+            if [[ "$arg" == --target=* ]]; then
+              target="${arg#--target=}"
+              target="$(echo "$target" | sed 's/-unknown//')"
+              args+=("--target=$target")
+            else
+              args+=("$arg")
+            fi
+          done
+          exec zig cc "${args[@]}"
+          WRAPPER
+          chmod +x /tmp/zig-cc
+
+          cat > /tmp/zig-cxx << 'WRAPPER'
+          #!/bin/bash
+          args=()
+          for arg in "$@"; do
+            if [[ "$arg" == --target=* ]]; then
+              target="${arg#--target=}"
+              target="$(echo "$target" | sed 's/-unknown//')"
+              args+=("--target=$target")
+            else
+              args+=("$arg")
+            fi
+          done
+          exec zig c++ "${args[@]}"
+          WRAPPER
+          chmod +x /tmp/zig-cxx
+
+          export CC="/tmp/zig-cc"
+          export CXX="/tmp/zig-cxx"
           
           if [ -n "${{ matrix.qemu_arch }}" ]; then
             ENV_NAME=$(echo ${{ matrix.platform }} | tr '[:lower:]-' '[:upper:]_')
             export CARGO_TARGET_${ENV_NAME}_RUNNER="qemu-${{ matrix.qemu_arch }}-static"
           fi
           
-          cargo zigbuild test --target ${{ matrix.zig_target }} --all-features
+          cargo zigbuild --target ${{ matrix.zig_target }} --all-features
+          cargo test --target ${{ matrix.platform }} --all-features
