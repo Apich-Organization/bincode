@@ -64,7 +64,7 @@ jobs:
             TIMEOUT=3600
           fi
           cd fuzz
-          cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=$TIMEOUT -rss_limit_mb=6144Mb
+          cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=$TIMEOUT -rss_limit_mb=16384Mb
 
       - name: Upload Crash Artifacts
         if: failure()
