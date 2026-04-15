@@ -52,7 +52,7 @@ jobs:
             ~/.cargo/git/db/
             fuzz/target/
             target/
-          key: ${{ runner.os }}-fuzz-target-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-fuzz-target-${{ matrix.target }}-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-fuzz-target-${{ matrix.target }}-
 
