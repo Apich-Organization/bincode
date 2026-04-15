@@ -59,9 +59,9 @@ jobs:
       - name: Run Fuzzer
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            TIMEOUT=19800
+            TIMEOUT=3600
           else
-            TIMEOUT=18000
+            TIMEOUT=3600
           fi
           cd fuzz
           cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=$TIMEOUT -rss_limit_mb=16384Mb
