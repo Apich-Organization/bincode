@@ -68,7 +68,7 @@ jobs:
             done
           else
             echo "Starting standard fuzzer iteration (1 hour)..."
-            cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=3600 -rss_limit_mb=16384Mb
+            cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=12000 -rss_limit_mb=16384Mb
           fi
 
       - name: Upload Crash Artifacts
