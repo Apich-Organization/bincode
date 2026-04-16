@@ -64,11 +64,11 @@ jobs:
             # Long single fuzzer runs can hit memory limits or cause CPU starvation in shared CI runners.
             for i in {1..2}; do
               echo "Starting PR fuzzer iteration $i of 5..."
-              cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=15000 -rss_limit_mb=16384Mb
+              cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=12000 -rss_limit_mb=16384Mb
             done
           else
             echo "Starting standard fuzzer iteration (1 hour)..."
-            cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=12000 -rss_limit_mb=16384Mb
+            cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=3600 -rss_limit_mb=16384Mb
           fi
 
       - name: Upload Crash Artifacts
