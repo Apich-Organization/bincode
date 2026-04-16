@@ -62,9 +62,9 @@ jobs:
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             # Run the fuzzer 5 times, each for 1 hour (3600 seconds) instead of 1 time for 5 hours.
             # Long single fuzzer runs can hit memory limits or cause CPU starvation in shared CI runners.
-            for i in {1..2}; do
+            for i in {1..5}; do
               echo "Starting PR fuzzer iteration $i of 5..."
-              cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=12000 -rss_limit_mb=16384Mb
+              cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=15000 -rss_limit_mb=16384Mb
             done
           else
             echo "Starting standard fuzzer iteration (1 hour)..."
