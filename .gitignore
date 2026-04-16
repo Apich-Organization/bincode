@@ -42,3 +42,4 @@ spec.tmp
 fuzz/report.html
 fuzz/coverage/zero_copy/coverage.profdata
 fuzz/coverage/zero_copy/raw/default-zero_copy.profraw
+tatus

@@ -52,19 +52,24 @@ jobs:
             ~/.cargo/git/db/
             fuzz/target/
             target/
-          key: ${{ runner.os }}-fuzz-target-${{ matrix.target }}-${{ hashFiles('**/Cargo.toml') }}
+          key: ${{ runner.os }}-fuzz-target-${{ matrix.target }}-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-fuzz-target-${{ matrix.target }}-
 
       - name: Run Fuzzer
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            TIMEOUT=18000
-          else
-            TIMEOUT=3600
-          fi
           cd fuzz
-          cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=$TIMEOUT -rss_limit_mb=16384Mb
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # Run the fuzzer 5 times, each for 1 hour (3600 seconds) instead of 1 time for 5 hours.
+            # Long single fuzzer runs can hit memory limits or cause CPU starvation in shared CI runners.
+            for i in {1..5}; do
+              echo "Starting PR fuzzer iteration $i of 5..."
+              cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=3600 -rss_limit_mb=16384Mb
+            done
+          else
+            echo "Starting standard fuzzer iteration (1 hour)..."
+            cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=3600 -rss_limit_mb=16384Mb
+          fi
 
       - name: Upload Crash Artifacts
         if: failure()
