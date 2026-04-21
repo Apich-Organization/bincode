@@ -10,7 +10,7 @@
 
 ## Reporting a Vulnerability
 
-Please do not report a vulnerability via Github issues. Any vulnerability shall be reported by emailing to **security@apich.org** or via our official website security reporting section (under construction). Please visit https://security.apich.org for more details on reporting.
+Please do not report a vulnerability via Github issues. Any vulnerability shall be reported by emailing to **security@apich.org** or via our official website security reporting section (under construction). Please visit **https://security.apich.org** for more details on reporting.
 
 ```text
 -----BEGIN PGP PUBLIC KEY BLOCK-----
