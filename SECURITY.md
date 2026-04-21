@@ -10,7 +10,45 @@
 
 ## Reporting a Vulnerability
 
-Please do not report a vulnerability via Github issues. Any vulnerability shall be reported by emailing to **security@apich.org** or via our official website security reporting section (under construction).
+Please do not report a vulnerability via Github issues. Any vulnerability shall be reported by emailing to **security@apich.org** or via our official website security reporting section (under construction). Please visit https://security.apich.org for more details on reporting.
+
+```text
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mJMEaZbYPxMJKyQDAwIIAQENBAMEmg9QdM7hsaWYydJJ4wFUMVdOcxJ5UmybeRRs
+4TRlgqCWPXXX3p8P7Txq9XhUdHjz4u3mW7K6nIWAWizz/TegfTDXMoiI+Iz4+T05
+R9kauK9Ei+Pi4k+8KJ6ve3HCHZtVqwDkcxVse5cR3Zzk9PHczvwvG317i03dMoHW
+T2OaNF+0MFNlY3VyaXR5IFRlYW0gUHVibGljIEUtTWFpbCA8c2VjdXJpdHlAYXBp
+Y2gub3JnPoj1BBMTCgBdFiEEu0UnZ7Wkvf22Bi2DE3O3OLzYp10FAmmW2D8bFIAA
+AAAABAAObWFudTIsMi41KzEuMTEsMiwxAhsDBQkHhdIBBQsJCAcCAiICBhUKCQgL
+AgQWAgMBAh4HAheAAAoJEBNztzi82Kdd4bEB/jomDTV1fKUpnVTRV0z0S4smyc2Q
+UihNfRwQ76Rv+84JAViMxGGB1AZXY41H6Zs1MHaH53bNgEHbv4CDWTiomDwB+wW/
+ri8kgZ9pKvIoIF95E/6xDy5JPDW/+7wCBQsh072Jhu7iRsPdtPruCN9XMTxafFfx
+skIhY7DT/00w/wFceW2IlQQQEwkAHRYhBK4nfyR71hB20rjShbQB5ELTOzKOBQJp
+lthjAAoJELQB5ELTOzKO6S8BgIq/Zjn33/NkXTi6nmSm+aTD9hVnIZQy+iLl32Eb
+xR7H676JvsPZke+YlFu6TYnCTgF+NJQpif/JeM7VJuUs9+goZfJLtZ+mhEU0/v7J
+fwYiCLSD71n1BBvdM23QJiI67r6/iLUEEBMKAB0WIQSQ7ldTd5YSBk1HN2R6paO5
+yA0x2AUCaZbYcAAKCRB6paO5yA0x2Dd6Af0fqsClGMeo4Sme03Ntd1wIhpwJzo6S
+frNuQxFYBCTqJutU0i1d3PyOGsQvQurBcGV0C7vevQELU/EVEaQFBQncAf9AhlzB
+r/NuZjgF7cFokMobFJsF5vPiC4RPDaQ55Mxni6F+mCh7zNrMS/hV44IBF2PVHj9/
+SEgchMvqZXBksnGfiLUEEBMKAB0WIQR9s1fBssdUA7skko5Llb3hTiglHwUCaZbY
+dgAKCRBLlb3hTiglH8w4Af99YCq61Y/yZ7oLKfslFG/1tZeZn0dsN2dEiefzHYtS
+DypTcW8hXgLSVdFc4RjctrFngTYi2ZTWjt9xnZwnnH4xAf0YtiQn10OJmMqSUzff
+LQrJu54+9VtP9OcIlirQzshXrs9meP6WUeLz5RaelP00elq0F/ION4dH5Dekd2Dp
+Xkb/iHUEEBYKAB0WIQRz4co5/DK9NuU+T/LK9q7tnA2eDQUCaZbZYQAKCRDK9q7t
+nA2eDcREAP9l3Pzw//eGwIzXBNHbL5Tb34R3E5HzX1JUlqGQpy4NWgD/R1H5PFJ/
+AVPLZYTn5wvkcwWh9Mv03NeHMyZ1EeNcCA+4lwRpltg/EgkrJAMDAggBAQ0EAwSG
+f4dorwVpQAH6DWIYVfQb3xdC0vCsumO1Fiwux/nQF44JuubKalFV+NGFWEDkbIfD
+bwm3pIjKmKg2PXSf2sRrKwilElp7qACxe9eszqw5cPM7LD89KJiWHHdNMRlhGJzq
+2X6T2lHKJFX2+Vt8EymcCb9/TAlYv2cPARE8yzhHTQMBCgmI2gQYEwoAQhYhBLtF
+J2e1pL39tgYtgxNztzi82KddBQJpltg/GxSAAAAAAAQADm1hbnUyLDIuNSsxLjEx
+LDIsMQIbDAUJB4XSAQAKCRATc7c4vNinXf+4AgCSbaKtFANWoZqvzYyS3N9Adwt7
+cAn4c4wSoz3FY1aGv0cA0BVhvTuAk5yAw8Vzvr5izywBs8tKguvlMJ83GYJ0Af9m
+fNn3AbPS1hVG3YXXidtP7kEY1iOLD0pDp+H/J2Mhv1/Th4IiJdwtCBts4oTVU2sA
+LrAkjU6KoSw2GRerRDGu
+=RBmp
+-----END PGP PUBLIC KEY BLOCK-----
+```
 
 ## Developer Security Standards (Mandatory for Organization Members and Recommended for Contributors)
 
