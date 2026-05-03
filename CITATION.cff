@@ -12,9 +12,6 @@ authors:
   - given-names: Xinyu
     family-names: Yang
     email: Xinyu.Yang@apich.org
-    affiliation: >-
-      Jinan Zhensheng Middle School, Jinan 250100, Shandong,
-      China
     orcid: 'https://orcid.org/0009-0007-2600-0948'
   - given-names: The bincode-next & bincode developers
     family-names: The bincode-next & bincode developers
