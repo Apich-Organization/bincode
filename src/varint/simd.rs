@@ -27,6 +27,7 @@ pub struct VarintScan {
 pub fn scan_single_byte_varints(bytes: &[u8]) -> VarintScan {
     let mut count = 0;
 
+    #[cfg(feature = "simd")]
     #[cfg(target_arch = "x86_64")]
     {
         if bytes.len() >= 16 {
@@ -53,6 +54,7 @@ pub fn scan_single_byte_varints(bytes: &[u8]) -> VarintScan {
         }
     }
 
+    #[cfg(feature = "simd")]
     #[cfg(target_arch = "aarch64")]
     {
         if bytes.len() >= 16 {
@@ -68,6 +70,47 @@ pub fn scan_single_byte_varints(bytes: &[u8]) -> VarintScan {
                         break;
                     }
                     count += 16;
+                }
+            }
+        }
+    }
+
+    #[cfg(feature = "simd")]
+    #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))]
+    {
+        if bytes.len() >= 16 {
+            unsafe {
+                let limit = 250u8;
+                while count < bytes.len() {
+                    let remaining = bytes.len() - count;
+                    if remaining < 16 {
+                        break;
+                    }
+                    let vl: usize;
+                    let first: isize;
+                    let ptr = bytes.as_ptr().add(count);
+
+                    core::arch::asm!(
+                        "vsetvli {vl}, {remaining}, e8, m1, ta, ma",
+                        "vle8.v v8, ({ptr})",
+                        "vmsgtu.vx v0, v8, {limit}",
+                        "vfirst.m {first}, v0",
+                        remaining = in(reg) remaining,
+                        ptr = in(reg) ptr,
+                        limit = in(reg) limit,
+                        vl = out(reg) vl,
+                        first = out(reg) first,
+                        out("v0") _,
+                        out("v8") _,
+                    );
+
+                    if first >= 0 {
+                        count += first as usize;
+                        return VarintScan {
+                            single_byte_count: count,
+                        };
+                    }
+                    count += vl;
                 }
             }
         }

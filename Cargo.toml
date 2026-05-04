@@ -45,12 +45,13 @@ description = "A compact, ultra-fast binary serialization format for Rust, optim
 edition = "2024"
 
 [features]
-default = ["std", "derive"]
+default = ["std", "derive", "simd"]
 std = ["alloc", "serde?/std"]
 alloc = ["serde?/alloc"]
 derive = ["bincode_derive-next"]
 no-std = ["panic-halt"]
 serde = ["dep:serde"]
+simd = []
 zero-copy = ["bincode_derive-next?/zero-copy"]
 static-size = ["bincode_derive-next?/static-size"]
 async-fiber = ["dep:futures-io", "dep:libc", "std"]
