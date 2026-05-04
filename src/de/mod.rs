@@ -783,7 +783,7 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
             | Format::Cbor | Format::CborDeterministic => {
                 let actual_len = cbor::decode_slice_len(self.reader())?;
                 if actual_len != _len && actual_len != usize::MAX {
-                    return Err(DecodeError::Other("struct length mismatch"));
+                    return crate::error::cold_decode_error_other("struct length mismatch");
                 }
                 Ok(())
             },
