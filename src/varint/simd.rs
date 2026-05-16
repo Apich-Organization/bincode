@@ -75,7 +75,7 @@ pub fn scan_single_byte_varints(bytes: &[u8]) -> VarintScan {
         }
     }
 
-    #[cfg(feature = "simd")]
+    #[cfg(all(feature = "simd", feature = "hw-acceleration"))]
     #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))]
     {
         if bytes.len() >= 16 {

@@ -48,8 +48,8 @@ edition = "2024"
 default = ["std", "derive", "simd"]
 std = ["alloc", "serde?/std"]
 alloc = ["serde?/alloc"]
-derive = ["bincode_derive-next"]
-no-std = ["panic-halt"]
+derive = ["dep:bincode_derive-next"]
+no-std = ["dep:panic-halt"]
 serde = ["dep:serde"]
 simd = []
 zero-copy = ["bincode_derive-next?/zero-copy"]
@@ -60,6 +60,7 @@ tokio = ["dep:tokio", "async-fiber"]
 # And remeber 'sudo chrt -f 99 cargo +nightly bench --bench complex' also.
 # And for loom: 'RUSTFLAGS="--cfg loom" cargo test --test async_fiber_loom --features "async-fiber, tokio/full" --release'
 fuzzing = ["dep:arbitrary", "zero-copy"]
+hw-acceleration = ["simd"]
 
 [dependencies]
 bincode_derive-next = { path = "derive", version = "3.0.0-rc.13", optional = true }
