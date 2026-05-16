@@ -380,6 +380,13 @@ unsafe extern "C" fn switch_context(
     restore: *const Registers,
 ) {
     naked_asm!(
+        "prefetchw [rdi]",
+        "prefetcht0 [rsi]",
+        "prefetcht0 [rsi + 64]",
+        "prefetcht0 [rsi + 128]",
+        "mov rax, [rsi]",
+        "prefetcht0 [rax]",
+        "prefetcht0 [rax + 64]",
         "mov [rdi + 0], rsp",
         "mov [rdi + 8], rbp",
         "mov [rdi + 16], rbx",
@@ -418,6 +425,13 @@ unsafe extern "C" fn switch_context(
     restore: *const Registers,
 ) {
     naked_asm!(
+        "prefetchw [rcx]",
+        "prefetcht0 [rdx]",
+        "prefetcht0 [rdx + 64]",
+        "prefetcht0 [rdx + 128]",
+        "mov rax, [rdx]",
+        "prefetcht0 [rax]",
+        "prefetcht0 [rax + 64]",
         "mov [rcx + 0], rsp",
         "mov [rcx + 8], rbp",
         "mov [rcx + 16], rbx",
@@ -470,6 +484,13 @@ unsafe extern "C" fn switch_context(
     restore: *const Registers,
 ) {
     naked_asm!(
+        "prfm pstl1keep, [x0]",
+        "prfm pldl1keep, [x1]",
+        "prfm pldl1keep, [x1, 64]",
+        "prfm pldl1keep, [x1, 128]",
+        "ldr x9, [x1, 96]",
+        "prfm pldl1keep, [x9]",
+        "prfm pldl1keep, [x9, 64]",
         "stp x19, x20, [x0, 0]",
         "stp x21, x22, [x0, 16]",
         "stp x23, x24, [x0, 32]",
@@ -511,6 +532,13 @@ unsafe extern "C" fn switch_context(
     restore: *const Registers,
 ) {
     naked_asm!(
+        "prfm pstl1keep, [x0]",
+        "prfm pldl1keep, [x1]",
+        "prfm pldl1keep, [x1, 64]",
+        "prfm pldl1keep, [x1, 128]",
+        "ldr x9, [x1, 96]",
+        "prfm pldl1keep, [x9]",
+        "prfm pldl1keep, [x9, 64]",
         "stp x19, x20, [x0, 0]",
         "stp x21, x22, [x0, 16]",
         "stp x23, x24, [x0, 32]",
@@ -523,7 +551,7 @@ unsafe extern "C" fn switch_context(
         "str x9, [x0, #104]",
         "ldr x9, [x18, #0x10]",
         "str x9, [x0, #112]",
-        "ldr x9, [x18, #0x1478]",
+        "ldr x9, [x18, #0x12C8]",
         "str x9, [x0, #120]",
         "stp q8, q9, [x0, 128]",
         "stp q10, q11, [x0, 160]",
@@ -538,7 +566,7 @@ unsafe extern "C" fn switch_context(
         "ldr x9, [x1, #112]",
         "str x9, [x18, #0x10]",
         "ldr x9, [x1, #120]",
-        "str x9, [x18, #0x1478]",
+        "str x9, [x18, #0x12C8]",
         "ldp x19, x20, [x1, 0]",
         "ldp x21, x22, [x1, 16]",
         "ldp x23, x24, [x1, 32]",
