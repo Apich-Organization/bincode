@@ -61,6 +61,18 @@ tokio = ["dep:tokio", "async-fiber"]
 # And for loom: 'RUSTFLAGS="--cfg loom" cargo test --test async_fiber_loom --features "async-fiber, tokio/full" --release'
 fuzzing = ["dep:arbitrary", "zero-copy"]
 hw-acceleration = ["simd"]
+full = [
+    "default",
+    "std",
+    "alloc",
+    "derive",
+    "serde",
+    "simd",
+    "zero-copy",
+    "static-size",
+    "async-fiber",
+    "tokio"
+]
 
 [dependencies]
 bincode_derive-next = { path = "derive", version = "3.0.0-rc.13", optional = true }

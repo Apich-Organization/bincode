@@ -580,13 +580,94 @@ unsafe extern "C" fn switch_context(
 }
 
 // riscv64 context switch — unix only (no Windows RISC-V target exists)
-#[cfg(all(feature = "async-fiber", target_arch = "riscv64", unix))]
+#[cfg(all(
+    feature = "async-fiber",
+    target_arch = "riscv64",
+    unix,
+    not(feature = "hw-acceleration")
+))]
 #[unsafe(naked)]
 unsafe extern "C" fn switch_context(
     save: *mut Registers,
     restore: *const Registers,
 ) {
     naked_asm!(
+        "sd sp, 0(a0)",
+        "sd s0, 8(a0)",
+        "sd s1, 16(a0)",
+        "sd s2, 24(a0)",
+        "sd s3, 32(a0)",
+        "sd s4, 40(a0)",
+        "sd s5, 48(a0)",
+        "sd s6, 56(a0)",
+        "sd s7, 64(a0)",
+        "sd s8, 72(a0)",
+        "sd s9, 80(a0)",
+        "sd s10, 88(a0)",
+        "sd s11, 96(a0)",
+        "sd ra, 104(a0)",
+        "fsd fs0, 128(a0)",
+        "fsd fs1, 136(a0)",
+        "fsd fs2, 144(a0)",
+        "fsd fs3, 152(a0)",
+        "fsd fs4, 160(a0)",
+        "fsd fs5, 168(a0)",
+        "fsd fs6, 176(a0)",
+        "fsd fs7, 184(a0)",
+        "fsd fs8, 192(a0)",
+        "fsd fs9, 200(a0)",
+        "fsd fs10, 208(a0)",
+        "fsd fs11, 216(a0)",
+        "ld sp, 0(a1)",
+        "ld s0, 8(a1)",
+        "ld s1, 16(a1)",
+        "ld s2, 24(a1)",
+        "ld s3, 32(a1)",
+        "ld s4, 40(a1)",
+        "ld s5, 48(a1)",
+        "ld s6, 56(a1)",
+        "ld s7, 64(a1)",
+        "ld s8, 72(a1)",
+        "ld s9, 80(a1)",
+        "ld s10, 88(a1)",
+        "ld s11, 96(a1)",
+        "ld ra, 104(a1)",
+        "fld fs0, 128(a1)",
+        "fld fs1, 136(a1)",
+        "fld fs2, 144(a1)",
+        "fld fs3, 152(a1)",
+        "fld fs4, 160(a1)",
+        "fld fs5, 168(a1)",
+        "fld fs6, 176(a1)",
+        "fld fs7, 184(a1)",
+        "fld fs8, 192(a1)",
+        "fld fs9, 200(a1)",
+        "fld fs10, 208(a1)",
+        "fld fs11, 216(a1)",
+        "ret"
+    );
+}
+
+// riscv64 context switch — unix only (no Windows RISC-V target exists)
+#[cfg(all(
+    feature = "async-fiber",
+    target_arch = "riscv64",
+    unix,
+    feature = "hw-acceleration"
+))]
+#[unsafe(naked)]
+unsafe extern "C" fn switch_context(
+    save: *mut Registers,
+    restore: *const Registers,
+) {
+    naked_asm!(
+        "prefetch.w 0(a0)",
+        "prefetch.r 0(a1)",
+        "prefetch.r 64(a1)",
+        "prefetch.r 128(a1)",
+        "ld a2, 0(a1)",
+        "prefetch.r 0(a2)",
+        "prefetch.r 64(a2)",
         "sd sp, 0(a0)",
         "sd s0, 8(a0)",
         "sd s1, 16(a0)",

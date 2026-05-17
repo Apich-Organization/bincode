@@ -116,5 +116,5 @@ jobs:
             fi
           fi
           
-          cargo zigbuild --target ${{ matrix.zig_target }} --all-features
-          cargo test --target ${{ matrix.platform }} --all-features
+          cargo zigbuild --target ${{ matrix.zig_target }} --features full
+          cargo test --target ${{ matrix.platform }} --features full
