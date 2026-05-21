@@ -28,7 +28,7 @@ Add `bincode-next` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bincode-next = "3.0.0-rc.14"
+bincode-next = "3.0.0-rc.15"
 ```
 
 ### Basic Encode / Decode
