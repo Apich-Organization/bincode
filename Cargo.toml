@@ -101,7 +101,7 @@ tokio = { version = "1.50", features = [
 rand = "0.10"
 uuid = { version = "1.1", features = ["serde"] }
 chrono = { version = "0.4", features = ["serde"] }
-glam = { version = "0.32", features = ["serde"] }
+glam = { version = "0.33", features = ["serde"] }
 bincode_1 = { version = "1.3", package = "bincode" }
 bincode_v2 = { version = "2.0.0-rc.3", package = "bincode", features = [
     "serde",
