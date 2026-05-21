@@ -57,9 +57,9 @@ keywords:
   - Encoding Alignment
   - Decoding algorithms
 license: Apache-2.0
-commit: d6117743b92fdeec8f3df836deab95a2a8ff891b
-version: v3.0.0-rc.14
-date-released: '2026-05-17'
+commit: 7f70df30df62168bd30c25c2c6d3dd8db83afd40
+version: v3.0.0-rc.15
+date-released: '2026-05-21'
 references:
   - type: software
     title: "Bincode"
