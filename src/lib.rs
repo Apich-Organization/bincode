@@ -113,9 +113,6 @@
     unsafe_code,
     clippy::dbg_macro,
     clippy::todo,
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    clippy::cast_possible_wrap,
     clippy::unnecessary_safety_comment
 )]
 // -------------------------------------------------------------------------
@@ -125,6 +122,9 @@
     clippy::restriction,
     clippy::inline_always,
     unused_doc_comments,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap,
     clippy::empty_line_after_doc_comments
 )]
 #![crate_name = "bincode_next"]
@@ -180,13 +180,7 @@ pub use de::Decode;
 pub use enc::Encode;
 pub use fingerprint::Fingerprint;
 #[cfg(feature = "zero-copy")]
-pub use relative_ptr::ZeroCopy;
-#[cfg(feature = "zero-copy")]
-pub use relative_ptr::ZeroCopyType;
-
-#[cfg(not(any(feature = "std", feature = "serde")))]
-#[cfg(feature = "no-std")]
-use panic_halt as _;
+pub use relative_ptr::*;
 
 use config::Config;
 use config::internal::InternalFingerprintGuard;
@@ -529,104 +523,6 @@ where
         .await
 }
 
-/// Attempt to decode a given type `T` from an `async-std` reader.
-///
-/// Requires the `async-fiber` feature.
-///
-/// # Errors
-///
-/// Returns a `DecodeError` if the reader fails or the data is invalid.
-///
-/// [config]: config/index.html
-#[cfg(feature = "async-fiber")]
-#[inline(always)]
-pub async fn decode_async_std<T, R, C>(
-    config: C,
-    reader: R,
-) -> Result<T, crate::error::DecodeError>
-where
-    T: crate::Decode<()>,
-    R: futures_io::AsyncRead + std::marker::Unpin,
-    C: crate::config::Config,
-    C::Mode: crate::config::InternalFingerprintGuard<T, C>,
-{
-    decode_async_with_context::<T, R, C, ()>(config, reader, ()).await
-}
-
-/// Attempt to decode a given type `T` from an `async-std` reader.
-///
-/// Requires the `async-fiber` feature.
-///
-/// # Errors
-///
-/// Returns a `DecodeError` if the reader fails or the data is invalid.
-///
-/// [config]: config/index.html
-#[cfg(feature = "async-fiber")]
-#[inline(always)]
-pub async fn decode_async_std_with_context<T, R, C, Context>(
-    config: C,
-    reader: R,
-    context: Context,
-) -> Result<T, crate::error::DecodeError>
-where
-    T: crate::Decode<Context>,
-    R: futures_io::AsyncRead + std::marker::Unpin,
-    C: crate::config::Config,
-    C::Mode: crate::config::InternalFingerprintGuard<T, C>,
-{
-    decode_async_with_context::<T, R, C, Context>(config, reader, context).await
-}
-
-/// Attempt to decode a given type `T` from a `smol` reader.
-///
-/// Requires the `async-fiber` feature.
-///
-/// # Errors
-///
-/// Returns a `DecodeError` if the reader fails or the data is invalid.
-///
-/// [config]: config/index.html
-#[cfg(feature = "async-fiber")]
-#[inline(always)]
-pub async fn decode_async_smol<T, R, C>(
-    config: C,
-    reader: R,
-) -> Result<T, crate::error::DecodeError>
-where
-    T: crate::Decode<()>,
-    R: futures_io::AsyncRead + std::marker::Unpin,
-    C: crate::config::Config,
-    C::Mode: crate::config::InternalFingerprintGuard<T, C>,
-{
-    decode_async_with_context::<T, R, C, ()>(config, reader, ()).await
-}
-
-/// Attempt to decode a given type `T` from a `smol` reader.
-///
-/// Requires the `async-fiber` feature.
-///
-/// # Errors
-///
-/// Returns a `DecodeError` if the reader fails or the data is invalid.
-///
-/// [config]: config/index.html
-#[cfg(feature = "async-fiber")]
-#[inline(always)]
-pub async fn decode_async_smol_with_context<T, R, C, Context>(
-    config: C,
-    reader: R,
-    context: Context,
-) -> Result<T, crate::error::DecodeError>
-where
-    T: crate::Decode<Context>,
-    R: futures_io::AsyncRead + std::marker::Unpin,
-    C: crate::config::Config,
-    C::Mode: crate::config::InternalFingerprintGuard<T, C>,
-{
-    decode_async_with_context::<T, R, C, Context>(config, reader, context).await
-}
-
 /// Attempt to decode a given type `T` from the given tokio async reader safely using a non-blocking fiber.
 ///
 /// Requires the `tokio` and `async-fiber` features.
@@ -698,100 +594,6 @@ where
     C: crate::config::Config,
 {
     decode_serde_async_with_context::<'de, T, R, C, ()>(config, reader, ()).await
-}
-
-/// Attempt to decode a given serde-compatible type `T` from an `async-std` reader.
-///
-/// Requires the `async-fiber` and `serde` features.
-///
-/// # Errors
-///
-/// Returns a `DecodeError` if the reader fails or the data is invalid.
-///
-/// [config]: config/index.html
-#[cfg(all(feature = "async-fiber", feature = "serde"))]
-#[inline(always)]
-pub async fn decode_serde_async_std<'de, T, R, C>(
-    config: C,
-    reader: R,
-) -> Result<T, crate::error::DecodeError>
-where
-    T: ::serde::Deserialize<'de>,
-    R: futures_io::AsyncRead + std::marker::Unpin,
-    C: crate::config::Config,
-{
-    decode_serde_async_with_context::<'de, T, R, C, ()>(config, reader, ()).await
-}
-
-/// Attempt to decode a given serde-compatible type `T` from an `async-std` reader.
-///
-/// Requires the `async-fiber` and `serde` features.
-///
-/// # Errors
-///
-/// Returns a `DecodeError` if the reader fails or the data is invalid.
-///
-/// [config]: config/index.html
-#[cfg(all(feature = "async-fiber", feature = "serde"))]
-#[inline(always)]
-pub async fn decode_serde_async_std_with_context<'de, T, R, C, Context>(
-    config: C,
-    reader: R,
-    context: Context,
-) -> Result<T, crate::error::DecodeError>
-where
-    T: ::serde::Deserialize<'de>,
-    R: futures_io::AsyncRead + std::marker::Unpin,
-    C: crate::config::Config,
-{
-    decode_serde_async_with_context::<'de, T, R, C, Context>(config, reader, context).await
-}
-
-/// Attempt to decode a given serde-compatible type `T` from a `smol` reader.
-///
-/// Requires the `async-fiber` and `serde` features.
-///
-/// # Errors
-///
-/// Returns a `DecodeError` if the reader fails or the data is invalid.
-///
-/// [config]: config/index.html
-#[cfg(all(feature = "async-fiber", feature = "serde"))]
-#[inline(always)]
-pub async fn decode_serde_async_smol<'de, T, R, C>(
-    config: C,
-    reader: R,
-) -> Result<T, crate::error::DecodeError>
-where
-    T: ::serde::Deserialize<'de>,
-    R: futures_io::AsyncRead + std::marker::Unpin,
-    C: crate::config::Config,
-{
-    decode_serde_async_with_context::<'de, T, R, C, ()>(config, reader, ()).await
-}
-
-/// Attempt to decode a given serde-compatible type `T` from a `smol` reader.
-///
-/// Requires the `async-fiber` and `serde` features.
-///
-/// # Errors
-///
-/// Returns a `DecodeError` if the reader fails or the data is invalid.
-///
-/// [config]: config/index.html
-#[cfg(all(feature = "async-fiber", feature = "serde"))]
-#[inline(always)]
-pub async fn decode_serde_async_smol_with_context<'de, T, R, C, Context>(
-    config: C,
-    reader: R,
-    context: Context,
-) -> Result<T, crate::error::DecodeError>
-where
-    T: ::serde::Deserialize<'de>,
-    R: futures_io::AsyncRead + std::marker::Unpin,
-    C: crate::config::Config,
-{
-    decode_serde_async_with_context::<'de, T, R, C, Context>(config, reader, context).await
 }
 
 /// Attempt to decode a given serde-compatible type `T` from the given async reader using a non-blocking fiber and a context.
@@ -890,9 +692,12 @@ pub mod migration_guide {
     feature = "derive",
     feature = "serde",
     feature = "async-fiber",
+    feature = "zero-copy",
+    feature = "static-size",
     doctest
 ))]
 #[cfg_attr(miri, ignore)]
 mod readme {
     #![doc = include_str!("../README.md")]
+    #![doc = include_str!("../derive/readme.md")]
 }

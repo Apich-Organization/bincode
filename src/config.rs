@@ -283,7 +283,7 @@ impl<E, I, L, B, O, F, FO> Configuration<E, I, L, B, O, F, FO> {
 
     /// Enables fingerprinting with a custom seed.
     ///
-    /// This is similar to [`with_fingerprint`], but allows specifying a custom seed
+    /// This is similar to [`with_fingerprint`](Self::with_fingerprint), but allows specifying a custom seed
     /// to further differentiate fingerprints.
     #[must_use]
     pub const fn with_fingerprint_and_seed<const SEED: u64>(
@@ -876,21 +876,38 @@ pub mod internal {
         L: InternalLimitConfig,
         B: InternalBitPackingConfig,
         O: InternalBitOrderingConfig,
+        FO: InternalFormatConfig,
     {
-        const CONFIG_HASH: u64 = rapidhash::v3::rapidhash_v3_seeded(
-            &[
-                crate::BINCODE_MAJOR_VERSION as u8,
-                E::ENDIAN as u8,
-                I::INT_ENCODING as u8,
-                match L::LIMIT {
-                    | None => 0,
-                    | Some(_) => 1,
-                },
-                B::BIT_PACKING as u8,
-                O::BIT_ORDERING as u8,
-            ],
-            &rapidhash::v3::RapidSecrets::seed_cpp(0),
-        );
+        const CONFIG_HASH: u64 = {
+            let format_byte: u8 = match FO::FORMAT {
+                | super::Format::Bincode => 0,
+                | super::Format::BincodeDeterministic => 1,
+                | super::Format::Cbor => 2,
+                | super::Format::CborDeterministic => 3,
+            };
+            let opts = FO::CBOR_OPTIONS;
+            rapidhash::v3::rapidhash_v3_seeded(
+                &[
+                    crate::BINCODE_MAJOR_VERSION as u8,
+                    E::ENDIAN as u8,
+                    I::INT_ENCODING as u8,
+                    match L::LIMIT {
+                        | None => 0,
+                        | Some(_) => 1,
+                    },
+                    B::BIT_PACKING as u8,
+                    O::BIT_ORDERING as u8,
+                    format_byte,
+                    opts.deterministic_mode as u8,
+                    opts.preferred_float as u8,
+                    opts.canonical_nan as u8,
+                    opts.normalize_neg_zero as u8,
+                    opts.allow_indefinite as u8,
+                    opts.strict_tags as u8,
+                ],
+                &rapidhash::v3::RapidSecrets::seed_cpp(0),
+            )
+        };
     }
 
     pub trait InternalFormatConfig {
