@@ -123,13 +123,13 @@ fn test_hashmap_duplicate_key_rejected_in_deterministic_mode() {
     // Standard mode: encoding with duplicate key by manually encoding length=2, key=1, val=10, key=1, val=20
     let mut dup_payload = Vec::new();
     // length = 2 (varint)
-    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(&2u64, config_standard).unwrap());
+    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(2u64, config_standard).unwrap());
     // key=1, val=10
-    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(&1u32, config_standard).unwrap());
-    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(&10u32, config_standard).unwrap());
+    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(1u32, config_standard).unwrap());
+    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(10u32, config_standard).unwrap());
     // key=1 (duplicate!), val=20
-    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(&1u32, config_standard).unwrap());
-    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(&20u32, config_standard).unwrap());
+    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(1u32, config_standard).unwrap());
+    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(20u32, config_standard).unwrap());
 
     // Standard mode should accept duplicates (last wins)
     let result: Result<(HashMap<u32, u32>, usize), _> =
@@ -157,9 +157,9 @@ fn test_hashset_duplicate_element_rejected_in_deterministic_mode() {
 
     // Manually craft a payload with duplicate elements: length=2, elem=1, elem=1
     let mut dup_payload = Vec::new();
-    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(&2u64, config_standard).unwrap());
-    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(&1u32, config_standard).unwrap());
-    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(&1u32, config_standard).unwrap());
+    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(2u64, config_standard).unwrap());
+    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(1u32, config_standard).unwrap());
+    dup_payload.extend_from_slice(&bincode_next::encode_to_vec(1u32, config_standard).unwrap());
 
     // Standard mode should accept duplicates
     let result: Result<(HashSet<u32>, usize), _> =

@@ -236,11 +236,11 @@ pub fn varint_decode_u16<R: Reader>(
 ) -> Result<u16, DecodeError> {
     if let Some(bytes) = read.peek_read(3) {
         let b = unsafe { *bytes.as_ptr() };
-        if b <= SINGLE_BYTE_MAX {
+        if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(u16::from(b));
         }
-        if b == U16_BYTE {
+        if crate::utils::is_unlikely!(b == U16_BYTE) {
             let v = unsafe {
                 let ptr = bytes.as_ptr().add(1).cast::<u16>();
                 let val = ptr.read_unaligned();
@@ -263,11 +263,11 @@ pub fn varint_decode_u32<R: Reader>(
 ) -> Result<u32, DecodeError> {
     if let Some(bytes) = read.peek_read(5) {
         let b = unsafe { *bytes.as_ptr() };
-        if b <= SINGLE_BYTE_MAX {
+        if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(u32::from(b));
         }
-        if b == U32_BYTE {
+        if crate::utils::is_unlikely!(b == U32_BYTE) {
             let v = unsafe {
                 let ptr = bytes.as_ptr().add(1).cast::<u32>();
                 let val = ptr.read_unaligned();
@@ -290,11 +290,11 @@ pub fn varint_decode_u64<R: Reader>(
 ) -> Result<u64, DecodeError> {
     if let Some(bytes) = read.peek_read(9) {
         let b = unsafe { *bytes.as_ptr() };
-        if b <= SINGLE_BYTE_MAX {
+        if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(u64::from(b));
         }
-        if b == U64_BYTE {
+        if crate::utils::is_unlikely!(b == U64_BYTE) {
             let v = unsafe {
                 let ptr = bytes.as_ptr().add(1).cast::<u64>();
                 let val = ptr.read_unaligned();
@@ -317,11 +317,11 @@ pub fn varint_decode_usize<R: Reader>(
 ) -> Result<usize, DecodeError> {
     if let Some(bytes) = read.peek_read(9) {
         let b = unsafe { *bytes.as_ptr() };
-        if b <= SINGLE_BYTE_MAX {
+        if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(b as usize);
         }
-        if b == U64_BYTE {
+        if crate::utils::is_unlikely!(b == U64_BYTE) {
             let v = unsafe {
                 let ptr = bytes.as_ptr().add(1).cast::<u64>();
                 let val = ptr.read_unaligned();
@@ -347,11 +347,11 @@ pub fn varint_decode_u128<R: Reader>(
 ) -> Result<u128, DecodeError> {
     if let Some(bytes) = read.peek_read(17) {
         let b = unsafe { *bytes.as_ptr() };
-        if b <= SINGLE_BYTE_MAX {
+        if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(u128::from(b));
         }
-        if b == U128_BYTE {
+        if crate::utils::is_unlikely!(b == U128_BYTE) {
             let v = unsafe {
                 let ptr = bytes.as_ptr().add(1).cast::<u128>();
                 let val = ptr.read_unaligned();

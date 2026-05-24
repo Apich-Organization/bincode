@@ -1,5 +1,7 @@
 //! CBOR (RFC 8949) encoding implementation.
 #![allow(clippy::branches_sharing_code)]
+#![allow(clippy::extra_unused_type_parameters)]
+#![allow(clippy::redundant_pub_crate)]
 
 use crate::config::CborDeterministicMode;
 use crate::config::Config;
@@ -18,19 +20,19 @@ fn encode_header<W: Writer>(
     val: u64,
 ) -> Result<(), EncodeError> {
     let major = major << 5;
-    if val <= 23 {
+    if crate::utils::is_likely!(val <= 23) {
         writer.write_u8(major | val as u8)
     } else if val <= 0xFF {
-        writer.write_u8(major | 24)?;
+        writer.write_u8(major | 0x0018)?;
         writer.write_u8(val as u8)
     } else if val <= 0xFFFF {
-        writer.write_u8(major | 25)?;
+        writer.write_u8(major | 0x0019)?;
         writer.write_u16((val as u16).to_be())
     } else if val <= 0xFFFF_FFFF {
-        writer.write_u8(major | 26)?;
+        writer.write_u8(major | 0x001a)?;
         writer.write_u32((val as u32).to_be())
     } else {
-        writer.write_u8(major | 27)?;
+        writer.write_u8(major | 0x001b)?;
         writer.write_u64(val.to_be())
     }
 }
@@ -54,7 +56,7 @@ fn encode_indefinite_header<W: Writer>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_u8<W: Writer, C: Config>(
+pub(crate) fn encode_u8<W: Writer, C: Config>(
     writer: &mut W,
     val: u8,
 ) -> Result<(), EncodeError> {
@@ -67,7 +69,7 @@ pub fn encode_u8<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_u16<W: Writer, C: Config>(
+pub(crate) fn encode_u16<W: Writer, C: Config>(
     writer: &mut W,
     val: u16,
 ) -> Result<(), EncodeError> {
@@ -80,7 +82,7 @@ pub fn encode_u16<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_u32<W: Writer, C: Config>(
+pub(crate) fn encode_u32<W: Writer, C: Config>(
     writer: &mut W,
     val: u32,
 ) -> Result<(), EncodeError> {
@@ -93,7 +95,7 @@ pub fn encode_u32<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_u64<W: Writer, C: Config>(
+pub(crate) fn encode_u64<W: Writer, C: Config>(
     writer: &mut W,
     val: u64,
 ) -> Result<(), EncodeError> {
@@ -106,7 +108,7 @@ pub fn encode_u64<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_i8<W: Writer, C: Config>(
+pub(crate) fn encode_i8<W: Writer, C: Config>(
     writer: &mut W,
     val: i8,
 ) -> Result<(), EncodeError> {
@@ -123,7 +125,7 @@ pub fn encode_i8<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_i16<W: Writer, C: Config>(
+pub(crate) fn encode_i16<W: Writer, C: Config>(
     writer: &mut W,
     val: i16,
 ) -> Result<(), EncodeError> {
@@ -140,7 +142,7 @@ pub fn encode_i16<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_i32<W: Writer, C: Config>(
+pub(crate) fn encode_i32<W: Writer, C: Config>(
     writer: &mut W,
     val: i32,
 ) -> Result<(), EncodeError> {
@@ -157,7 +159,7 @@ pub fn encode_i32<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_i64<W: Writer, C: Config>(
+pub(crate) fn encode_i64<W: Writer, C: Config>(
     writer: &mut W,
     val: i64,
 ) -> Result<(), EncodeError> {
@@ -174,7 +176,7 @@ pub fn encode_i64<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_u128<W: Writer, C: Config>(
+pub(crate) fn encode_u128<W: Writer, C: Config>(
     writer: &mut W,
     val: u128,
 ) -> Result<(), EncodeError> {
@@ -195,7 +197,7 @@ pub fn encode_u128<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_i128<W: Writer, C: Config>(
+pub(crate) fn encode_i128<W: Writer, C: Config>(
     writer: &mut W,
     val: i128,
 ) -> Result<(), EncodeError> {
@@ -221,7 +223,7 @@ pub fn encode_i128<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_bool<W: Writer, C: Config>(
+pub(crate) fn encode_bool<W: Writer, C: Config>(
     writer: &mut W,
     val: bool,
 ) -> Result<(), EncodeError> {
@@ -308,7 +310,7 @@ const fn f64_to_f32(val: f64) -> Option<f32> {
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_f32<W: Writer, C: Config>(
+pub(crate) fn encode_f32<W: Writer, C: Config>(
     writer: &mut W,
     mut val: f32,
 ) -> Result<(), EncodeError> {
@@ -338,7 +340,7 @@ pub fn encode_f32<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_f64<W: Writer, C: Config>(
+pub(crate) fn encode_f64<W: Writer, C: Config>(
     writer: &mut W,
     mut val: f64,
 ) -> Result<(), EncodeError> {
@@ -367,7 +369,7 @@ pub fn encode_f64<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_str<W: Writer, C: Config>(
+pub(crate) fn encode_str<W: Writer, C: Config>(
     writer: &mut W,
     val: &str,
 ) -> Result<(), EncodeError> {
@@ -381,7 +383,7 @@ pub fn encode_str<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_byte_slice<W: Writer, C: Config>(
+pub(crate) fn encode_byte_slice<W: Writer, C: Config>(
     writer: &mut W,
     val: &[u8],
 ) -> Result<(), EncodeError> {
@@ -395,7 +397,7 @@ pub fn encode_byte_slice<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_slice_len<W: Writer, C: Config>(
+pub(crate) fn encode_slice_len<W: Writer, C: Config>(
     writer: &mut W,
     len: usize,
 ) -> Result<(), EncodeError> {
@@ -412,7 +414,7 @@ pub fn encode_slice_len<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_byte_slice_len<W: Writer, C: Config>(
+pub(crate) fn encode_byte_slice_len<W: Writer, C: Config>(
     writer: &mut W,
     len: u64,
 ) -> Result<(), EncodeError> {
@@ -429,7 +431,7 @@ pub fn encode_byte_slice_len<W: Writer, C: Config>(
 ///
 /// Returns `EncodeError` if the encoding fails.
 #[inline(always)]
-pub fn encode_map_len<W: Writer, C: Config>(
+pub(crate) fn encode_map_len<W: Writer, C: Config>(
     writer: &mut W,
     len: usize,
 ) -> Result<(), EncodeError> {
@@ -449,7 +451,7 @@ pub fn encode_map_len<W: Writer, C: Config>(
 /// Returns `EncodeError` if the encoding fails.
 #[inline]
 #[cfg(feature = "alloc")]
-pub fn encode_map_deterministic<E, K, V, I>(
+pub(crate) fn encode_map_deterministic<E, K, V, I>(
     encoder: &mut E,
     iter: I,
 ) -> Result<(), EncodeError>
@@ -497,7 +499,7 @@ where
 /// Returns `EncodeError` if the encoding fails.
 #[inline]
 #[cfg(feature = "alloc")]
-pub fn encode_slice_deterministic<E, T, I>(
+pub(crate) fn encode_slice_deterministic<E, T, I>(
     encoder: &mut E,
     iter: I,
 ) -> Result<(), EncodeError>

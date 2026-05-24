@@ -1,3 +1,6 @@
+#![cfg(feature = "derive")]
+#![cfg(feature = "std")]
+
 use bincode_next::Decode;
 use bincode_next::Encode;
 use bincode_next::Fingerprint;

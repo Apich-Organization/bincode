@@ -1,40 +1,88 @@
-{
-  "name": "CIFuzz",
-  "on": [
-    "pull_request"
-  ],
-  "jobs": {
-    "Fuzzing": {
-      "runs-on": "ubuntu-latest",
-      "steps": [
-        {
-          "name": "Build Fuzzers",
-          "id": "build",
-          "uses": "google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@master",
-          "with": {
-            "oss-fuzz-project-name": "bincode",
-            "language": "rust"
-          }
-        },
-        {
-          "name": "Run Fuzzers",
-          "uses": "google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@master",
-          "with": {
-            "oss-fuzz-project-name": "bincode",
-            "fuzz-seconds": 300,
-            "language": "rust"
-          }
-        },
-        {
-          "name": "Upload Crash",
-          "uses": "actions/upload-artifact@v4",
-          "if": "failure() && steps.build.outcome == 'success'",
-          "with": {
-            "name": "artifacts",
-            "path": "./out/artifacts"
-          }
-        }
-      ]
-    }
-  }
-}
+name: Continuous Fuzzing
+
+on:
+  push:
+    branches: [main, master, staging, try]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: "0 0 * * *" # Daily sanity check
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: Fuzz ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [roundtrip, compat, zero_copy, sync_roundtrip, async_fiber]
+
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2 # nightly
+
+      - name: Cache cargo bin
+        id: cache-cargo-bin
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.cargo/bin/cargo-fuzz
+          key: ${{ runner.os }}-cargo-fuzz-bin
+
+      - name: Install cargo-fuzz
+        if: steps.cache-cargo-bin.outputs.cache-hit != 'true'
+        run: cargo install cargo-fuzz
+
+      - name: Cache Fuzzing Corpus
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: fuzz/corpus/${{ matrix.target }}
+          key: ${{ runner.os }}-fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-fuzz-corpus-${{ matrix.target }}-
+
+      - name: Cache build artifacts
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            fuzz/target/
+            target/
+          key: ${{ runner.os }}-fuzz-target-${{ matrix.target }}-${{ hashFiles('Cargo.lock', 'fuzz/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-fuzz-target-${{ matrix.target }}-
+
+      - name: Run Fuzzer
+        run: |
+          cd fuzz
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # Run the fuzzer 5 times, each for 1 hour (3600 seconds) instead of 1 time for 5 hours.
+            # Long single fuzzer runs can hit memory limits or cause CPU starvation in shared CI runners.
+            for i in {1..5}; do
+              echo "Starting PR fuzzer iteration $i of 5..."
+              cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=3600 -rss_limit_mb=16384Mb
+            done
+          else
+            echo "Starting standard fuzzer iteration (1 hour)..."
+            cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=3600 -rss_limit_mb=16384Mb
+          fi
+
+      - name: Upload Crash Artifacts
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzzer-artifacts-${{ matrix.target }}
+          path: fuzz/artifacts/${{ matrix.target }}
+          if-no-files-found: ignore

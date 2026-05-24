@@ -12,9 +12,6 @@ authors:
   - given-names: Xinyu
     family-names: Yang
     email: Xinyu.Yang@apich.org
-    affiliation: >-
-      Jinan Zhensheng Middle School, Jinan 250100, Shandong,
-      China
     orcid: 'https://orcid.org/0009-0007-2600-0948'
   - given-names: The bincode-next & bincode developers
     family-names: The bincode-next & bincode developers
@@ -57,9 +54,9 @@ keywords:
   - Encoding Alignment
   - Decoding algorithms
 license: Apache-2.0
-commit: 86d6f519c11c51668e9967b922621d4ef28c5ac2
-version: v3.0.0-rc.3
-date-released: '2026-03-02'
+commit: 7f70df30df62168bd30c25c2c6d3dd8db83afd40
+version: v3.0.0-rc.15
+date-released: '2026-05-21'
 references:
   - type: software
     title: "Bincode"

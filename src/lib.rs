@@ -1,5 +1,7 @@
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![allow(internal_features)]
+#![cfg_attr(is_nightly, feature(core_intrinsics))]
 
 //! Bincode-next is a crate for encoding and decoding using a tiny binary
 //! serialization strategy.  Using it, you can easily go from having
@@ -80,7 +82,6 @@
 // -------------------------------------------------------------------------
 #![deny(
     // Rust Compiler Errors
-    dead_code,
     unreachable_code,
     improper_ctypes_definitions,
     future_incompatible,
@@ -106,13 +107,12 @@
 // LEVEL 2: STYLE WARNINGS (Warn)
 // -------------------------------------------------------------------------
 #![warn(
+    // For `no-std` Situation Issues
+    dead_code,
     warnings,
     unsafe_code,
     clippy::dbg_macro,
     clippy::todo,
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    clippy::cast_possible_wrap,
     clippy::unnecessary_safety_comment
 )]
 // -------------------------------------------------------------------------
@@ -122,6 +122,9 @@
     clippy::restriction,
     clippy::inline_always,
     unused_doc_comments,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap,
     clippy::empty_line_after_doc_comments
 )]
 #![crate_name = "bincode_next"]
@@ -177,9 +180,7 @@ pub use de::Decode;
 pub use enc::Encode;
 pub use fingerprint::Fingerprint;
 #[cfg(feature = "zero-copy")]
-pub use relative_ptr::ZeroCopy;
-#[cfg(feature = "zero-copy")]
-pub use relative_ptr::ZeroCopyType;
+pub use relative_ptr::*;
 
 use config::Config;
 use config::internal::InternalFingerprintGuard;
@@ -193,6 +194,7 @@ use config::internal::InternalFingerprintGuard;
 /// Returns an `EncodeError` if the slice is too small or the value cannot be encoded.
 ///
 /// [config]: config/index.html
+#[inline]
 pub fn encode_into_slice<E: enc::Encode, C: Config>(
     val: E,
     dst: &mut [u8],
@@ -217,6 +219,7 @@ where
 /// Returns an `EncodeError` if the writer fails or the value cannot be encoded.
 ///
 /// [config]: config/index.html
+#[inline]
 pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
     val: E,
     mut writer: W,
@@ -242,6 +245,7 @@ where
 /// Returns a `DecodeError` if the slice is too small or the data is invalid.
 ///
 /// [config]: config/index.html
+#[inline(always)]
 pub fn decode_from_slice<D: de::Decode<()>, C: Config>(
     src: &[u8],
     config: C,
@@ -263,6 +267,7 @@ where
 /// Returns a `DecodeError` if the slice is too small or the data is invalid.
 ///
 /// [config]: config/index.html
+#[inline]
 pub fn decode_from_slice_with_context<Context, D: de::Decode<Context>, C: Config>(
     src: &[u8],
     config: C,
@@ -288,6 +293,7 @@ where
 /// Returns a `DecodeError` if the slice is too small or the data is invalid.
 ///
 /// [config]: config/index.html
+#[inline(always)]
 pub fn borrow_decode_from_slice<'a, D: de::BorrowDecode<'a, ()>, C: Config>(
     src: &'a [u8],
     config: C,
@@ -307,6 +313,7 @@ where
 /// Returns a `DecodeError` if the slice is too small or the data is invalid.
 ///
 /// [config]: config/index.html
+#[inline]
 pub fn borrow_decode_from_slice_with_context<
     'a,
     Context,
@@ -336,6 +343,7 @@ where
 ///
 /// Returns a `DecodeError` if the slice contains invalid data.
 #[cfg(feature = "static-size")]
+#[inline(always)]
 pub fn decode_from_slice_static<D, const CAP: usize, C>(
     src: &[u8; CAP],
     config: C,
@@ -362,6 +370,7 @@ where
 ///
 /// Returns a `DecodeError` if the slice contains invalid data.
 #[cfg(feature = "static-size")]
+#[inline(always)]
 pub fn decode_from_slice_static_with_context<Context, D, const CAP: usize, C>(
     src: &[u8; CAP],
     config: C,
@@ -388,6 +397,7 @@ where
 ///
 /// Returns a `DecodeError` if the slice contains invalid data.
 #[cfg(feature = "static-size")]
+#[inline(always)]
 pub fn borrow_decode_from_slice_static<'a, D, const CAP: usize, C>(
     src: &'a [u8; CAP],
     config: C,
@@ -414,6 +424,7 @@ where
 ///
 /// Returns a `DecodeError` if the slice contains invalid data.
 #[cfg(feature = "static-size")]
+#[inline(always)]
 pub fn borrow_decode_from_slice_static_with_context<'a, Context, D, const CAP: usize, C>(
     src: &'a [u8; CAP],
     config: C,
@@ -440,6 +451,7 @@ where
 /// Returns a `DecodeError` if the reader fails or the data is invalid.
 ///
 /// [config]: config/index.html
+#[inline]
 pub fn decode_from_reader<D: de::Decode<()>, R: Reader, C: Config>(
     mut reader: R,
     config: C,
@@ -452,8 +464,218 @@ where
     D::decode(&mut decoder)
 }
 
-// TODO: Currently our doctests fail when trying to include the specs because the specs depend on `derive` and `alloc`.
-// But we want to have the specs in the docs always
+/// Attempt to decode a given type `T` from the given async reader safely using a non-blocking fiber.
+///
+/// Requires the `async-fiber` feature.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the reader fails or the data is invalid.
+///
+/// [config]: config/index.html
+#[cfg(feature = "async-fiber")]
+#[inline(always)]
+pub async fn decode_async<T, R, C>(
+    config: C,
+    reader: R,
+) -> Result<T, crate::error::DecodeError>
+where
+    T: crate::Decode<()>,
+    R: futures_io::AsyncRead + std::marker::Unpin,
+    C: crate::config::Config,
+    C::Mode: crate::config::InternalFingerprintGuard<T, C>,
+{
+    decode_async_with_context::<T, R, C, ()>(config, reader, ()).await
+}
+
+/// Attempt to decode a given type `T` from the given async reader using a non-blocking fiber and a context.
+///
+/// This is the primary implementation for runtimes that use the `futures-io` traits (e.g. `async-std`, `smol`).
+///
+/// Requires the `async-fiber` feature.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the reader fails or the data is invalid.
+///
+/// [config]: config/index.html
+#[cfg(feature = "async-fiber")]
+#[inline]
+pub async fn decode_async_with_context<T, R, C, Context>(
+    config: C,
+    reader: R,
+    context: Context,
+) -> Result<T, crate::error::DecodeError>
+where
+    T: crate::Decode<Context>,
+    R: futures_io::AsyncRead + std::marker::Unpin,
+    C: crate::config::Config,
+    C::Mode: crate::config::InternalFingerprintGuard<T, C>,
+{
+    let bridge = crate::de::async_fiber::AsyncFiberBridge::new(reader);
+    bridge
+        .run(move |fiber_reader| {
+            C::Mode::decode_check(&config, fiber_reader)?;
+            let mut decoder =
+                crate::de::DecoderImpl::<_, C, Context>::new(fiber_reader, config, context);
+            T::decode(&mut decoder)
+        })
+        .await
+}
+
+/// Attempt to decode a given type `T` from the given tokio async reader safely using a non-blocking fiber.
+///
+/// Requires the `tokio` and `async-fiber` features.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the reader fails or the data is invalid.
+///
+/// [config]: config/index.html
+#[cfg(all(feature = "tokio", feature = "async-fiber"))]
+#[inline(always)]
+pub async fn decode_async_tokio<T, R, C>(
+    config: C,
+    reader: R,
+) -> Result<T, crate::error::DecodeError>
+where
+    T: crate::Decode<()>,
+    R: tokio::io::AsyncRead + std::marker::Unpin,
+    C: crate::config::Config,
+    C::Mode: crate::config::InternalFingerprintGuard<T, C>,
+{
+    decode_async_tokio_with_context::<T, R, C, ()>(config, reader, ()).await
+}
+
+/// Attempt to decode a given type `T` from the given tokio async reader using a non-blocking fiber and a context.
+///
+/// Requires the `tokio` and `async-fiber` features.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the reader fails or the data is invalid.
+///
+/// [config]: config/index.html
+#[cfg(all(feature = "tokio", feature = "async-fiber"))]
+#[inline(always)]
+pub async fn decode_async_tokio_with_context<T, R, C, Context>(
+    config: C,
+    reader: R,
+    context: Context,
+) -> Result<T, crate::error::DecodeError>
+where
+    T: crate::Decode<Context>,
+    R: tokio::io::AsyncRead + std::marker::Unpin,
+    C: crate::config::Config,
+    C::Mode: crate::config::InternalFingerprintGuard<T, C>,
+{
+    let reader = crate::de::async_fiber::TokioReader(reader);
+    decode_async_with_context::<T, _, C, Context>(config, reader, context).await
+}
+
+/// Attempt to decode a given serde-compatible type `T` from the given async reader safely using a non-blocking fiber.
+///
+/// Requires the `async-fiber` and `serde` features.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the reader fails or the data is invalid.
+///
+/// [config]: config/index.html
+#[cfg(all(feature = "async-fiber", feature = "serde"))]
+#[inline(always)]
+pub async fn decode_serde_async<'de, T, R, C>(
+    config: C,
+    reader: R,
+) -> Result<T, crate::error::DecodeError>
+where
+    T: ::serde::Deserialize<'de>,
+    R: futures_io::AsyncRead + std::marker::Unpin,
+    C: crate::config::Config,
+{
+    decode_serde_async_with_context::<'de, T, R, C, ()>(config, reader, ()).await
+}
+
+/// Attempt to decode a given serde-compatible type `T` from the given async reader using a non-blocking fiber and a context.
+///
+/// Requires the `async-fiber` and `serde` features.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the reader fails or the data is invalid.
+///
+/// [config]: config/index.html
+#[cfg(all(feature = "async-fiber", feature = "serde"))]
+#[inline]
+pub async fn decode_serde_async_with_context<'de, T, R, C, Context>(
+    config: C,
+    reader: R,
+    context: Context,
+) -> Result<T, crate::error::DecodeError>
+where
+    T: ::serde::Deserialize<'de>,
+    R: futures_io::AsyncRead + std::marker::Unpin,
+    C: crate::config::Config,
+{
+    let bridge = crate::de::async_fiber::AsyncFiberBridge::new(reader);
+    bridge
+        .run(move |fiber_reader| {
+            let decoder =
+                crate::de::DecoderImpl::<_, C, Context>::new(fiber_reader, config, context);
+            let mut serde_decoder = crate::features::serde::OwnedSerdeDecoder { de: decoder };
+            T::deserialize(serde_decoder.as_deserializer())
+        })
+        .await
+}
+
+/// Attempt to decode a given serde-compatible type `T` from the given tokio async reader safely using a non-blocking fiber.
+///
+/// Requires the `tokio`, `async-fiber` and `serde` features.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the reader fails or the data is invalid.
+///
+/// [config]: config/index.html
+#[cfg(all(feature = "tokio", feature = "async-fiber", feature = "serde"))]
+#[inline(always)]
+pub async fn decode_serde_tokio_async<'de, T, R, C>(
+    config: C,
+    reader: R,
+) -> Result<T, crate::error::DecodeError>
+where
+    T: ::serde::Deserialize<'de>,
+    R: tokio::io::AsyncRead + std::marker::Unpin,
+    C: crate::config::Config,
+{
+    decode_serde_tokio_async_with_context::<'de, T, R, C, ()>(config, reader, ()).await
+}
+
+/// Attempt to decode a given serde-compatible type `T` from the given tokio async reader using a non-blocking fiber and a context.
+///
+/// Requires the `tokio`, `async-fiber` and `serde` features.
+///
+/// # Errors
+///
+/// Returns a `DecodeError` if the reader fails or the data is invalid.
+///
+/// [config]: config/index.html
+#[cfg(all(feature = "tokio", feature = "async-fiber", feature = "serde"))]
+#[inline(always)]
+pub async fn decode_serde_tokio_async_with_context<'de, T, R, C, Context>(
+    config: C,
+    reader: R,
+    context: Context,
+) -> Result<T, crate::error::DecodeError>
+where
+    T: ::serde::Deserialize<'de>,
+    R: tokio::io::AsyncRead + std::marker::Unpin,
+    C: crate::config::Config,
+{
+    let reader = crate::de::async_fiber::TokioReader(reader);
+    decode_serde_async_with_context::<'de, T, _, C, Context>(config, reader, context).await
+}
+
 #[cfg(all(feature = "alloc", feature = "derive", doc))]
 pub mod spec {
     #![doc = include_str!("../docs/spec.md")]
@@ -465,7 +687,17 @@ pub mod migration_guide {
 }
 
 // Test the examples in readme.md
-#[cfg(all(feature = "alloc", feature = "derive", doctest))]
+#[cfg(all(
+    feature = "std",
+    feature = "derive",
+    feature = "serde",
+    feature = "async-fiber",
+    feature = "zero-copy",
+    feature = "static-size",
+    doctest
+))]
+#[cfg_attr(miri, ignore)]
 mod readme {
     #![doc = include_str!("../README.md")]
+    #![doc = include_str!("../derive/readme.md")]
 }

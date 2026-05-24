@@ -2,8 +2,14 @@
 
 /// A trait that calculates the upper bound of a type's serialized size as a `const` value.
 pub trait StaticSize {
-    /// The maximum possible serialized size in bytes.
+    /// The maximum possible serialized size in bytes (no bit-packing).
     const MAX_SIZE: usize;
+    /// The maximum possible serialized size in bytes when bit-packing is enabled.
+    ///
+    /// For types with `#[bincode(bits = N)]` fields this is typically smaller than
+    /// `MAX_SIZE` because consecutive bit-packed fields share bytes.  Types that
+    /// have no bit-packed fields default to `MAX_SIZE`.
+    const PACKED_MAX_SIZE: usize = Self::MAX_SIZE;
 }
 
 // Primitives
@@ -108,6 +114,7 @@ impl_static_size_tuple!(A, B, C, D, E, F, G, H, I, J, K);
 impl_static_size_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
 
 /// Helper constants for common bincode structures
+#[doc(hidden)]
 pub mod helpers {
     /// The maximum bytes a `usize` (length) can take when encoded as a varint.
     pub const VARINT_MAX_64: usize = 9;

@@ -19,6 +19,9 @@ use crate::config::InternalLimitConfig;
 use crate::error::DecodeError;
 use crate::utils::Sealed;
 
+/// Fiber-backed abstraction for zero-cost async decoding.
+#[cfg(feature = "async-fiber")]
+pub mod async_fiber;
 /// Bit-level reader for space-optimized packing.
 pub mod bit_reader;
 pub(crate) mod cbor;
@@ -135,6 +138,7 @@ pub trait BorrowDecode<'de, Context>: Sized {
 
 /// Helper macro to implement `BorrowDecode` for any type that implements `Decode`.
 #[macro_export]
+#[doc(hidden)]
 macro_rules! impl_borrow_decode {
     ($ty:ty $(, $param:tt)*) => {
         impl<'de $(, $param)*, __Context> $crate::BorrowDecode<'de, __Context> for $ty {
@@ -150,6 +154,7 @@ macro_rules! impl_borrow_decode {
 
 /// Helper macro to implement `BorrowDecode` for any type that implements `Decode`.
 #[macro_export]
+#[doc(hidden)]
 macro_rules! impl_borrow_decode_with_context {
     ($ty:ty, $context:ty $(, $param:tt)*) => {
         impl<'de $(, $param)*> $crate::BorrowDecode<'de, $context> for $ty {
@@ -778,7 +783,7 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
             | Format::Cbor | Format::CborDeterministic => {
                 let actual_len = cbor::decode_slice_len(self.reader())?;
                 if actual_len != _len && actual_len != usize::MAX {
-                    return Err(DecodeError::Other("struct length mismatch"));
+                    return crate::error::cold_decode_error_other("struct length mismatch");
                 }
                 Ok(())
             },

@@ -138,7 +138,7 @@ pub const fn legacy() -> Configuration<
     SkipBitPacking,
     LsbFirst,
     FingerprintDisabled,
-    BincodeFormat,
+    BincodeLegacyFormat,
 > {
     generate()
 }
@@ -270,12 +270,21 @@ impl<E, I, L, B, O, F, FO> Configuration<E, I, L, B, O, F, FO> {
     }
 
     /// Enables fingerprinting with the default deterministic seed (0).
+    ///
+    /// The fingerprint is a 64-bit hash that covers:
+    /// - The type name
+    /// - For structs: field names, types, and their order
+    /// - For enums: variant names, field names, types, and their order
+    /// - Configuration settings such as endianness and integer encoding
     #[must_use]
     pub const fn with_fingerprint(self) -> Configuration<E, I, L, B, O, FingerprintEnabled<0>, FO> {
         generate()
     }
 
     /// Enables fingerprinting with a custom seed.
+    ///
+    /// This is similar to [`with_fingerprint`](Self::with_fingerprint), but allows specifying a custom seed
+    /// to further differentiate fingerprints.
     #[must_use]
     pub const fn with_fingerprint_and_seed<const SEED: u64>(
         self
@@ -284,6 +293,9 @@ impl<E, I, L, B, O, F, FO> Configuration<E, I, L, B, O, F, FO> {
     }
 
     /// Enables legacy fingerprinting with an expected hash.
+    ///
+    /// In this mode, bincode will not calculate the fingerprint automatically.
+    /// Instead, it will use the provided `EXPECTED` hash for verification.
     #[must_use]
     pub const fn with_legacy_fingerprint<const EXPECTED: u64>(
         self
@@ -367,6 +379,9 @@ pub trait Config:
     /// Returns the CBOR options of this configuration.
     /// Returns default options if the format is not CBOR.
     fn cbor_options(&self) -> CborOptions;
+
+    /// Returns true if this configuration uses compact network encoding (omitting `flowinfo/scope_id`).
+    fn is_compact_net(&self) -> bool;
 }
 
 impl<T> Config for T
@@ -417,10 +432,15 @@ where
     fn cbor_options(&self) -> CborOptions {
         <T as InternalFormatConfig>::CBOR_OPTIONS
     }
+
+    fn is_compact_net(&self) -> bool {
+        <T as InternalFormatConfig>::IS_COMPACT_NET
+    }
 }
 
 /// Encodes all integer types in big endian.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct BigEndian;
 
 impl InternalEndianConfig for BigEndian {
@@ -429,6 +449,7 @@ impl InternalEndianConfig for BigEndian {
 
 /// Encodes all integer types in little endian.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct LittleEndian;
 
 impl InternalEndianConfig for LittleEndian {
@@ -437,6 +458,7 @@ impl InternalEndianConfig for LittleEndian {
 
 /// Use fixed-size integer encoding.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct Fixint;
 
 impl InternalIntEncodingConfig for Fixint {
@@ -445,6 +467,7 @@ impl InternalIntEncodingConfig for Fixint {
 
 /// Use variable integer encoding.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct Varint;
 
 impl InternalIntEncodingConfig for Varint {
@@ -453,6 +476,7 @@ impl InternalIntEncodingConfig for Varint {
 
 /// Sets an unlimited byte limit.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct NoLimit;
 impl InternalLimitConfig for NoLimit {
     const LIMIT: Option<usize> = None;
@@ -460,6 +484,7 @@ impl InternalLimitConfig for NoLimit {
 
 /// Sets the byte limit to N.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct Limit<const N: usize>;
 impl<const N: usize> InternalLimitConfig for Limit<N> {
     const LIMIT: Option<usize> = Some(N);
@@ -467,6 +492,7 @@ impl<const N: usize> InternalLimitConfig for Limit<N> {
 
 /// Use bit-packing for types that support it.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct AllowBitPacking;
 
 impl InternalBitPackingConfig for AllowBitPacking {
@@ -475,6 +501,7 @@ impl InternalBitPackingConfig for AllowBitPacking {
 
 /// Skip bit-packing.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct SkipBitPacking;
 
 impl InternalBitPackingConfig for SkipBitPacking {
@@ -483,6 +510,7 @@ impl InternalBitPackingConfig for SkipBitPacking {
 
 /// Use MSB-first bit ordering.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct MsbFirst;
 
 impl InternalBitOrderingConfig for MsbFirst {
@@ -491,6 +519,7 @@ impl InternalBitOrderingConfig for MsbFirst {
 
 /// Use LSB-first bit ordering.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct LsbFirst;
 
 impl InternalBitOrderingConfig for LsbFirst {
@@ -499,6 +528,7 @@ impl InternalBitOrderingConfig for LsbFirst {
 
 /// Fingerprinting is disabled.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct FingerprintDisabled;
 
 impl InternalFingerprintConfig for FingerprintDisabled {
@@ -507,6 +537,7 @@ impl InternalFingerprintConfig for FingerprintDisabled {
 
 /// Fingerprinting is enabled with a seed.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct FingerprintEnabled<const SEED: u64>;
 
 impl<const SEED: u64> InternalFingerprintConfig for FingerprintEnabled<SEED> {
@@ -515,6 +546,7 @@ impl<const SEED: u64> InternalFingerprintConfig for FingerprintEnabled<SEED> {
 
 /// Legacy fingerprinting with an expected hash.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct FingerprintLegacy<const EXPECTED: u64>;
 
 impl<const EXPECTED: u64> InternalFingerprintConfig for FingerprintLegacy<EXPECTED> {
@@ -523,24 +555,29 @@ impl<const EXPECTED: u64> InternalFingerprintConfig for FingerprintLegacy<EXPECT
 
 /// The default bincode format.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct BincodeFormat;
 
 impl InternalFormatConfig for BincodeFormat {
     const CBOR_OPTIONS: CborOptions = CborOptions::DEFAULT;
     const FORMAT: Format = Format::Bincode;
+    const IS_COMPACT_NET: bool = false;
 }
 
 /// Bincode format with deterministic encoding.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct BincodeDeterministicFormat;
 
 impl InternalFormatConfig for BincodeDeterministicFormat {
     const CBOR_OPTIONS: CborOptions = CborOptions::DEFAULT;
     const FORMAT: Format = Format::BincodeDeterministic;
+    const IS_COMPACT_NET: bool = false;
 }
 
 /// CBOR configuration with const generic options.
 #[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
 pub struct CborConfig<
     const DET: u8,
     const PREF: bool,
@@ -576,12 +613,26 @@ impl<
     } else {
         Format::CborDeterministic
     };
+    const IS_COMPACT_NET: bool = false;
+}
+
+/// Bincode format for legacy compatibility (omitting flowinfo/scope_id).
+#[derive(Copy, Clone, Debug)]
+#[doc(hidden)]
+pub struct BincodeLegacyFormat;
+
+impl InternalFormatConfig for BincodeLegacyFormat {
+    const CBOR_OPTIONS: CborOptions = CborOptions::DEFAULT;
+    const FORMAT: Format = Format::Bincode;
+    const IS_COMPACT_NET: bool = true;
 }
 
 /// CBOR format with default options.
+#[doc(hidden)]
 pub type CborFormat = CborConfig<0, true, true, false, true, false>;
 
 /// CBOR format with deterministic encoding (Canonical CBOR).
+#[doc(hidden)]
 pub type CborDeterministicFormat = CborConfig<1, true, true, false, false, true>;
 
 /// Endianness of a `Configuration`.
@@ -825,26 +876,44 @@ pub mod internal {
         L: InternalLimitConfig,
         B: InternalBitPackingConfig,
         O: InternalBitOrderingConfig,
+        FO: InternalFormatConfig,
     {
-        const CONFIG_HASH: u64 = rapidhash::v3::rapidhash_v3_seeded(
-            &[
-                crate::BINCODE_MAJOR_VERSION as u8,
-                E::ENDIAN as u8,
-                I::INT_ENCODING as u8,
-                match L::LIMIT {
-                    | None => 0,
-                    | Some(_) => 1,
-                },
-                B::BIT_PACKING as u8,
-                O::BIT_ORDERING as u8,
-            ],
-            &rapidhash::v3::RapidSecrets::seed_cpp(0),
-        );
+        const CONFIG_HASH: u64 = {
+            let format_byte: u8 = match FO::FORMAT {
+                | super::Format::Bincode => 0,
+                | super::Format::BincodeDeterministic => 1,
+                | super::Format::Cbor => 2,
+                | super::Format::CborDeterministic => 3,
+            };
+            let opts = FO::CBOR_OPTIONS;
+            rapidhash::v3::rapidhash_v3_seeded(
+                &[
+                    crate::BINCODE_MAJOR_VERSION as u8,
+                    E::ENDIAN as u8,
+                    I::INT_ENCODING as u8,
+                    match L::LIMIT {
+                        | None => 0,
+                        | Some(_) => 1,
+                    },
+                    B::BIT_PACKING as u8,
+                    O::BIT_ORDERING as u8,
+                    format_byte,
+                    opts.deterministic_mode as u8,
+                    opts.preferred_float as u8,
+                    opts.canonical_nan as u8,
+                    opts.normalize_neg_zero as u8,
+                    opts.allow_indefinite as u8,
+                    opts.strict_tags as u8,
+                ],
+                &rapidhash::v3::RapidSecrets::seed_cpp(0),
+            )
+        };
     }
 
     pub trait InternalFormatConfig {
         const FORMAT: super::Format;
         const CBOR_OPTIONS: super::CborOptions;
+        const IS_COMPACT_NET: bool;
     }
 
     impl<E, I, L, B, O, F, FO: InternalFormatConfig> InternalFormatConfig
@@ -852,5 +921,6 @@ pub mod internal {
     {
         const CBOR_OPTIONS: super::CborOptions = FO::CBOR_OPTIONS;
         const FORMAT: super::Format = FO::FORMAT;
+        const IS_COMPACT_NET: bool = FO::IS_COMPACT_NET;
     }
 }

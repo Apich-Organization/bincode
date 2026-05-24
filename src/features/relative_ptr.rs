@@ -51,6 +51,7 @@ unsafe impl<T: ZeroCopy, const N: usize> ZeroCopy for [T; N] {
 }
 
 /// Trait for handling endianness in zero-copy types.
+#[doc(hidden)]
 pub trait Endian {
     /// Converts a u16 from native endianness to the relative pointer's endianness.
     fn from_native_u16(v: u16) -> u16;
@@ -113,6 +114,8 @@ pub trait Endian {
 }
 
 /// Little-endian marker.
+#[doc(hidden)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
 pub struct LittleEndian;
 impl Endian for LittleEndian {
     #[inline(always)]
@@ -197,6 +200,8 @@ impl Endian for LittleEndian {
 }
 
 /// Big-endian marker.
+#[doc(hidden)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
 pub struct BigEndian;
 impl Endian for BigEndian {
     #[inline(always)]
@@ -281,6 +286,8 @@ impl Endian for BigEndian {
 }
 
 /// Native-endian marker.
+#[doc(hidden)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
 pub struct NativeEndian;
 impl Endian for NativeEndian {
     #[inline(always)]
@@ -367,6 +374,7 @@ impl Endian for NativeEndian {
 /// A relative pointer that stores the offset from its own address to the target data.
 /// This allows zero-copy deserialization without runtime allocations.
 #[repr(transparent)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct RelativePtr<T, const ALIGN: usize, E: Endian = NativeEndian> {
     offset: i32,
     _marker: PhantomData<(T, E)>,
@@ -457,6 +465,13 @@ impl<T, const ALIGN: usize, E: Endian> RelativePtr<T, ALIGN, E> {
     }
 }
 
+#[cfg(feature = "fuzzing")]
+impl<'a, T, const ALIGN: usize, E: Endian> arbitrary::Arbitrary<'a> for RelativePtr<T, ALIGN, E> {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self::new(i32::arbitrary(u)?))
+    }
+}
+
 impl<T, const ALIGN: usize, E: Endian> StaticSize for RelativePtr<T, ALIGN, E> {
     const SIZE: usize = core::mem::size_of::<Self>();
 }
@@ -467,6 +482,7 @@ unsafe impl<T, const ALIGN: usize, E: Endian> ZeroCopy for RelativePtr<T, ALIGN,
 
 /// A zero-copy array collection equivalent to `[T; N]`.
 #[repr(transparent)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ZeroArray<T, const N: usize, const ALIGN: usize, E: Endian = NativeEndian> {
     ptr: RelativePtr<[T; N], ALIGN, E>,
 }
@@ -479,6 +495,17 @@ impl<T: ZeroCopy, const N: usize, const ALIGN: usize, E: Endian> ZeroArray<T, N,
         buffer: &'a [u8],
     ) -> Option<&'a [T; N]> {
         self.ptr.get(buffer)
+    }
+}
+
+#[cfg(feature = "fuzzing")]
+impl<'a, T: ZeroCopy, const N: usize, const ALIGN: usize, E: Endian> arbitrary::Arbitrary<'a>
+    for ZeroArray<T, N, ALIGN, E>
+{
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self {
+            ptr: arbitrary::Arbitrary::arbitrary(u)?,
+        })
     }
 }
 
@@ -495,6 +522,7 @@ unsafe impl<T: ZeroCopy, const N: usize, const ALIGN: usize, E: Endian> ZeroCopy
 
 /// A zero-copy string type with compile-time known max capacity, stored inline.
 #[repr(C)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ZeroString<const CAP: usize, E: Endian = NativeEndian> {
     len: u32,
     data: [u8; CAP],
@@ -512,6 +540,20 @@ impl<const CAP: usize, E: Endian> ZeroString<CAP, E> {
     }
 }
 
+#[cfg(feature = "fuzzing")]
+impl<'a, const CAP: usize, E: Endian> arbitrary::Arbitrary<'a> for ZeroString<CAP, E> {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let len = u32::arbitrary(u)? % (CAP as u32 + 1);
+        let mut data = [0u8; CAP];
+        u.fill_buffer(&mut data[..len as usize])?;
+        Ok(Self {
+            len: E::from_native_u32(len),
+            data,
+            _marker: PhantomData,
+        })
+    }
+}
+
 impl<const CAP: usize, E: Endian> StaticSize for ZeroString<CAP, E> {
     const SIZE: usize = core::mem::size_of::<Self>();
 }
@@ -522,6 +564,7 @@ unsafe impl<const CAP: usize, E: Endian> ZeroCopy for ZeroString<CAP, E> {
 
 /// A zero-copy slice collection conceptually equivalent to `&[T]` or `Vec<T>`.
 #[repr(C)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ZeroSlice<T, const ALIGN: usize, E: Endian = NativeEndian> {
     len: u32,
     ptr: RelativePtr<T, ALIGN, E>,
@@ -578,6 +621,15 @@ impl<T: ZeroCopy, const ALIGN: usize, E: Endian> ZeroSlice<T, ALIGN, E> {
     }
 }
 
+#[cfg(feature = "fuzzing")]
+impl<'a, T: ZeroCopy, const ALIGN: usize, E: Endian> arbitrary::Arbitrary<'a>
+    for ZeroSlice<T, ALIGN, E>
+{
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self::new(u32::arbitrary(u)?, i32::arbitrary(u)?))
+    }
+}
+
 impl<T, const ALIGN: usize, E: Endian> StaticSize for ZeroSlice<T, ALIGN, E> {
     const SIZE: usize = core::mem::size_of::<Self>();
 }
@@ -588,6 +640,7 @@ unsafe impl<T: ZeroCopy, const ALIGN: usize, E: Endian> ZeroCopy for ZeroSlice<T
 
 /// A dynamically sized zero-copy string conceptually equivalent to `&str` or `String`.
 #[repr(transparent)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ZeroStr<E: Endian = NativeEndian> {
     slice: ZeroSlice<u8, 0, E>,
 }
@@ -612,6 +665,15 @@ impl<E: Endian> ZeroStr<E> {
     ) -> Option<&'a str> {
         let bytes = self.slice.get(buffer)?;
         core::str::from_utf8(bytes).ok()
+    }
+}
+
+#[cfg(feature = "fuzzing")]
+impl<'a, E: Endian> arbitrary::Arbitrary<'a> for ZeroStr<E> {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self {
+            slice: arbitrary::Arbitrary::arbitrary(u)?,
+        })
     }
 }
 
@@ -965,6 +1027,7 @@ impl<E: Endian> Encode for ZeroStr<E> {
 /// This is necessary because `Vec<u8>` always deallocates with alignment 1, which is UB
 /// if the memory was allocated with a higher alignment.
 #[cfg(feature = "alloc")]
+#[doc(hidden)]
 pub struct AlignedBuffer {
     ptr: *mut u8,
     len: usize,
@@ -1040,8 +1103,7 @@ fn checked_relative_offset(
     let diff = to as isize - from as isize;
     i32::try_from(diff).unwrap_or_else(|_| {
         panic!(
-            "Relative offset overflow: distance {} between positions {} and {} exceeds i32 range",
-            diff, from, to
+            "Relative offset overflow: distance {diff} between positions {from} and {to} exceeds i32 range"
         )
     })
 }
@@ -1204,6 +1266,7 @@ pub trait ZeroCopyBuilder<E: Endian = NativeEndian, const ALIGN: usize = 0> {
 
 /// A wrapper for builders that produce a `RelativePtr`.
 #[cfg(feature = "alloc")]
+#[doc(hidden)]
 pub struct RelativeBuilder<B, const ALIGN: usize>(pub B);
 
 #[cfg(feature = "alloc")]
@@ -1228,6 +1291,7 @@ where
 
 /// A wrapper for builders that produce a `ZeroArray`.
 #[cfg(feature = "alloc")]
+#[doc(hidden)]
 pub struct ArrayBuilder<B, const N: usize, const ALIGN: usize>(pub [B; N]);
 
 #[cfg(feature = "alloc")]
@@ -1265,6 +1329,7 @@ where
 
 /// A wrapper for builders that produce a `ZeroSlice`.
 #[cfg(feature = "alloc")]
+#[doc(hidden)]
 pub struct SliceBuilder<B, const ALIGN: usize>(pub Vec<B>);
 
 #[cfg(feature = "alloc")]
@@ -1441,6 +1506,7 @@ impl<E: Endian> ZeroCopyBuilder<E, 0> for String {
 
 /// A wrapper for `String` to build into an inline `ZeroString<CAP>`.
 #[cfg(feature = "alloc")]
+#[doc(hidden)]
 pub struct FixedString<const CAP: usize>(pub String);
 
 #[cfg(feature = "alloc")]
@@ -1460,7 +1526,11 @@ impl<E: Endian, const CAP: usize> ZeroCopyBuilder<E, 0> for FixedString<CAP> {
         _offset: usize,
     ) -> Self::Target {
         let bytes = self.0.as_bytes();
-        let len = bytes.len().min(CAP);
+        let mut len = bytes.len().min(CAP);
+        // Ensure truncation happens at a valid UTF-8 boundary
+        while len > 0 && !self.0.is_char_boundary(len) {
+            len -= 1;
+        }
         let mut data = [0u8; CAP];
         data[..len].copy_from_slice(&bytes[..len]);
         ZeroString {
@@ -1536,7 +1606,7 @@ where
     /// The builder type associated with this trait.
     type Builder = [<T as ZeroCopyType<E>>::Builder; N];
 }
-impl<E: Endian, T, B, const N: usize, const ALIGN: usize> ZeroCopyBuilder<E, ALIGN> for [B; N]
+impl<E: Endian, T, B, const N: usize> ZeroCopyBuilder<E, 0> for [B; N]
 where
     B: ZeroCopyBuilder<E, 0, Target = T>,
     T: ZeroCopy,

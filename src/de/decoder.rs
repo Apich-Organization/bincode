@@ -10,7 +10,6 @@ use crate::utils::Sealed;
 impl<R, C: Config, Context> BincodeErrorPathCovered<0> for DecoderImpl<R, C, Context> {}
 impl<C, D: Decoder + ?Sized> BincodeErrorPathCovered<0> for WithContext<'_, D, C> {}
 
-
 /// A Decoder that reads bytes from a given reader `R`.
 ///
 /// This struct should rarely be used.

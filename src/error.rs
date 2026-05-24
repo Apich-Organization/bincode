@@ -40,7 +40,6 @@ macro_rules! bincode_error {
     };
 }
 
-
 bincode_error! {
     /// Errors that can be encountered by encoding a type
     #[non_exhaustive]

@@ -177,6 +177,7 @@ where
 
         let mut map = Self::new();
         for _ in 0..len {
+            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
             let key = K::decode(decoder)?;
             let value = V::decode(decoder)?;
             if is_deterministic {
@@ -222,6 +223,7 @@ where
 
         let mut map = Self::new();
         for _ in 0..len {
+            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
             let key = K::borrow_decode(decoder)?;
             let value = V::borrow_decode(decoder)?;
             if is_deterministic {
@@ -299,6 +301,7 @@ where
 
         let mut map = Self::new();
         for _ in 0..len {
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
             let key = T::decode(decoder)?;
             if is_deterministic {
                 if !map.insert(key) {
@@ -341,6 +344,7 @@ where
 
         let mut map = Self::new();
         for _ in 0..len {
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
             let key = T::borrow_decode(decoder)?;
             if is_deterministic {
                 if !map.insert(key) {
@@ -595,8 +599,10 @@ where
                                     #[cfg(target_arch = "aarch64")]
                                     unsafe {
                                         if j % 8 == 0 && reader.slice.len() > 64 {
-                                            core::arch::aarch64::__prefetch(
-                                                reader.slice.as_ptr().add(64).cast::<i8>(),
+                                            core::arch::asm!(
+                                                "prfm pldl1keep, [{ptr}]",
+                                                ptr = in(reg) reader.slice.as_ptr().add(64),
+                                                options(nostack, preserves_flags, readonly)
                                             );
                                         }
                                     }
@@ -700,13 +706,13 @@ where
             }
 
             for _ in i..len {
+                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
                 vec.push(T::decode(decoder)?);
             }
             Ok(vec)
         }
     }
 }
-
 
 impl<'de, T, Context> BorrowDecode<'de, Context> for Vec<T>
 where
@@ -835,14 +841,16 @@ where
                                         );
                                     }
                                 }
-                                #[cfg(target_arch = "aarch64")]
-                                unsafe {
-                                    if j % 8 == 0 {
-                                        core::arch::aarch64::__prefetch(
-                                            reader.slice.as_ptr().add(64).cast::<i8>(),
-                                        );
+                                    #[cfg(target_arch = "aarch64")]
+                                    unsafe {
+                                        if j % 8 == 0 && reader.slice.len() > 64 {
+                                            core::arch::asm!(
+                                                "prfm pldl1keep, [{ptr}]",
+                                                ptr = in(reg) reader.slice.as_ptr().add(64),
+                                                options(nostack, preserves_flags, readonly)
+                                            );
+                                        }
                                     }
-                                }
                                 unsafe {
                                     core::ptr::write(
                                         ptr.add(j),
@@ -947,7 +955,6 @@ where
     }
 }
 
-
 impl<T> Encode for Vec<T>
 where
     T: Encode,
@@ -999,7 +1006,6 @@ where
         Ok(())
     }
 }
-
 
 impl<Context> Decode<Context> for String {
     #[inline(always)]

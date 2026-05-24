@@ -1,3 +1,5 @@
+#![cfg(all(feature = "std", feature = "derive"))]
+
 use bincode_next::BitPacked;
 
 #[derive(BitPacked, Debug, PartialEq, Clone, Copy)]

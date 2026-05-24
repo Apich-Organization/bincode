@@ -47,7 +47,6 @@ pub fn varint_encode_i128<W: Writer>(
     varint_encode_u128(writer, endian, ((val << 1) ^ (val >> 127)) as u128)
 }
 
-
 #[test]
 fn test_encode_i16() {
     let cases: &[(i16, &[u8], &[u8])] = &[

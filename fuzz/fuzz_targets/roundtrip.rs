@@ -1,16 +1,29 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::collections::VecDeque;
 use std::ffi::CString;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
-use std::num::{NonZeroI128, NonZeroI32, NonZeroU128, NonZeroU32};
+use std::net::IpAddr;
+use std::net::Ipv4Addr;
+use std::net::Ipv6Addr;
+use std::net::SocketAddr;
+use std::net::SocketAddrV4;
+use std::net::SocketAddrV6;
+use std::num::NonZeroI128;
+use std::num::NonZeroI32;
+use std::num::NonZeroU128;
+use std::num::NonZeroU32;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
+use std::time::SystemTime;
 
-#[derive(bincode::Decode, bincode::Encode, PartialEq, Debug)]
+#[derive(bincode_next::Decode, bincode_next::Encode, PartialEq, Debug)]
 enum AllTypes {
     BTreeMap(BTreeMap<u8, u8>),
     HashMap(HashMap<u8, u8>),
@@ -41,12 +54,12 @@ enum AllTypes {
 }
 
 fuzz_target!(|data: &[u8]| {
-    let config = bincode::config::standard().with_limit::<1024>();
-    let result: Result<(AllTypes, _), _> = bincode::decode_from_slice(data, config);
+    let config = bincode_next::config::standard().with_limit::<1024>();
+    let result: Result<(AllTypes, _), _> = bincode_next::decode_from_slice(data, config);
 
     if let Ok((before, _)) = result {
-        let encoded = bincode::encode_to_vec(&before, config).expect("round trip");
-        let (after, _) = bincode::decode_from_slice(&encoded, config).unwrap();
+        let encoded = bincode_next::encode_to_vec(&before, config).expect("round trip");
+        let (after, _) = bincode_next::decode_from_slice(&encoded, config).unwrap();
         assert_eq!(before, after);
     }
 });

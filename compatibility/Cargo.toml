@@ -1,12 +1,12 @@
 [package]
-name = "bincode_compatibility-next"
+name = "bincode_compatibility"
 version = "0.1.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bincode_2 = { path = "..", package = "bincode-next", version = "3.0.0-rc.4", features = [
+bincode_2 = { path = "..", package = "bincode-next", version = "3.0.0-rc.13", features = [
     "serde",
 ] }
 bincode_1 = { version = "1", package = "bincode" }

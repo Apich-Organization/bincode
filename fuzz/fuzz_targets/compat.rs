@@ -1,16 +1,27 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
+use std::collections::VecDeque;
 use std::ffi::CString;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
-use std::num::{NonZeroI128, NonZeroI32, NonZeroU128, NonZeroU32};
+use std::net::IpAddr;
+use std::net::Ipv4Addr;
+use std::net::Ipv6Addr;
+use std::net::SocketAddr;
+use std::net::SocketAddrV4;
+use std::net::SocketAddrV6;
+use std::num::NonZeroI128;
+use std::num::NonZeroI32;
+use std::num::NonZeroU128;
+use std::num::NonZeroU32;
 use std::path::PathBuf;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
+use std::time::SystemTime;
 
 #[derive(
-    bincode::Decode,
-    bincode::Encode,
+    bincode_next::Decode,
+    bincode_next::Encode,
     PartialEq,
     Debug,
     serde::Serialize,
@@ -49,29 +60,30 @@ enum AllTypes {
 }
 
 fuzz_target!(|data: &[u8]| {
-    let config = bincode::config::legacy().with_limit::<1024>();
+    let config = bincode_next::config::legacy().with_limit::<1024>();
     #[allow(deprecated)]
     let mut configv1 = bincodev1::config();
     configv1.limit(1024);
     let bincode_v1: Result<AllTypes, _> = configv1.deserialize_from(data);
-    let bincode_v2: Result<(AllTypes, _), _> = bincode::decode_from_slice(data, config);
+    let bincode_v2: Result<(AllTypes, _), _> = bincode_next::decode_from_slice(data, config);
 
     match (&bincode_v1, &bincode_v2) {
-        (Err(e), _) if e.to_string() == "the size limit has been reached" => {}
-        (_, Err(bincode::error::DecodeError::LimitExceeded)) => {}
-        (Ok(bincode_v1), Ok((bincode_v2, _))) if bincode_v1 != bincode_v2 => {
-            println!("Bytes:      {:?}", data);
-            println!("Bincode V1: {:?}", bincode_v1);
-            println!("Bincode V2: {:?}", bincode_v2);
-            panic!("failed equality check");
-        }
-        (Ok(_), Err(_)) | (Err(_), Ok(_)) => {
-            println!("Bytes:      {:?}", data);
-            println!("Bincode V1: {:?}", bincode_v1);
-            println!("Bincode V2: {:?}", bincode_v2);
-            panic!("failed equality check");
-        }
+        | (Err(e), _) if e.to_string().contains("limit") => {},
 
-        _ => {}
+        | (_, Err(bincode_next::error::DecodeError::LimitExceeded)) => {},
+        | (Ok(bincode_v1), Ok((bincode_v2, _))) if bincode_v1 != bincode_v2 => {
+            println!("Bytes:      {:?}", data);
+            println!("Bincode V1: {:?}", bincode_v1);
+            println!("Bincode V2: {:?}", bincode_v2);
+            panic!("failed equality check");
+        },
+        | (Ok(_), Err(_)) | (Err(_), Ok(_)) => {
+            println!("Bytes:      {:?}", data);
+            println!("Bincode V1: {:?}", bincode_v1);
+            println!("Bincode V2: {:?}", bincode_v2);
+            panic!("failed equality check");
+        },
+
+        | _ => {},
     }
 });

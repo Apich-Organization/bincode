@@ -409,7 +409,6 @@ where
     }
 }
 
-
 const TAG_CONT: u8 = 0b1000_0000;
 const TAG_TWO_B: u8 = 0b1100_0000;
 const TAG_THREE_B: u8 = 0b1110_0000;
@@ -513,11 +512,6 @@ where
                 encoder.writer().write(slice)?;
             }
         } else {
-            // Arrays in CBOR are always length-prefixed arrays if not byte strings?
-            // Actually, bincode-next seems to encode [T; N] as just T...N WITHOUT length prefix?
-            // Let's check bincode format spec for [T; N].
-            // Ah, bincode encodes [T; N] as N elements of T without a length prefix.
-            // In CBOR, we should probably encode it as an array if it's not a byte string.
             if !is_bincode {
                 encoder.encode_array_len(N)?;
             }

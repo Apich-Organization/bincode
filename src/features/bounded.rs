@@ -3,6 +3,8 @@
 //! These types enforce capacity limits both at construction time and during
 //! decoding, preventing Denial-of-Service attacks via unbounded allocations.
 
+#![cfg(feature = "alloc")]
+
 use crate::de::BorrowDecode;
 use crate::de::BorrowDecoder;
 use crate::de::Decode;

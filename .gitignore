@@ -14,6 +14,7 @@ plan.md
 issue20.md
 issue18.md
 issue17.md
+issue63.md
 expanded_enum.rs
 expanded_macro.rs
 revert_align.py
@@ -36,3 +37,9 @@ parse_error.py
 problems.md
 fix_code.py
 2
+search.py
+spec.tmp
+fuzz/report.html
+fuzz/coverage/zero_copy/coverage.profdata
+fuzz/coverage/zero_copy/raw/default-zero_copy.profraw
+tatus

@@ -1,3 +1,6 @@
+#![cfg(feature = "derive")]
+#![allow(dead_code)]
+
 #[cfg(feature = "zero-copy")]
 use bincode_next::ZeroCopy;
 

@@ -19,6 +19,8 @@ impl DeriveZeroCopy {
         self.generate_static_size(generator)?;
         self.generate_zerocopy_marker(generator)?;
         self.generate_builder(generator)?;
+        self.generate_validator(generator)?;
+        self.generate_deep_validator(generator)?;
         Ok(())
     }
 
@@ -307,13 +309,16 @@ impl DeriveZeroCopy {
                         .as_ref()
                         .map(|i| i.to_string())
                         .unwrap_or_else(|| format!("field_{}", i));
-                    builder_struct.add_field(
+                    let mut f = builder_struct.add_field(
                         name,
                         format!(
                             "<{} as {}::relative_ptr::ZeroCopyType<{}>>::Builder",
                             type_string, crate_name, endian_type
                         ),
                     );
+                    if self.visibility == Visibility::Pub {
+                        f.make_pub();
+                    }
                 }
             }
 
@@ -371,6 +376,236 @@ impl DeriveZeroCopy {
             }
         }
 
+        Ok(())
+    }
+
+    fn generate_validator(
+        &self,
+        generator: &mut Generator,
+    ) -> Result<()> {
+        let crate_name = &self.attributes.crate_name;
+        let mut impl_for = generator.impl_for(format!("{}::relative_ptr::Validator", crate_name));
+
+        impl_for
+            .generate_fn("is_valid")
+            .with_arg("&self", "")
+            .with_arg("buffer", "&[u8]")
+            .with_return_type("bool")
+            .body(|fn_body| {
+                if let Some(variants) = self.variants.as_ref() {
+                    fn_body.push_parsed("match self")?;
+                    fn_body.group(Delimiter::Brace, |match_body| {
+                        for variant in variants {
+                            match_body.push_parsed(format!("Self::{}", variant.name))?;
+                            if let Some(fields) = variant.fields.as_ref() {
+                                match fields {
+                                    | Fields::Struct(s) => {
+                                        match_body.group(Delimiter::Brace, |field_body| {
+                                            for (ident, _) in s.iter() {
+                                                field_body.push_parsed(format!("{},", ident))?;
+                                            }
+                                            Ok(())
+                                        })?;
+                                    },
+                                    | Fields::Tuple(t) => {
+                                        match_body.group(Delimiter::Parenthesis, |field_body| {
+                                            for i in 0..t.len() {
+                                                field_body
+                                                    .push_parsed(format!("__field_{},", i))?;
+                                            }
+                                            Ok(())
+                                        })?;
+                                    },
+                                }
+                            }
+                            match_body.puncts("=>");
+                            match_body.group(Delimiter::Brace, |arm_body| {
+                                if let Some(fields) = variant.fields.as_ref() {
+                                    let mut first = true;
+                                    match fields {
+                                        | Fields::Struct(s) => {
+                                            for (ident, _) in s.iter() {
+                                                if !first {
+                                                    arm_body.push_parsed(" && ")?;
+                                                }
+                                                arm_body.push_parsed(format!(
+                                                    "{}.is_valid(buffer)",
+                                                    ident
+                                                ))?;
+                                                first = false;
+                                            }
+                                        },
+                                        | Fields::Tuple(t) => {
+                                            for i in 0..t.len() {
+                                                if !first {
+                                                    arm_body.push_parsed(" && ")?;
+                                                }
+                                                arm_body.push_parsed(format!(
+                                                    "__field_{}.is_valid(buffer)",
+                                                    i
+                                                ))?;
+                                                first = false;
+                                            }
+                                        },
+                                    }
+                                    if first {
+                                        arm_body.push_parsed("true")?;
+                                    }
+                                } else {
+                                    arm_body.push_parsed("true")?;
+                                }
+                                Ok(())
+                            })?;
+                            match_body.punct(',');
+                        }
+                        Ok(())
+                    })?;
+                } else if let Some(fields) = self.fields.as_ref() {
+                    let mut first = true;
+                    match fields {
+                        | Fields::Struct(s) => {
+                            for (ident, _) in s.iter() {
+                                if !first {
+                                    fn_body.push_parsed(" && ")?;
+                                }
+                                fn_body.push_parsed(format!("self.{}.is_valid(buffer)", ident))?;
+                                first = false;
+                            }
+                        },
+                        | Fields::Tuple(t) => {
+                            for i in 0..t.len() {
+                                if !first {
+                                    fn_body.push_parsed(" && ")?;
+                                }
+                                fn_body.push_parsed(format!("self.{}.is_valid(buffer)", i))?;
+                                first = false;
+                            }
+                        },
+                    }
+                    if first {
+                        fn_body.push_parsed("true")?;
+                    }
+                } else {
+                    fn_body.push_parsed("true")?;
+                }
+                Ok(())
+            })?;
+        Ok(())
+    }
+
+    fn generate_deep_validator(
+        &self,
+        generator: &mut Generator,
+    ) -> Result<()> {
+        let crate_name = &self.attributes.crate_name;
+        let mut impl_for =
+            generator.impl_for(format!("{}::relative_ptr::DeepValidator", crate_name));
+
+        impl_for
+            .generate_fn("is_valid_deep")
+            .with_arg("&self", "")
+            .with_arg("buffer", "&[u8]")
+            .with_return_type("bool")
+            .body(|fn_body| {
+                if let Some(variants) = self.variants.as_ref() {
+                    fn_body.push_parsed("match self")?;
+                    fn_body.group(Delimiter::Brace, |match_body| {
+                        for variant in variants {
+                            match_body.push_parsed(format!("Self::{}", variant.name))?;
+                            if let Some(fields) = variant.fields.as_ref() {
+                                match fields {
+                                    | Fields::Struct(s) => {
+                                        match_body.group(Delimiter::Brace, |field_body| {
+                                            for (ident, _) in s.iter() {
+                                                field_body.push_parsed(format!("{},", ident))?;
+                                            }
+                                            Ok(())
+                                        })?;
+                                    },
+                                    | Fields::Tuple(t) => {
+                                        match_body.group(Delimiter::Parenthesis, |field_body| {
+                                            for i in 0..t.len() {
+                                                field_body
+                                                    .push_parsed(format!("__field_{},", i))?;
+                                            }
+                                            Ok(())
+                                        })?;
+                                    },
+                                }
+                            }
+                            match_body.puncts("=>");
+                            match_body.group(Delimiter::Brace, |arm_body| {
+                                if let Some(fields) = variant.fields.as_ref() {
+                                    let mut first = true;
+                                    match fields {
+                                        | Fields::Struct(s) => {
+                                            for (ident, _) in s.iter() {
+                                                if !first {
+                                                    arm_body.push_parsed(" && ")?;
+                                                }
+                                                arm_body.push_parsed(format!(
+                                                    "{}.is_valid_deep(buffer)",
+                                                    ident
+                                                ))?;
+                                                first = false;
+                                            }
+                                        },
+                                        | Fields::Tuple(t) => {
+                                            for i in 0..t.len() {
+                                                if !first {
+                                                    arm_body.push_parsed(" && ")?;
+                                                }
+                                                arm_body.push_parsed(format!(
+                                                    "__field_{}.is_valid_deep(buffer)",
+                                                    i
+                                                ))?;
+                                                first = false;
+                                            }
+                                        },
+                                    }
+                                    if first {
+                                        arm_body.push_parsed("true")?;
+                                    }
+                                } else {
+                                    arm_body.push_parsed("true")?;
+                                }
+                                Ok(())
+                            })?;
+                            match_body.punct(',');
+                        }
+                        Ok(())
+                    })?;
+                } else if let Some(fields) = self.fields.as_ref() {
+                    let mut first = true;
+                    match fields {
+                        | Fields::Struct(s) => {
+                            for (ident, _) in s.iter() {
+                                if !first {
+                                    fn_body.push_parsed(" && ")?;
+                                }
+                                fn_body
+                                    .push_parsed(format!("self.{}.is_valid_deep(buffer)", ident))?;
+                                first = false;
+                            }
+                        },
+                        | Fields::Tuple(t) => {
+                            for i in 0..t.len() {
+                                if !first {
+                                    fn_body.push_parsed(" && ")?;
+                                }
+                                fn_body.push_parsed(format!("self.{}.is_valid_deep(buffer)", i))?;
+                                first = false;
+                            }
+                        },
+                    }
+                    if first {
+                        fn_body.push_parsed("true")?;
+                    }
+                } else {
+                    fn_body.push_parsed("true")?;
+                }
+                Ok(())
+            })?;
         Ok(())
     }
 }

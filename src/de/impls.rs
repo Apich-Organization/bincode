@@ -366,10 +366,7 @@ where
             if is_u8 {
                 let len = decoder.decode_byte_slice_len()?;
                 if len != N {
-                    return Err(DecodeError::ArrayLengthMismatch {
-                        required: N,
-                        found: len,
-                    });
+                    return crate::error::cold_decode_error_array_length_mismatch(N, len);
                 }
                 decoder.claim_bytes_read(N)?;
                 let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
@@ -382,10 +379,7 @@ where
             } else {
                 let len = decoder.decode_array_len()?;
                 if len != N && len != usize::MAX {
-                    return Err(DecodeError::ArrayLengthMismatch {
-                        required: N,
-                        found: len,
-                    });
+                    return crate::error::cold_decode_error_array_length_mismatch(N, len);
                 }
             }
         }
@@ -434,7 +428,6 @@ where
     }
 }
 
-
 impl<'de, T, const N: usize, Context> BorrowDecode<'de, Context> for [T; N]
 where
     T: BorrowDecode<'de, Context>,
@@ -452,10 +445,7 @@ where
             if is_u8 {
                 let len = decoder.decode_byte_slice_len()?;
                 if len != N {
-                    return Err(DecodeError::ArrayLengthMismatch {
-                        required: N,
-                        found: len,
-                    });
+                    return crate::error::cold_decode_error_array_length_mismatch(N, len);
                 }
                 decoder.claim_bytes_read(N)?;
                 let mut res = core::mem::MaybeUninit::<[T; N]>::uninit();
@@ -468,10 +458,7 @@ where
             } else {
                 let len = decoder.decode_array_len()?;
                 if len != N && len != usize::MAX {
-                    return Err(DecodeError::ArrayLengthMismatch {
-                        required: N,
-                        found: len,
-                    });
+                    return crate::error::cold_decode_error_array_length_mismatch(N, len);
                 }
             }
         }
@@ -520,7 +507,6 @@ where
         }
     }
 }
-
 
 impl<Context> Decode<Context> for () {
     fn decode<D: Decoder<Context = Context>>(_: &mut D) -> Result<Self, DecodeError> {

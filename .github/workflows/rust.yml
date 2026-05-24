@@ -1,195 +1,88 @@
-{
-  "name": "CI",
-  "on": {
-    "push": {
-      "branches": [
-        "trunk",
-        "v*.x",
-        "ci/*"
-      ]
-    },
-    "pull_request": {
-      "branches": [
-        "trunk",
-        "v*.x"
-      ]
-    }
-  },
-  "jobs": {
-    "check": {
-      "name": "Check",
-      "runs-on": "ubuntu-latest",
-      "strategy": {
-        "fail-fast": false,
-        "matrix": {
-          "rust": [
-            "stable",
-            "beta",
-            "nightly",
-            "1.85.0"
-          ]
-        }
-      },
-      "steps": [
-        {
-          "uses": "actions/checkout@v4",
-          "name": "Checkout"
-        },
-        {
-          "uses": "actions-rs/toolchain@v1",
-          "with": {
-            "profile": "minimal",
-            "toolchain": "${{ matrix.rust }}",
-            "override": true
-          },
-          "name": "Install Rust ${{ matrix.rust }}"
-        },
-        {
-          "uses": "actions-rs/cargo@v1",
-          "with": {
-            "command": "check",
-            "args": "--all-features"
-          },
-          "name": "Run `cargo check`"
-        },
-        {
-          "uses": "actions-rs/cargo@v1",
-          "with": {
-            "command": "check",
-            "args": "--bench *"
-          },
-          "name": "Run `cargo check` on benches"
-        },
-        {
-          "uses": "actions-rs/cargo@v1",
-          "with": {
-            "command": "check",
-            "args": "--examples"
-          },
-          "name": "Check examples"
-        }
-      ]
-    },
-    "test": {
-      "name": "Test",
-      "strategy": {
-        "matrix": {
-          "runner": [
-            "ubuntu-latest",
-            "windows-latest",
-            "macos-latest"
-          ],
-          "rust": [
-            "stable",
-            "1.85.0"
-          ],
-          "features": [
-            "",
-            "alloc",
-            "alloc,derive",
-            "std",
-            "std,derive",
-            "serde",
-            "alloc,serde",
-            "std,serde",
-            "serde,derive",
-            "alloc,serde,derive",
-            "std,serde,derive",
-          ]
-        }
-      },
-      "runs-on": "${{ matrix.runner }}",
-      "steps": [
-        {
-          "uses": "actions/checkout@v4",
-          "name": "Checkout"
-        },
-        {
-          "uses": "actions-rs/toolchain@v1",
-          "with": {
-            "profile": "minimal",
-            "toolchain": "${{ matrix.rust }}",
-            "override": true
-          },
-          "name": "Install Rust ${{ matrix.rust }}"
-        },
-        {
-          "run": "if [ -z \"${{ matrix.features }}\" ]\n
-then\n
-  cargo test --no-default-features\n
-else\n
-  cargo test --no-default-features --features ${{ matrix.features }}\n
-fi",
-          "name": "Run `cargo test` on all features",
-          "shell": "bash",
-          "env": {
-            "RUSTFLAGS": "-D warnings"
-          }
-        }
-      ]
-    },
-    "lints": {
-      "name": "Lints",
-      "runs-on": "ubuntu-latest",
-      "steps": [
-        {
-          "uses": "actions/checkout@v4",
-          "name": "Checkout"
-        },
-        {
-          "uses": "actions-rs/toolchain@v1",
-          "with": {
-            "profile": "minimal",
-            "toolchain": "1.85.0",
-            "override": true,
-            "components": "rustfmt, clippy"
-          },
-          "name": "Install Rust stable"
-        },
-        {
-          "uses": "actions-rs/cargo@v1",
-          "with": {
-            "command": "fmt",
-            "args": "--all -- --check"
-          },
-          "name": "Run `cargo fmt`"
-        },
-        {
-          "uses": "actions-rs/cargo@v1",
-          "with": {
-            "command": "clippy",
-            "args": "--all-features -- -D warnings"
-          },
-          "name": "Run `cargo clippy`"
-        }
-      ]
-    },
-    "compatibility": {
-      "name": "Compatibility",
-      "runs-on": "ubuntu-latest",
-      "steps": [
-        {
-          "uses": "actions/checkout@v4",
-          "name": "Checkout"
-        },
-        {
-          "uses": "actions-rs/toolchain@v1",
-          "with": {
-            "profile": "minimal",
-            "toolchain": "1.85.0",
-            "override": true,
-          },
-          "name": "Install Rust stable"
-        },
-        {
-          "uses": "actions-rs/cargo@v1",
-          "with": {
-            "command": "test",
-            "args": "--manifest-path compatibility/Cargo.toml"
-          },
-          "name": "Run compatibility tests"
-        }
-      ]
-    }
-  }
-}
+name: Rust CI
+
+on:
+  push:
+    branches: [trunk, main, "v*.x", "ci/*"]
+  pull_request:
+    branches: [trunk, main, "v*.x"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [stable, beta, nightly, 1.91.1] # MSRV: 1.91.1
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - name: cargo check (all-features)
+        run: cargo check --all-features
+
+  test:
+    name: Test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - name: cargo test
+        run: cargo test --all-features
+
+  lints:
+    name: Lints
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2 # nightly
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - name: cargo fmt
+        run: cargo fmt --all -- --check
+      - name: cargo clippy
+        run: cargo clippy --all-features
+
+  compatibility:
+    name: Compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: dtolnay/rust-toolchain@ba6e37b9b9af502effa9a8e8d218bc68ac8ea564 # 1.91.1
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - name: Run compatibility tests
+        run: cargo test --manifest-path compatibility/Cargo.toml

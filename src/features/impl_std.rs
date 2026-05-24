@@ -231,12 +231,12 @@ impl<W: std::io::Write> Writer for IoWriter<'_, W> {
         &mut self,
         bytes: &[u8],
     ) -> Result<(), EncodeError> {
-        if bytes.len() <= self.buffer.len() - self.buffer_len {
+        if crate::utils::is_likely!(bytes.len() <= self.buffer.len() - self.buffer_len) {
             self.buffer[self.buffer_len..self.buffer_len + bytes.len()].copy_from_slice(bytes);
             self.buffer_len += bytes.len();
         } else {
             self.flush()?;
-            if bytes.len() >= self.buffer.len() {
+            if crate::utils::is_likely!(bytes.len() >= self.buffer.len()) {
                 self.writer.write_all(bytes).map_err(|inner| {
                     crate::error::cold_encode_error_io::<()>(inner, self.bytes_written).unwrap_err()
                 })?;
@@ -582,7 +582,12 @@ impl Encode for SocketAddrV6 {
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
         self.ip().encode(encoder)?;
-        self.port().encode(encoder)
+        self.port().encode(encoder)?;
+        if !encoder.config().is_compact_net() {
+            self.flowinfo().encode(encoder)?;
+            self.scope_id().encode(encoder)?;
+        }
+        Ok(())
     }
 }
 
@@ -591,7 +596,13 @@ impl<Context> Decode<Context> for SocketAddrV6 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let ip = Ipv6Addr::decode(decoder)?;
         let port = u16::decode(decoder)?;
-        Ok(Self::new(ip, port, 0, 0))
+        if decoder.config().is_compact_net() {
+            Ok(Self::new(ip, port, 0, 0))
+        } else {
+            let flowinfo = u32::decode(decoder)?;
+            let scope_id = u32::decode(decoder)?;
+            Ok(Self::new(ip, port, flowinfo, scope_id))
+        }
     }
 }
 impl_borrow_decode!(SocketAddrV6);
@@ -663,6 +674,7 @@ where
         let hash_builder: S = Default::default();
         let mut map = Self::with_capacity_and_hasher(len, hash_builder);
         for _ in 0..len {
+            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
             let k = K::decode(decoder)?;
             let v = V::decode(decoder)?;
             if is_deterministic {
@@ -710,6 +722,7 @@ where
         let hash_builder: S = Default::default();
         let mut map = Self::with_capacity_and_hasher(len, hash_builder);
         for _ in 0..len {
+            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
             let k = K::borrow_decode(decoder)?;
             let v = V::borrow_decode(decoder)?;
             if is_deterministic {
@@ -754,6 +767,7 @@ where
         let hash_builder: S = Default::default();
         let mut map: Self = Self::with_capacity_and_hasher(len, hash_builder);
         for _ in 0..len {
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
             let key = T::decode(decoder)?;
             if is_deterministic {
                 if !map.insert(key) {
@@ -798,6 +812,7 @@ where
 
         let mut map = Self::with_capacity_and_hasher(len, S::default());
         for _ in 0..len {
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
             let key = T::borrow_decode(decoder)?;
             if is_deterministic {
                 if !map.insert(key) {
