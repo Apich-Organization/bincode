@@ -2,9 +2,12 @@ name: Miri
 
 on:
   push:
-    branches: [trunk, main, 'v*.x', 'ci/*']
+    branches: [trunk, main, "v*.x", "ci/*"]
   pull_request:
-    branches: [trunk, main, 'v*.x']
+    branches: [trunk, main, "v*.x"]
+
+permissions:
+  contents: read
 
 env:
   CARGO_TERM_COLOR: always

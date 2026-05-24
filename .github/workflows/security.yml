@@ -2,8 +2,11 @@ name: Security Audit
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: "0 0 * * *"
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   audit:

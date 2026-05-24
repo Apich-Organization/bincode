@@ -2,12 +2,15 @@ name: Rust CI
 
 on:
   push:
-    branches: [trunk, main, 'v*.x', 'ci/*']
+    branches: [trunk, main, "v*.x", "ci/*"]
   pull_request:
-    branches: [trunk, main, 'v*.x']
+    branches: [trunk, main, "v*.x"]
 
 env:
   CARGO_TERM_COLOR: always
+
+permissions:
+  contents: read
 
 jobs:
   check:
@@ -53,7 +56,7 @@ jobs:
         run: cargo fmt --all -- --check
       - name: cargo clippy
         run: cargo clippy --all-features
-  
+
   compatibility:
     name: Compatibility
     runs-on: ubuntu-latest

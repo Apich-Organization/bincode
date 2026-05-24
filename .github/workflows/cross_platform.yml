@@ -2,9 +2,12 @@ name: Cross-Platform CI
 
 on:
   push:
-    branches: [trunk, main, 'v*.x', 'ci/*']
+    branches: [trunk, main, "v*.x", "ci/*"]
   pull_request:
-    branches: [trunk, main, 'v*.x']
+    branches: [trunk, main, "v*.x"]
+
+permissions:
+  contents: read
 
 env:
   CARGO_TERM_COLOR: always
@@ -55,7 +58,7 @@ jobs:
         shell: bash
         run: |
           ZIG_TARGET=$(echo "${{ matrix.zig_target }}" | sed 's/-unknown//' | sed 's/riscv64gc/riscv64/')
-          
+
           # Create zig wrappers that remove any `--target=` injected by cc-rs
           # and strictly enforce the target architecture.
           cat > /tmp/zig-cc << WRAPPER
@@ -86,7 +89,7 @@ jobs:
 
           export CC="/tmp/zig-cc"
           export CXX="/tmp/zig-cxx"
-          
+
           # Musl targets must be fully static because zig cc does not support
           # dynamically linking musl libc, which is what `cargo test` does by default.
           # We also disable self-contained linking so Rust doesn't duplicate zig's libc components.
@@ -94,7 +97,7 @@ jobs:
             export RUSTFLAGS="-C target-feature=+crt-static -C link-self-contained=no"
             export RUSTDOCFLAGS="-C target-feature=+crt-static -C link-self-contained=no"
           fi
-          
+
           ENV_NAME=$(echo ${{ matrix.platform }} | tr '[:lower:]-' '[:upper:]_')
           export CARGO_TARGET_${ENV_NAME}_LINKER="/tmp/zig-cc"
 
@@ -115,6 +118,6 @@ jobs:
               export QEMU_LD_PREFIX=/usr/riscv64-linux-gnu
             fi
           fi
-          
+
           cargo zigbuild --target ${{ matrix.zig_target }} --features full
           cargo test --target ${{ matrix.platform }} --features full

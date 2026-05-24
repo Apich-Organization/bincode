@@ -2,11 +2,14 @@ name: Continuous Fuzzing
 
 on:
   push:
-    branches: [ main, master, staging, try ]
+    branches: [main, master, staging, try]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   schedule:
-    - cron: '0 0 * * *' # Daily sanity check
+    - cron: "0 0 * * *" # Daily sanity check
+
+permissions:
+  contents: read
 
 jobs:
   fuzz:
@@ -16,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         target: [roundtrip, compat, zero_copy, sync_roundtrip, async_fiber]
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
