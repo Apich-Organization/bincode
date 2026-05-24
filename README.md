@@ -403,7 +403,7 @@ cargo bench --bench extreme_perf
 cargo bench --bench complex
 ```
 
-TL;DR: Please visit [https://bincode-next.apich.org/](https://bincode-next.apich.org/) for more detailed information.
+TL;DR: Please visit [https://bincode-next.apich.org/bench.html](https://bincode-next.apich.org/bench.html) for more detailed information.
 
 ### **Performance Comparison: Decoding**
 
@@ -512,7 +512,7 @@ Yes, Bincode-Next is designed to be wire-compatible with Bincode 2.x when using 
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+We welcome contributions! Please see [CONTRIBUTING.html](CONTRIBUTING.html) for more details.
 
 ## License
 
@@ -521,4 +521,4 @@ Bincode-Next is licensed under either of:
 - The MIT License (MIT)
 - The Apache License, Version 2.0
 
-See [LICENSE.md](LICENSE.md) for details.
+See [LICENSE.html](LICENSE.html) for details.

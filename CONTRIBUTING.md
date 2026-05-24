@@ -4,7 +4,7 @@ First off, thank you for considering contributing to Bincode-Next! It's people l
 
 ## Code of Conduct
 
-We are committed to providing a welcoming and inspiring community. We do not tolerate harassment, doxxing, or any form of hate speech. Please be respectful to all contributors and the original authors of the library. Please see the [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for more details.
+We are committed to providing a welcoming and inspiring community. We do not tolerate harassment, doxxing, or any form of hate speech. Please be respectful to all contributors and the original authors of the library. Please see the [CODE_OF_CONDUCT.html](CODE_OF_CONDUCT.html) for more details.
 
 ## Performance First
 
