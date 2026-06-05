@@ -510,7 +510,6 @@ unsafe extern "C" fn switch_context(
 ) {
     naked_asm!(
         "bti c",
-        "paciasp",
         "prfm pstl1keep, [x0]",
         "prfm pldl1keep, [x1]",
         "prfm pldl1keep, [x1, 64]",
@@ -542,7 +541,6 @@ unsafe extern "C" fn switch_context(
         "ldp x29, x30, [x1, 80]",
         "ldr x9, [x1, 96]",
         "mov sp, x9",
-        "autiasp",
         "ret"
     );
 }
@@ -610,7 +608,6 @@ unsafe extern "C" fn switch_context(
 ) {
     naked_asm!(
         "bti c",
-        "paciasp",
         "prfm pstl1keep, [x0]",
         "prfm pldl1keep, [x1]",
         "prfm pldl1keep, [x1, 64]",
@@ -654,7 +651,6 @@ unsafe extern "C" fn switch_context(
         "ldp x29, x30, [x1, 80]",
         "ldr x9, [x1, 96]",
         "mov sp, x9",
-        "autiasp",
         "ret"
     );
 }
@@ -1057,7 +1053,7 @@ where
                 ctx.regs.gprs[1] = 0; // RBP (frame pointer) = NULL → end of frame chain
                 ctx.regs.gprs[7] = fiber_trampoline as *const () as u64; // return address
                 // MXCSR default: 0x1F80 = all FP exceptions masked.
-                ctx.regs.extended_state[24..28].copy_from_slice(&0x1F80u32.to_ne_bytes());
+                ctx.regs.gprs[8] = 0x1F80;
             }
             #[cfg(all(target_arch = "x86_64", windows))]
             {
@@ -1070,7 +1066,7 @@ where
                 ctx.regs.gprs[11] = ctx.stack.bottom(); // TIB StackLimit
                 ctx.regs.gprs[12] = ctx.stack.allocation_base(); // TIB DeallocationStack
                 ctx.regs.gprs[13] = 0xFFFFFFFFFFFFFFFFu64; // ExceptionList terminator
-                ctx.regs.extended_state[24..28].copy_from_slice(&0x1F80u32.to_ne_bytes());
+                ctx.regs.gprs[14] = 0x1F80;
             }
             #[cfg(all(target_arch = "aarch64", unix))]
             {
