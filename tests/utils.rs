@@ -2,12 +2,12 @@ use core::fmt::Debug;
 
 extern crate bincode_next as bincode;
 
-fn the_same_with_config<'a, V: 'a, C, CMP>(
+fn the_same_with_config<'a, V, C, CMP>(
     element: &'a V,
     config: C,
     cmp: CMP,
 ) where
-    V: TheSameTrait,
+    V: 'a + TheSameTrait,
     C: bincode::config::Config,
     C::Mode: bincode::config::internal::InternalFingerprintGuard<V, C>
         + bincode::config::internal::InternalFingerprintGuard<&'a V, C>,

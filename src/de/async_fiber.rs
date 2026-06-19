@@ -166,7 +166,7 @@ impl GuardedStack {
                 base,
                 page_size,
                 winapi_shim::PAGE_NOACCESS,
-                &mut old_protect,
+                &raw mut old_protect,
             );
             if rc == 0 {
                 winapi_shim::VirtualFree(base, 0, winapi_shim::MEM_RELEASE);
@@ -287,44 +287,44 @@ fn page_size() -> usize {
 #[cfg(all(feature = "async-fiber", windows))]
 mod winapi_shim {
     #[repr(C)]
-    pub(crate) struct SYSTEM_INFO {
-        pub(crate) wProcessorArchitecture: u16,
-        pub(crate) wReserved: u16,
-        pub(crate) dwPageSize: u32,
-        pub(crate) lpMinimumApplicationAddress: *mut core::ffi::c_void,
-        pub(crate) lpMaximumApplicationAddress: *mut core::ffi::c_void,
-        pub(crate) dwActiveProcessorMask: usize,
-        pub(crate) dwNumberOfProcessors: u32,
-        pub(crate) dwProcessorType: u32,
-        pub(crate) dwAllocationGranularity: u32,
-        pub(crate) wProcessorLevel: u16,
-        pub(crate) wProcessorRevision: u16,
+    pub struct SYSTEM_INFO {
+        pub wProcessorArchitecture: u16,
+        pub wReserved: u16,
+        pub dwPageSize: u32,
+        pub lpMinimumApplicationAddress: *mut core::ffi::c_void,
+        pub lpMaximumApplicationAddress: *mut core::ffi::c_void,
+        pub dwActiveProcessorMask: usize,
+        pub dwNumberOfProcessors: u32,
+        pub dwProcessorType: u32,
+        pub dwAllocationGranularity: u32,
+        pub wProcessorLevel: u16,
+        pub wProcessorRevision: u16,
     }
-    pub(crate) const MEM_COMMIT: u32 = 0x00001000;
-    pub(crate) const MEM_RESERVE: u32 = 0x00002000;
-    pub(crate) const MEM_RELEASE: u32 = 0x00008000;
-    pub(crate) const PAGE_NOACCESS: u32 = 0x01;
-    pub(crate) const PAGE_READWRITE: u32 = 0x04;
+    pub const MEM_COMMIT: u32 = 0x0000_1000;
+    pub const MEM_RESERVE: u32 = 0x0000_2000;
+    pub const MEM_RELEASE: u32 = 0x0000_8000;
+    pub const PAGE_NOACCESS: u32 = 0x01;
+    pub const PAGE_READWRITE: u32 = 0x04;
 
     unsafe extern "system" {
-        pub(crate) fn VirtualAlloc(
+        pub fn VirtualAlloc(
             lpAddress: *mut core::ffi::c_void,
             dwSize: usize,
             flAllocationType: u32,
             flProtect: u32,
         ) -> *mut core::ffi::c_void;
-        pub(crate) fn VirtualFree(
+        pub fn VirtualFree(
             lpAddress: *mut core::ffi::c_void,
             dwSize: usize,
             dwFreeType: u32,
         ) -> i32;
-        pub(crate) fn VirtualProtect(
+        pub fn VirtualProtect(
             lpAddress: *mut core::ffi::c_void,
             dwSize: usize,
             flNewProtect: u32,
             lpflOldProtect: *mut u32,
         ) -> i32;
-        pub(crate) fn GetSystemInfo(lpSystemInfo: *mut SYSTEM_INFO);
+        pub fn GetSystemInfo(lpSystemInfo: *mut SYSTEM_INFO);
     }
 }
 
@@ -1065,7 +1065,7 @@ where
                 ctx.regs.gprs[10] = ctx.stack.top(); // TIB StackBase
                 ctx.regs.gprs[11] = ctx.stack.bottom(); // TIB StackLimit
                 ctx.regs.gprs[12] = ctx.stack.allocation_base(); // TIB DeallocationStack
-                ctx.regs.gprs[13] = 0xFFFFFFFFFFFFFFFFu64; // ExceptionList terminator
+                ctx.regs.gprs[13] = 0xFFFF_FFFF_FFFF_FFFF_u64; // ExceptionList terminator
                 ctx.regs.gprs[14] = 0x1F80;
             }
             #[cfg(all(target_arch = "aarch64", unix))]

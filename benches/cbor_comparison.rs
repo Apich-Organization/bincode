@@ -393,7 +393,7 @@ fn make_batch() -> TelemetryBatch {
         },
     ];
 
-    let attrs_template = vec![
+    let attrs_template = [
         Attribute {
             key: "host.ip".into(),
             value: AttrValue::Text("10.0.1.42".into()),

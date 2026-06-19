@@ -1,4 +1,5 @@
 #![cfg(all(feature = "alloc", feature = "derive"))]
+#![allow(clippy::extra_unused_lifetimes)]
 
 use bincode::BorrowDecode;
 use bincode::Decode;
