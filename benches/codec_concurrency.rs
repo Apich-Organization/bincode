@@ -570,7 +570,11 @@ fn bench_decode_stream(c: &mut Criterion) {
                                             chunk_size: chunk,
                                         };
                                         let mut buf = [0u8; 1024];
-                                        assert!(e.len() <= buf.len(), "Encoded frame size {} exceeds buffer capacity", e.len());
+                                        assert!(
+                                            e.len() <= buf.len(),
+                                            "Encoded frame size {} exceeds buffer capacity",
+                                            e.len()
+                                        );
                                         let buf = &mut buf[..e.len()];
                                         reader.read_exact(buf).await.unwrap();
                                         let v: NetworkFrame = postcard::from_bytes(&buf).unwrap();
@@ -606,7 +610,11 @@ fn bench_decode_stream(c: &mut Criterion) {
                                             chunk_size: chunk,
                                         };
                                         let mut buf = [0u8; 1024];
-                                        assert!(e.len() <= buf.len(), "Encoded frame size {} exceeds buffer capacity", e.len());
+                                        assert!(
+                                            e.len() <= buf.len(),
+                                            "Encoded frame size {} exceeds buffer capacity",
+                                            e.len()
+                                        );
                                         let buf = &mut buf[..e.len()];
                                         reader.read_exact(buf).await.unwrap();
                                         let v: NetworkFrame = bincode_1::deserialize(&buf).unwrap();
@@ -642,7 +650,11 @@ fn bench_decode_stream(c: &mut Criterion) {
                                             chunk_size: chunk,
                                         };
                                         let mut buf = [0u8; 1024];
-                                        assert!(e.len() <= buf.len(), "Encoded frame size {} exceeds buffer capacity", e.len());
+                                        assert!(
+                                            e.len() <= buf.len(),
+                                            "Encoded frame size {} exceeds buffer capacity",
+                                            e.len()
+                                        );
                                         let buf = &mut buf[..e.len()];
                                         reader.read_exact(buf).await.unwrap();
                                         let (v, _): (NetworkFrame, usize) =
@@ -839,7 +851,11 @@ fn bench_roundtrip_stream(c: &mut Criterion) {
                                                 chunk_size: chunk,
                                             };
                                             let mut buf = [0u8; 1024];
-                                            assert!(e.len() <= buf.len(), "Encoded frame size {} exceeds buffer capacity", e.len());
+                                            assert!(
+                                                e.len() <= buf.len(),
+                                                "Encoded frame size {} exceeds buffer capacity",
+                                                e.len()
+                                            );
                                             let buf = &mut buf[..e.len()];
                                             reader.read_exact(buf).await.unwrap();
                                             let v: NetworkFrame =
@@ -885,7 +901,11 @@ fn bench_roundtrip_stream(c: &mut Criterion) {
                                                 chunk_size: chunk,
                                             };
                                             let mut buf = [0u8; 1024];
-                                            assert!(e.len() <= buf.len(), "Encoded frame size {} exceeds buffer capacity", e.len());
+                                            assert!(
+                                                e.len() <= buf.len(),
+                                                "Encoded frame size {} exceeds buffer capacity",
+                                                e.len()
+                                            );
                                             let buf = &mut buf[..e.len()];
                                             reader.read_exact(buf).await.unwrap();
                                             let v: NetworkFrame =
@@ -935,7 +955,11 @@ fn bench_roundtrip_stream(c: &mut Criterion) {
                                                 chunk_size: chunk,
                                             };
                                             let mut buf = [0u8; 1024];
-                                            assert!(e.len() <= buf.len(), "Encoded frame size {} exceeds buffer capacity", e.len());
+                                            assert!(
+                                                e.len() <= buf.len(),
+                                                "Encoded frame size {} exceeds buffer capacity",
+                                                e.len()
+                                            );
                                             let buf = &mut buf[..e.len()];
                                             reader.read_exact(buf).await.unwrap();
                                             let (v, _): (NetworkFrame, usize) =
