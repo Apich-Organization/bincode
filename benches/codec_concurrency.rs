@@ -882,7 +882,8 @@ fn bench_roundtrip_stream(c: &mut Criterion) {
                                                 pos: 0,
                                                 chunk_size: chunk,
                                             };
-                                            let mut buf = [0u8; 512];
+                                            let mut buf = [0u8; 1024];
+                                            assert!(e.len() <= buf.len(), "Encoded frame size {} exceeds buffer capacity", e.len());
                                             let buf = &mut buf[..e.len()];
                                             reader.read_exact(buf).await.unwrap();
                                             let v: NetworkFrame =
