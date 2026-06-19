@@ -290,6 +290,7 @@ impl From<crate::features::serde::DecodeError> for crate::error::DecodeError {
     }
 }
 
+#[cfg(feature = "serde")]
 #[doc(hidden)]
 #[must_use]
 /// Helper function to convert an error into a `DecodeError`.
