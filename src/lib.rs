@@ -589,6 +589,9 @@ pub use fingerprint::Fingerprint;
 pub mod zero_copy {
     pub use crate::relative_ptr::*;
 }
+#[cfg(feature = "zero-copy")]
+#[doc(hidden)]
+pub use crate::relative_ptr::*;
 
 use config::Config;
 use config::internal::InternalFingerprintGuard;

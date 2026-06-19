@@ -187,7 +187,7 @@ struct YieldingReader {
 impl futures_io::AsyncRead for YieldingReader {
     fn poll_read(
         mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
+        _cx: &mut Context<'_>,
         buf: &mut [u8],
     ) -> Poll<std::io::Result<usize>> {
         if self.pos >= self.data.len() || buf.is_empty() {
@@ -198,7 +198,6 @@ impl futures_io::AsyncRead for YieldingReader {
             .min(buf.len());
         buf[..n].copy_from_slice(&self.data[self.pos..self.pos + n]);
         self.pos += n;
-        cx.waker().wake_by_ref();
         Poll::Ready(Ok(n))
     }
 }
@@ -206,7 +205,7 @@ impl futures_io::AsyncRead for YieldingReader {
 impl tokio::io::AsyncRead for YieldingReader {
     fn poll_read(
         mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
+        _cx: &mut Context<'_>,
         buf: &mut tokio::io::ReadBuf<'_>,
     ) -> Poll<std::io::Result<()>> {
         if self.pos >= self.data.len() || buf.remaining() == 0 {
@@ -217,7 +216,6 @@ impl tokio::io::AsyncRead for YieldingReader {
             .min(buf.remaining());
         buf.put_slice(&self.data[self.pos..self.pos + n]);
         self.pos += n;
-        cx.waker().wake_by_ref();
         Poll::Ready(Ok(()))
     }
 }
