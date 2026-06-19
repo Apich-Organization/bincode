@@ -380,7 +380,7 @@ impl<'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'_, DE> {
     where
         V: serde::de::Visitor<'de>,
     {
-        return super::cold_decode_error_cannot_borrow_owned_data::<'de, V>().map_err(|e| e.into());
+        return super::cold_decode_error_cannot_allocate::<'de, V>().map_err(|e| e.into());
     }
 
     fn deserialize_option<V>(
