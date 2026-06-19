@@ -3,26 +3,25 @@ name: Publish to crates.io
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    environment:
-      name: publishing
-      url: https://crates.io/crates/bincode-next
-    
     permissions:
       id-token: write
       contents: read
-    
+    environment:
+      name: publishing
+      url: https://crates.io/crates/bincode-next
+
     steps:
       # Pin actions/checkout v4.2.2
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      
+
       # Pin dtolnay/rust-toolchain (latest stable)
       - uses: dtolnay/rust-toolchain@8f51a215752c0199994f1c990a911762c5e5330a # master
-      
+
       # Pin katyo/publish-crates v2.3.0
       - uses: katyo/publish-crates@5e676395995873941433020619623e114092b740 # v2.3.0
         with:
