@@ -283,6 +283,7 @@ bincode_error! {
     }
 }
 
+#[cfg(feature = "serde")]
 impl From<crate::features::serde::DecodeError> for crate::error::DecodeError {
     fn from(err: crate::features::serde::DecodeError) -> Self {
         Self::Serde(err)
@@ -309,11 +310,9 @@ impl DecodeError {
     #[inline(never)]
     pub(crate) fn change_integer_type_to_signed(self) -> Self {
         match self {
-            | Self::InvalidIntegerType { expected, found } => {
-                Self::InvalidIntegerType {
-                    expected: expected.into_signed(),
-                    found: found.into_signed(),
-                }
+            | Self::InvalidIntegerType { expected, found } => Self::InvalidIntegerType {
+                expected: expected.into_signed(),
+                found: found.into_signed(),
             },
             | other => other,
         }
