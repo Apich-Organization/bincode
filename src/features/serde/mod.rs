@@ -90,11 +90,11 @@ pub use crate::decode_serde_async as decode_async;
 #[doc(alias = "decode_serde_async_with_context")]
 #[doc(inline)]
 pub use crate::decode_serde_async_with_context as decode_async_with_context;
-#[cfg(feature = "async-fiber")]
+#[cfg(all(feature = "tokio", feature = "async-fiber", feature = "serde"))]
 #[doc(alias = "decode_serde_async_tokio")]
 #[doc(inline)]
 pub use crate::decode_serde_tokio_async as decode_async_tokio;
-#[cfg(feature = "async-fiber")]
+#[cfg(all(feature = "tokio", feature = "async-fiber", feature = "serde"))]
 #[doc(alias = "decode_serde_async_tokio_with_context")]
 #[doc(inline)]
 pub use crate::decode_serde_tokio_async_with_context as decode_async_tokio_with_context;

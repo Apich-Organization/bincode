@@ -43,3 +43,5 @@ fuzz/report.html
 fuzz/coverage/zero_copy/coverage.profdata
 fuzz/coverage/zero_copy/raw/default-zero_copy.profraw
 tatus
+enum_bit_packed.rs
+optional_bit_packing.rs

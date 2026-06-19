@@ -112,6 +112,10 @@ proptest = "1.10"
 loom = "0.7"
 async-bincode = "0.8"
 futures = "0.3"
+postcard = { version = "1.1", features = ["alloc", "use-std"] }
+cbor4ii = { version = "1.2", features = ["serde1"] }
+minicbor = { version = "2.2", features = ["derive", "alloc"] }
+dtact = "0.2"
 
 [[bench]]
 name = "varint"
@@ -144,6 +148,19 @@ required-features = ["zero-copy"]
 
 [[bench]]
 name = "async_fiber"
+harness = false
+required-features = ["async-fiber"]
+
+[[bench]]
+name = "cbor_comparison"
+harness = false
+
+[[bench]]
+name = "postcard_comparison"
+harness = false
+
+[[bench]]
+name = "codec_concurrency"
 harness = false
 required-features = ["async-fiber"]
 

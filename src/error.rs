@@ -290,6 +290,13 @@ impl From<crate::features::serde::DecodeError> for crate::error::DecodeError {
     }
 }
 
+#[doc(hidden)]
+#[must_use]
+/// Helper function to convert an error into a `DecodeError`.
+pub const fn decode_err_from(e: crate::features::serde::DecodeError) -> DecodeError {
+    DecodeError::Serde(e)
+}
+
 impl core::fmt::Display for DecodeError {
     fn fmt(
         &self,

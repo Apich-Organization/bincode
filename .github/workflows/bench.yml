@@ -2,12 +2,14 @@ name: Benchmarks
 
 on:
   push:
-    branches: [main]
+    branches: [main, master, "v*.x", "ci/*"]
     paths:
       - "src/**"
       - "benches/**"
       - "derive/**"
       - ".github/workflows/bench.yml"
+  pull_request:
+    branches: [main, master, "v*.x", "ci/*"]
   workflow_dispatch:
 
 permissions:
