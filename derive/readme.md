@@ -6,7 +6,7 @@ do not depend on this crate directly — it is re-exported through the `derive` 
 
 ```toml
 [dependencies]
-bincode-next = { version = "3.0.5", features = ["derive"] }
+bincode-next = { version = "3.0.6", features = ["derive"] }
 ```
 
 ---
