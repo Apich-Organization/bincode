@@ -3,7 +3,7 @@ members = ["derive", "compatibility"]
 
 [package]
 name = "bincode-next"
-version = "3.1.0"
+version = "3.1.1"
 # Remember to update html_root_url and bincode_derive
 authors = [
     "Xinyu Yang <xinyu.yang@apich.org>",
@@ -74,7 +74,7 @@ full = [
 ]
 
 [dependencies]
-bincode_derive-next = { path = "derive", version = "3.1.0", optional = true }
+bincode_derive-next = { path = "derive", version = "3.1.1", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
 unty = { version = "0.1.2", package = "unty-next" }
 rapidhash = { version = "4.4", default-features = false }
