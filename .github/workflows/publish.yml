@@ -17,13 +17,8 @@ jobs:
       url: https://crates.io/crates/bincode-next
 
     steps:
-      # Pin actions/checkout v4.2.2
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      # Pin dtolnay/rust-toolchain (latest stable)
-      - uses: dtolnay/rust-toolchain@8f51a215752c0199994f1c990a911762c5e5330a # master
-
-      # Pin katyo/publish-crates v2.3.0
-      - uses: katyo/publish-crates@5e676395995873941433020619623e114092b740 # v2.3.0
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # master
+      - uses: katyo/publish-crates@5e67639f17e8a1f221e804c2bd47f7a253e45dac # v2.3.0
         with:
           registry-token: ${{ secrets.CRATES_IO_TOKEN }}
