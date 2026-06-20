@@ -21,4 +21,12 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # master
       - name: Publish to crates.io
-        run: cargo publish
+        run: |
+          cargo package
+          ID_TOKEN=$(curl -sSL "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=crates.io" -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value')
+          CRATE_FILE=$(find target/package -name "*.crate")
+          curl -H "Authorization: $ID_TOKEN" \
+            -H "Content-Type: application/json" \
+            -X PUT \
+            --data-binary @$CRATE_FILE \
+            https://crates.io/api/v1/crates/new
