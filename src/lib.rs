@@ -47,7 +47,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! bincode-next = "3.0.0-rc.15"
+//! bincode-next = "3.0.5"
 //! ```
 //!
 //! ### Basic Encode / Decode
@@ -118,7 +118,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! bincode-next = { version = "3.0.0-rc.15", features = ["serde"] }
+//! bincode-next = { version = "3.0.5", features = ["serde"] }
 //! serde = { version = "1", features = ["derive"] }
 //! ```
 //!
