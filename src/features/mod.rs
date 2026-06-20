@@ -19,6 +19,7 @@ pub mod serde;
 
 /// Relative pointer system for zero-copy nested structures
 #[cfg(feature = "zero-copy")]
+#[doc(hidden)]
 pub mod relative_ptr;
 
 #[cfg(feature = "static-size")]

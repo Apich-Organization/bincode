@@ -1,5 +1,4 @@
 #![allow(deprecated)]
-use super::DecodeError as SerdeDecodeError;
 use super::de_borrowed::borrow_decode_from_slice;
 use crate::config::Config;
 use crate::de::Decode;
@@ -173,7 +172,7 @@ impl<'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'_, DE> {
     where
         V: serde::de::Visitor<'de>,
     {
-        Err(SerdeDecodeError::AnyNotSupported.into())
+        super::cold_decode_error_any_not_supported::<'de, V>().map_err(core::convert::Into::into)
     }
 
     fn deserialize_bool<V>(
@@ -315,7 +314,7 @@ impl<'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'_, DE> {
     where
         V: serde::de::Visitor<'de>,
     {
-        Err(SerdeDecodeError::CannotBorrowOwnedData.into())
+        return super::cold_decode_error_cannot_borrow_owned_data::<'de, V>().map_err(|e| e.into());
     }
 
     #[cfg(feature = "alloc")]
@@ -337,7 +336,7 @@ impl<'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'_, DE> {
     where
         V: serde::de::Visitor<'de>,
     {
-        Err(SerdeDecodeError::CannotAllocate.into())
+        return super::cold_decode_error_cannot_allocate::<'de, V>().map_err(|e| e.into());
     }
 
     #[cfg(feature = "alloc")]
@@ -359,7 +358,7 @@ impl<'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'_, DE> {
     where
         V: serde::de::Visitor<'de>,
     {
-        Err(SerdeDecodeError::CannotBorrowOwnedData.into())
+        return super::cold_decode_error_cannot_borrow_owned_data::<'de, V>().map_err(|e| e.into());
     }
 
     #[cfg(feature = "alloc")]
@@ -381,7 +380,7 @@ impl<'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'_, DE> {
     where
         V: serde::de::Visitor<'de>,
     {
-        Err(SerdeDecodeError::CannotAllocate.into())
+        return super::cold_decode_error_cannot_allocate::<'de, V>().map_err(|e| e.into());
     }
 
     fn deserialize_option<V>(
@@ -602,7 +601,8 @@ impl<'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'_, DE> {
     where
         V: serde::de::Visitor<'de>,
     {
-        Err(SerdeDecodeError::IdentifierNotSupported.into())
+        super::cold_decode_error_identifier_not_supported::<'de, V>()
+            .map_err(core::convert::Into::into)
     }
 
     fn deserialize_ignored_any<V>(
@@ -612,7 +612,8 @@ impl<'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'_, DE> {
     where
         V: serde::de::Visitor<'de>,
     {
-        Err(SerdeDecodeError::IgnoredAnyNotSupported.into())
+        super::cold_decode_error_ignored_any_not_supported::<'de, V>()
+            .map_err(core::convert::Into::into)
     }
 
     fn is_human_readable(&self) -> bool {
@@ -632,7 +633,9 @@ impl<'de, DE: Decoder> EnumAccess<'de> for SerdeDecoder<'_, DE> {
         V: DeserializeSeed<'de>,
     {
         let idx = u32::decode(&mut self.de)?;
-        let val = seed.deserialize(idx.into_deserializer())?;
+        let de: serde::de::value::U32Deserializer<crate::error::DecodeError> =
+            idx.into_deserializer();
+        let val = seed.deserialize(de)?;
         Ok((val, self))
     }
 }

@@ -70,7 +70,7 @@ Bincode-Next works with any type that already derives `serde::Serialize` /
 
 ```toml
 [dependencies]
-bincode-next = { version = "3.0.0-rc.14", features = ["serde"] }
+bincode-next = { version = "3.0.0-rc.15", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 ```
 
