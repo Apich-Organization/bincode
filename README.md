@@ -398,83 +398,40 @@ cargo bench --bench complex
 
 TL;DR: Please visit [https://bincode-next.apich.org/bench.html](https://bincode-next.apich.org/bench.html) for more detailed information.
 
-### **Performance Comparison: Decoding**
+### CBOR Encoding & Decoding
 
-*Baseline: **bincode-next (traits, varint)** at 16.878 µs*
-
-| Rank  | Implementation   | Interface | Int Encoding | Median Time   | Relative Speed |
-| ----- | ---------------- | --------- | ------------ | ------------- | -------------- |
-| **1** | **bincode-next** | traits    | varint       | **16.878 µs** | **1.00x**      |
-| 2     | **bincode-next** | traits    | fixed        | 21.872 µs     | 1.30x          |
-| 3     | **bincode-v2**   | serde     | fixed        | 21.973 µs     | 1.30x          |
-| 4     | **bincode-v1**   | serde     | N/A          | 22.074 µs     | 1.31x          |
-| 5     | **bincode-v2**   | serde     | varint       | 25.727 µs     | 1.52x          |
+| Implementation | Encode (µs) | **Relative Speed (Enc)** | Decode (µs) | **Relative Speed (Dec)** |
+| --- | --- | --- | --- | --- |
+| `bincode-next` | 5.64 | **1.00x** | 30.47 | **1.00x** |
+| `bincode-next` (det.) | 5.68 | 1.01x | 30.49 | 1.00x |
+| `minicbor` | 9.36 | 1.66x | 41.42 | 1.36x |
+| `cbor4ii` | 11.98 | 2.12x | 63.54 | 2.09x |
 
 ---
 
-### **Performance Comparison: Encoding**
+### Complex World Benchmarks
 
-*Baseline: **bincode-next (traits, fixed)** at 2.9350 µs*
+*Baseline: `bincode-next` (fixed) for encoding, `bincode-next` (varint) for decoding.*
 
-| Rank  | Implementation   | Interface | Int Encoding | Median Time   | Relative Speed |
-| ----- | ---------------- | --------- | ------------ | ------------- | -------------- |
-| **1** | **bincode-next** | traits    | fixed        | **2.9350 µs** | **1.00x**      |
-| 2     | **bincode-v1**   | serde     | N/A          | 3.0767 µs     | 1.05x          |
-| 3     | **bincode-v2**   | serde     | fixed        | 3.3295 µs     | 1.13x          |
-| 4     | **bincode-next** | traits    | varint       | 3.3467 µs     | 1.14x          |
-| 5     | **bincode-v2**   | serde     | varint       | 4.2489 µs     | 1.45x          |
-
----
-
-### **Efficiency Score: Combined Round-Trip Performance**
-
-*Sum of Median Decode + Median Encode (Normalized to the fastest = 1.00x)*
-
-| Rank  | Implementation   | Interface  | Int Encoding | Total Time    | Efficiency Score |
-| ----- | ---------------- | ---------- | ------------ | ------------- | ---------------- |
-| **1** | **bincode-next** | **traits** | **varint**   | **20.225 µs** | **1.00x**        |
-| 2     | **bincode-next** | traits     | fixed        | 24.807 µs     | 1.23x            |
-| 3     | **bincode-v1**   | serde      | N/A          | 25.151 µs     | 1.24x            |
-| 4     | **bincode-v2**   | serde      | fixed        | 25.303 µs     | 1.25x            |
-| 5     | **bincode-v2**   | serde      | varint       | 29.976 µs     | 1.48x            |
+| Implementation | Encode (µs) | **Rel. Speed** | Decode (µs) | **Rel. Speed** |
+| --- | --- | --- | --- | --- |
+| `bincode-next` (fixed) | 3.23 | **1.00x** | 20.63 | 1.10x |
+| `bincode-next` (varint) | 3.44 | 1.07x | 18.74 | **1.00x** |
+| `bincode-v1` (serde) | 3.31 | 1.02x | 18.96 | 1.01x |
+| `bincode-v2` (fixed) | 3.43 | 1.06x | 18.71 | 1.00x |
+| `bincode-v2` (varint) | 4.22 | 1.31x | 25.00 | 1.33x |
+| `bincode-next` (cbor) | 5.99 | 1.85x | 24.82 | 1.32x |
+| `bincode-next` (cbor-det) | 6.01 | 1.86x | 24.68 | 1.32x |
 
 ---
 
-### **Vector `u64` Decoding: Varint Performance**
+### Postcard Comparison
 
-*Contrasting small vs. large integer varint decoding.*
-
-| Dataset          | Implementation             | Median Time   | Relative Speed |
-| ---------------- | -------------------------- | ------------- | -------------- |
-| **Small Varint** | **bincode-next (current)** | **2.8256 µs** | **1.00x**      |
-| Small Varint     | bincode-v2 (original)      | 12.450 µs     | 4.41x          |
-|                  |                            |               |                |
-| **Large Varint** | **bincode-next (current)** | **13.062 µs** | **1.00x**      |
-| Large Varint     | bincode-v2 (original)      | 17.635 µs     | 1.35x          |
-
----
-
-### **Vector `u64` Decoding: Fixed Performance**
-
-*Baseline: **bincode-next (current)** at 1.8373 µs*
-
-| Rank  | Implementation             | Median Time   | Relative Speed |
-| ----- | -------------------------- | ------------- | -------------- |
-| **1** | **bincode-next (current)** | **1.8373 µs** | **1.00x**      |
-| 2     | bincode-v1                 | 7.5378 µs     | 4.10x          |
-| 3     | bincode-v2 (original)      | 10.129 µs     | 5.51x          |
-
----
-
-### **Bulk `u8` Decoding: Throughput Performance**
-
-*Baseline: **bincode-next (current)** at 160.44 ns*
-
-| Rank  | Implementation             | Median Time   | Relative Speed |
-| ----- | -------------------------- | ------------- | -------------- |
-| **1** | **bincode-next (current)** | **160.44 ns** | **1.00x**      |
-| 2     | bincode-v2 (original)      | 273.86 ns     | 1.71x          |
-| 3     | bincode-v1                 | 6307.00 ns    | 39.31x         |
+| Implementation | Encode (µs) | **Rel. Speed (Enc)** | Decode (µs) | **Rel. Speed (Dec)** |
+| --- | --- | --- | --- | --- |
+| `bincode-next` (fixed) | 3.58 | **1.00x** | 25.03 | **1.00x** |
+| `bincode-next` (varint) | 5.06 | 1.41x | 25.49 | 1.02x |
+| `postcard` | 8.38 | 2.34x | 30.96 | 1.24x |
 
 ## About Security and Code Quality
 
@@ -493,7 +450,7 @@ And please notice that contributors shall follow the community guide lines of `b
 
 ## Specification
 
-The formal wire-format specification is available in [docs/spec.md](docs/spec.md).
+The formal wire-format specification is available in [docs/spec.html](docs/spec.html).
 
 ## FAQ
 
