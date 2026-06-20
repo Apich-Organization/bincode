@@ -29,7 +29,7 @@ exclude = [
     ".gitignore",
     ".github/",
 ]
-rust-version = "1.93.1"
+rust-version = "1.88.0"
 
 publish = true
 
@@ -74,9 +74,9 @@ full = [
 ]
 
 [dependencies]
-bincode_derive-next = { path = "derive", version = "3.0.0-rc.15", optional = true }
+bincode_derive-next = { path = "derive", version = "3.0.0", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
-unty = { version = "0.1.1", package = "unty-next" }
+unty = { version = "0.1.2", package = "unty-next" }
 rapidhash = { version = "4.4", default-features = false }
 pastey = "0.2"
 futures-io = { version = "0.3", optional = true }
