@@ -9,7 +9,7 @@ authors = [
     "The bincode-next & bincode developers",
 ]
 edition = "2024"
-rust-version = "1.88.0"
+rust-version = "1.90.0"
 
 repository = "https://github.com/Apich-Organization/bincode"
 documentation = "https://docs.rs/bincode_derive_next"

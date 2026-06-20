@@ -29,7 +29,7 @@ exclude = [
     ".gitignore",
     ".github/",
 ]
-rust-version = "1.88.0"
+rust-version = "1.90.0"
 
 publish = true
 
