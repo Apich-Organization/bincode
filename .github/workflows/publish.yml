@@ -25,7 +25,7 @@ jobs:
           cd derive
           cargo package
           ID_TOKEN=$(curl -sSL "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=crates.io" -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value')
-          CRATE_FILE=$(find target/package -name "*.crate")
+          CRATE_FILE=$(find ../target/package -name "*.crate")
           curl -H "Authorization: $ID_TOKEN" \
             -H "Content-Type: application/json" \
             -X PUT \
@@ -34,7 +34,7 @@ jobs:
           cd ..
           cargo package
           ID_TOKEN=$(curl -sSL "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=crates.io" -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value')
-          CRATE_FILE=$(find target/package -name "*.crate")
+          CRATE_FILE=$(find ./target/package -name "*.crate")
           curl -H "Authorization: $ID_TOKEN" \
             -H "Content-Type: application/json" \
             -X PUT \
