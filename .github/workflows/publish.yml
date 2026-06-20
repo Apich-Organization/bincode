@@ -5,12 +5,13 @@ on:
     tags:
       - "v*"
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
     environment:
       name: publishing
       url: https://crates.io/crates/bincode-next
