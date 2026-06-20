@@ -659,7 +659,7 @@ impl DeriveBitPackedEnum {
                                     b.push_parsed(format!("let variant_index = <u32 as {0}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits({1}, &__config)?);", crate_name, variant_bits))?;
                                 }
                                 b.push_parsed("__bit_state = bit_reader.get_state();")?;
-                                b.push_parsed("core::result::Result::Ok(variant_index)")?;
+                                b.push_parsed(format!("core::result::Result::Ok::<_, {}::error::DecodeError>(variant_index)", crate_name))?;
                                 Ok(())
                             })?;
                             b_packed.push_parsed("?;")?;
@@ -882,7 +882,7 @@ impl DeriveBitPackedEnum {
                                     b.push_parsed(format!("let variant_index = <u32 as {0}::de::bit_reader::Unpackable>::unpack(bit_reader.read_bits({1}, &__config)?);", crate_name, variant_bits))?;
                                 }
                                 b.push_parsed("__bit_state = bit_reader.get_state();")?;
-                                b.push_parsed("core::result::Result::Ok(variant_index)")?;
+                                b.push_parsed(format!("core::result::Result::Ok::<_, {}::error::DecodeError>(variant_index)", crate_name))?;
                                 Ok(())
                             })?;
                             b_packed.push_parsed("?;")?;

@@ -166,7 +166,7 @@ impl GuardedStack {
                 base,
                 page_size,
                 winapi_shim::PAGE_NOACCESS,
-                &mut old_protect,
+                &raw mut old_protect,
             );
             if rc == 0 {
                 winapi_shim::VirtualFree(base, 0, winapi_shim::MEM_RELEASE);
@@ -287,44 +287,44 @@ fn page_size() -> usize {
 #[cfg(all(feature = "async-fiber", windows))]
 mod winapi_shim {
     #[repr(C)]
-    pub(crate) struct SYSTEM_INFO {
-        pub(crate) wProcessorArchitecture: u16,
-        pub(crate) wReserved: u16,
-        pub(crate) dwPageSize: u32,
-        pub(crate) lpMinimumApplicationAddress: *mut core::ffi::c_void,
-        pub(crate) lpMaximumApplicationAddress: *mut core::ffi::c_void,
-        pub(crate) dwActiveProcessorMask: usize,
-        pub(crate) dwNumberOfProcessors: u32,
-        pub(crate) dwProcessorType: u32,
-        pub(crate) dwAllocationGranularity: u32,
-        pub(crate) wProcessorLevel: u16,
-        pub(crate) wProcessorRevision: u16,
+    pub struct SYSTEM_INFO {
+        pub wProcessorArchitecture: u16,
+        pub wReserved: u16,
+        pub dwPageSize: u32,
+        pub lpMinimumApplicationAddress: *mut core::ffi::c_void,
+        pub lpMaximumApplicationAddress: *mut core::ffi::c_void,
+        pub dwActiveProcessorMask: usize,
+        pub dwNumberOfProcessors: u32,
+        pub dwProcessorType: u32,
+        pub dwAllocationGranularity: u32,
+        pub wProcessorLevel: u16,
+        pub wProcessorRevision: u16,
     }
-    pub(crate) const MEM_COMMIT: u32 = 0x00001000;
-    pub(crate) const MEM_RESERVE: u32 = 0x00002000;
-    pub(crate) const MEM_RELEASE: u32 = 0x00008000;
-    pub(crate) const PAGE_NOACCESS: u32 = 0x01;
-    pub(crate) const PAGE_READWRITE: u32 = 0x04;
+    pub const MEM_COMMIT: u32 = 0x0000_1000;
+    pub const MEM_RESERVE: u32 = 0x0000_2000;
+    pub const MEM_RELEASE: u32 = 0x0000_8000;
+    pub const PAGE_NOACCESS: u32 = 0x01;
+    pub const PAGE_READWRITE: u32 = 0x04;
 
     unsafe extern "system" {
-        pub(crate) fn VirtualAlloc(
+        pub fn VirtualAlloc(
             lpAddress: *mut core::ffi::c_void,
             dwSize: usize,
             flAllocationType: u32,
             flProtect: u32,
         ) -> *mut core::ffi::c_void;
-        pub(crate) fn VirtualFree(
+        pub fn VirtualFree(
             lpAddress: *mut core::ffi::c_void,
             dwSize: usize,
             dwFreeType: u32,
         ) -> i32;
-        pub(crate) fn VirtualProtect(
+        pub fn VirtualProtect(
             lpAddress: *mut core::ffi::c_void,
             dwSize: usize,
             flNewProtect: u32,
             lpflOldProtect: *mut u32,
         ) -> i32;
-        pub(crate) fn GetSystemInfo(lpSystemInfo: *mut SYSTEM_INFO);
+        pub fn GetSystemInfo(lpSystemInfo: *mut SYSTEM_INFO);
     }
 }
 
@@ -394,10 +394,10 @@ unsafe extern "C" fn switch_context(
         "mov [rdi + 32], r13",
         "mov [rdi + 40], r14",
         "mov [rdi + 48], r15",
-        "fxsave [rdi + 128]",
+        "stmxcsr [rdi + 64]",
         "lea rax, [rip + 1f]",
         "mov [rdi + 56], rax",
-        "fxrstor [rsi + 128]",
+        "ldmxcsr [rsi + 64]",
         "mov rsp, [rsi + 0]",
         "mov rbp, [rsi + 8]",
         "mov rbx, [rsi + 16]",
@@ -449,10 +449,30 @@ unsafe extern "C" fn switch_context(
         "mov [rcx + 96], rax",
         "mov rax, gs:[0x00]",
         "mov [rcx + 104], rax",
-        "fxsave [rcx + 128]",
+        "stmxcsr [rcx + 112]",
+        "movaps [rcx + 128], xmm6",
+        "movaps [rcx + 144], xmm7",
+        "movaps [rcx + 160], xmm8",
+        "movaps [rcx + 176], xmm9",
+        "movaps [rcx + 192], xmm10",
+        "movaps [rcx + 208], xmm11",
+        "movaps [rcx + 224], xmm12",
+        "movaps [rcx + 240], xmm13",
+        "movaps [rcx + 256], xmm14",
+        "movaps [rcx + 272], xmm15",
         "lea rax, [rip + 1f]",
         "mov [rcx + 56], rax",
-        "fxrstor [rdx + 128]",
+        "movaps xmm6,  [rdx + 128]",
+        "movaps xmm7,  [rdx + 144]",
+        "movaps xmm8,  [rdx + 160]",
+        "movaps xmm9,  [rdx + 176]",
+        "movaps xmm10, [rdx + 192]",
+        "movaps xmm11, [rdx + 208]",
+        "movaps xmm12, [rdx + 224]",
+        "movaps xmm13, [rdx + 240]",
+        "movaps xmm14, [rdx + 256]",
+        "movaps xmm15, [rdx + 272]",
+        "ldmxcsr [rdx + 112]",
         "mov rax, [rdx + 80]",
         "mov gs:[0x08], rax",
         "mov rax, [rdx + 88]",
@@ -477,7 +497,62 @@ unsafe extern "C" fn switch_context(
 
 // aarch64 context switch — AAPCS64 (Linux, macOS, FreeBSD)
 // Arguments: x0 = save, x1 = restore
-#[cfg(all(feature = "async-fiber", target_arch = "aarch64", unix))]
+#[cfg(all(
+    feature = "async-fiber",
+    target_arch = "aarch64",
+    unix,
+    target_os = "macos"
+))]
+#[unsafe(naked)]
+unsafe extern "C" fn switch_context(
+    save: *mut Registers,
+    restore: *const Registers,
+) {
+    naked_asm!(
+        "bti c",
+        "prfm pstl1keep, [x0]",
+        "prfm pldl1keep, [x1]",
+        "prfm pldl1keep, [x1, 64]",
+        "prfm pldl1keep, [x1, 128]",
+        "ldr x9, [x1, 96]",
+        "prfm pldl1keep, [x9]",
+        "prfm pldl1keep, [x9, 64]",
+        "stp x19, x20, [x0, 0]",
+        "stp x21, x22, [x0, 16]",
+        "stp x23, x24, [x0, 32]",
+        "stp x25, x26, [x0, 48]",
+        "stp x27, x28, [x0, 64]",
+        "stp x29, x30, [x0, 80]",
+        "mov x9, sp",
+        "str x9, [x0, 96]",
+        "stp d8,  d9,  [x0, 128]",
+        "stp d10, d11, [x0, 144]",
+        "stp d12, d13, [x0, 160]",
+        "stp d14, d15, [x0, 176]",
+        "ldp d8,  d9,  [x1, 128]",
+        "ldp d10, d11, [x1, 144]",
+        "ldp d12, d13, [x1, 160]",
+        "ldp d14, d15, [x1, 176]",
+        "ldp x19, x20, [x1, 0]",
+        "ldp x21, x22, [x1, 16]",
+        "ldp x23, x24, [x1, 32]",
+        "ldp x25, x26, [x1, 48]",
+        "ldp x27, x28, [x1, 64]",
+        "ldp x29, x30, [x1, 80]",
+        "ldr x9, [x1, 96]",
+        "mov sp, x9",
+        "ret"
+    );
+}
+
+// aarch64 context switch — AAPCS64 (Linux, macOS, FreeBSD)
+// Arguments: x0 = save, x1 = restore
+#[cfg(all(
+    feature = "async-fiber",
+    target_arch = "aarch64",
+    unix,
+    not(target_os = "macos")
+))]
 #[unsafe(naked)]
 unsafe extern "C" fn switch_context(
     save: *mut Registers,
@@ -499,10 +574,10 @@ unsafe extern "C" fn switch_context(
         "stp x29, x30, [x0, 80]",
         "mov x9, sp",
         "str x9, [x0, 96]",
-        "stp q8, q9, [x0, 128]",
-        "stp q10, q11, [x0, 160]",
-        "stp q12, q13, [x0, 192]",
-        "stp q14, q15, [x0, 224]",
+        "stp d8,  d9,  [x0, 128]",
+        "stp d10, d11, [x0, 144]",
+        "stp d12, d13, [x0, 160]",
+        "stp d14, d15, [x0, 176]",
         "ldp x19, x20, [x1, 0]",
         "ldp x21, x22, [x1, 16]",
         "ldp x23, x24, [x1, 32]",
@@ -511,10 +586,10 @@ unsafe extern "C" fn switch_context(
         "ldp x29, x30, [x1, 80]",
         "ldr x9, [x1, 96]",
         "mov sp, x9",
-        "ldp q8, q9, [x1, 128]",
-        "ldp q10, q11, [x1, 160]",
-        "ldp q12, q13, [x1, 192]",
-        "ldp q14, q15, [x1, 224]",
+        "ldp d8,  d9,  [x1, 128]",
+        "ldp d10, d11, [x1, 144]",
+        "ldp d12, d13, [x1, 160]",
+        "ldp d14, d15, [x1, 176]",
         "ret"
     );
 }
@@ -532,6 +607,7 @@ unsafe extern "C" fn switch_context(
     restore: *const Registers,
 ) {
     naked_asm!(
+        "bti c",
         "prfm pstl1keep, [x0]",
         "prfm pldl1keep, [x1]",
         "prfm pldl1keep, [x1, 64]",
@@ -553,14 +629,14 @@ unsafe extern "C" fn switch_context(
         "str x9, [x0, #112]",
         "ldr x9, [x18, #0x12C8]",
         "str x9, [x0, #120]",
-        "stp q8, q9, [x0, 128]",
-        "stp q10, q11, [x0, 160]",
-        "stp q12, q13, [x0, 192]",
-        "stp q14, q15, [x0, 224]",
-        "ldp q8, q9, [x1, 128]",
-        "ldp q10, q11, [x1, 160]",
-        "ldp q12, q13, [x1, 192]",
-        "ldp q14, q15, [x1, 224]",
+        "stp d8,  d9,  [x0, 128]",
+        "stp d10, d11, [x0, 144]",
+        "stp d12, d13, [x0, 160]",
+        "stp d14, d15, [x0, 176]",
+        "ldp d8,  d9,  [x1, 128]",
+        "ldp d10, d11, [x1, 144]",
+        "ldp d12, d13, [x1, 160]",
+        "ldp d14, d15, [x1, 176]",
         "ldr x9, [x1, #104]",
         "str x9, [x18, #0x08]",
         "ldr x9, [x1, #112]",
@@ -977,7 +1053,7 @@ where
                 ctx.regs.gprs[1] = 0; // RBP (frame pointer) = NULL → end of frame chain
                 ctx.regs.gprs[7] = fiber_trampoline as *const () as u64; // return address
                 // MXCSR default: 0x1F80 = all FP exceptions masked.
-                ctx.regs.extended_state[24..28].copy_from_slice(&0x1F80u32.to_ne_bytes());
+                ctx.regs.gprs[8] = 0x1F80;
             }
             #[cfg(all(target_arch = "x86_64", windows))]
             {
@@ -989,8 +1065,8 @@ where
                 ctx.regs.gprs[10] = ctx.stack.top(); // TIB StackBase
                 ctx.regs.gprs[11] = ctx.stack.bottom(); // TIB StackLimit
                 ctx.regs.gprs[12] = ctx.stack.allocation_base(); // TIB DeallocationStack
-                ctx.regs.gprs[13] = 0xFFFFFFFFFFFFFFFFu64; // ExceptionList terminator
-                ctx.regs.extended_state[24..28].copy_from_slice(&0x1F80u32.to_ne_bytes());
+                ctx.regs.gprs[13] = 0xFFFF_FFFF_FFFF_FFFF_u64; // ExceptionList terminator
+                ctx.regs.gprs[14] = 0x1F80;
             }
             #[cfg(all(target_arch = "aarch64", unix))]
             {

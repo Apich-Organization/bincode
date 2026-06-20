@@ -80,33 +80,96 @@ pub use self::de_borrowed::*;
 pub use self::de_owned::*;
 pub use self::ser::*;
 
-/// A serde-specific error that occurred while decoding.
-#[derive(Debug)]
-#[non_exhaustive]
-pub enum DecodeError {
-    /// Bincode does not support serde's `any` decoding feature.
-    ///
-    /// See the "known issues" list in the serde module for more information on this.
-    AnyNotSupported,
+use serde::de::Visitor;
 
-    /// Bincode does not support serde identifiers
-    IdentifierNotSupported,
+#[cfg(feature = "async-fiber")]
+#[doc(alias = "decode_serde_async")]
+#[doc(inline)]
+pub use crate::decode_serde_async as decode_async;
+#[cfg(feature = "async-fiber")]
+#[doc(alias = "decode_serde_async_with_context")]
+#[doc(inline)]
+pub use crate::decode_serde_async_with_context as decode_async_with_context;
+#[cfg(all(feature = "tokio", feature = "async-fiber", feature = "serde"))]
+#[doc(alias = "decode_serde_async_tokio")]
+#[doc(inline)]
+pub use crate::decode_serde_tokio_async as decode_async_tokio;
+#[cfg(all(feature = "tokio", feature = "async-fiber", feature = "serde"))]
+#[doc(alias = "decode_serde_async_tokio_with_context")]
+#[doc(inline)]
+pub use crate::decode_serde_tokio_async_with_context as decode_async_tokio_with_context;
 
-    /// Bincode does not support serde's `ignored_any`.
-    ///
-    /// See the "known issues" list in the serde module for more information on this.
-    IgnoredAnyNotSupported,
+#[doc(hidden)]
+#[macro_export]
+#[rustfmt::skip]
+macro_rules! bincode_error_serde {
+    (
+        $(#[$meta:meta])*
+        $vis:vis enum $name:ident {
+            $(
+                $(#[$variant_meta:meta])*
+                $variant:ident $( { $( $(#[$field_meta:meta])* $field:ident : $ftype:ty ),* $(,)? } )? $( ( $( $(#[$tuple_meta:meta])* $tname:ident : $ttype:ty ),* $(,)? ) )?
+            ),* $(,)?
+        }
+    ) => {
+        $(#[$meta])*
+        $vis enum $name {
+            $(
+                $(#[$variant_meta])*
+                $variant $( { $( $(#[$field_meta])* $field : $ftype ),* } )? $( ( $( $(#[$tuple_meta])* $ttype ),* ) )?,
+            )*
+        }
 
-    /// Serde tried decoding a borrowed value from an owned reader. Use `serde_decode_borrowed_from_*` instead
-    CannotBorrowOwnedData,
+        pastey::paste! {
+            $(
+                $(#[$variant_meta])*
+                #[doc(hidden)]
+                #[cold]
+                #[track_caller]
+                #[inline(never)]
+                pub const fn [<cold_ $name:snake _ $variant:snake>]<'de, V>(
+                    $($($field : $ftype),*)?
+                    $($($tname : $ttype),*)?
+                ) -> core::result::Result<<V as Visitor<'de>>::Value, $name>
+                where
+                    V: Visitor<'de>,
+                {
+                    core::result::Result::Err($name::$variant $( { $($field),* } )? $( ( $( $tname ),* ) )?)
+                }
+            )*
+        }
+    };
+}
 
-    /// Could not allocate data like `String` and `Vec<u8>`
-    #[cfg(not(feature = "alloc"))]
-    CannotAllocate,
+bincode_error_serde! {
+    /// A serde-specific error that occurred while decoding.
+    #[derive(Debug)]
+    #[non_exhaustive]
+    pub enum DecodeError {
+        /// Bincode does not support serde's `any` decoding feature.
+        ///
+        /// See the "known issues" list in the serde module for more information on this.
+        AnyNotSupported,
 
-    /// Custom serde error but bincode is unable to allocate a string. Set a breakpoint where this is thrown for more information.
-    #[cfg(not(feature = "alloc"))]
-    CustomError,
+        /// Bincode does not support serde identifiers
+        IdentifierNotSupported,
+
+        /// Bincode does not support serde's `ignored_any`.
+        ///
+        /// See the "known issues" list in the serde module for more information on this.
+        IgnoredAnyNotSupported,
+
+        /// Serde tried decoding a borrowed value from an owned reader. Use `serde_decode_borrowed_from_*` instead
+        CannotBorrowOwnedData,
+
+        /// Could not allocate data like `String` and `Vec<u8>`
+        #[cfg(not(feature = "alloc"))]
+        CannotAllocate,
+
+        /// Custom serde error but bincode is unable to allocate a string. Set a breakpoint where this is thrown for more information.
+        #[cfg(not(feature = "alloc"))]
+        CustomError,
+    }
 }
 
 #[cfg(feature = "alloc")]
@@ -127,13 +190,6 @@ impl serde::de::Error for crate::error::DecodeError {
         T: core::fmt::Display,
     {
         crate::error::cold_decode_error_serde::<()>(DecodeError::CustomError).unwrap_err()
-    }
-}
-
-#[allow(clippy::from_over_into)]
-impl Into<crate::error::DecodeError> for DecodeError {
-    fn into(self) -> crate::error::DecodeError {
-        crate::error::cold_decode_error_serde::<()>(self).unwrap_err()
     }
 }
 

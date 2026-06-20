@@ -3,7 +3,7 @@ members = ["derive", "compatibility"]
 
 [package]
 name = "bincode-next"
-version = "3.0.0-rc.15"
+version = "3.1.1"
 # Remember to update html_root_url and bincode_derive
 authors = [
     "Xinyu Yang <xinyu.yang@apich.org>",
@@ -29,7 +29,7 @@ exclude = [
     ".gitignore",
     ".github/",
 ]
-rust-version = "1.91.1"
+rust-version = "1.90.0"
 
 publish = true
 
@@ -50,16 +50,16 @@ std = ["alloc", "serde?/std"]
 alloc = ["serde?/alloc"]
 derive = ["dep:bincode_derive-next"]
 serde = ["dep:serde"]
-simd = []
 zero-copy = ["bincode_derive-next?/zero-copy"]
 static-size = ["bincode_derive-next?/static-size"]
 async-fiber = ["dep:futures-io", "dep:libc", "std"]
 tokio = ["dep:tokio", "async-fiber"]
+simd = []
+hw-acceleration = ["simd"]
 # Remember to run 'MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --all-features --no-fail-fast'
 # And remeber 'sudo chrt -f 99 cargo +nightly bench --bench complex' also.
 # And for loom: 'RUSTFLAGS="--cfg loom" cargo test --test async_fiber_loom --features "async-fiber, tokio/full" --release'
 fuzzing = ["dep:arbitrary", "zero-copy"]
-hw-acceleration = ["simd"]
 full = [
     "default",
     "std",
@@ -74,9 +74,9 @@ full = [
 ]
 
 [dependencies]
-bincode_derive-next = { path = "derive", version = "3.0.0-rc.15", optional = true }
+bincode_derive-next = { path = "derive", version = "3.1.1", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
-unty = { version = "0.1.1", package = "unty-next" }
+unty = { version = "0.1.2", package = "unty-next" }
 rapidhash = { version = "4.4", default-features = false }
 pastey = "0.2"
 futures-io = { version = "0.3", optional = true }
@@ -112,6 +112,10 @@ proptest = "1.10"
 loom = "0.7"
 async-bincode = "0.8"
 futures = "0.3"
+postcard = { version = "1.1", features = ["alloc", "use-std"] }
+cbor4ii = { version = "1.2", features = ["serde1"] }
+minicbor = { version = "2.2", features = ["derive", "alloc"] }
+dtact = "0.2"
 
 [[bench]]
 name = "varint"
@@ -144,6 +148,19 @@ required-features = ["zero-copy"]
 
 [[bench]]
 name = "async_fiber"
+harness = false
+required-features = ["async-fiber"]
+
+[[bench]]
+name = "cbor_comparison"
+harness = false
+
+[[bench]]
+name = "postcard_comparison"
+harness = false
+
+[[bench]]
+name = "codec_concurrency"
 harness = false
 required-features = ["async-fiber"]
 
