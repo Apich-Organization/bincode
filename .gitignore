@@ -48,4 +48,4 @@ optional_bit_packing.rs
 creduce-interesting.sh
 creduce-README.md
 high_res_analysis_*/*
-
+**/*.json
