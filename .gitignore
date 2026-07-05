@@ -54,5 +54,5 @@ high_res_analysis_*/*
 **/*.jpg
 **/*.tar
 **/*.zip
-**.*.xz
+**/*.xz
 **/*.7z
