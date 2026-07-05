@@ -49,3 +49,6 @@ creduce-interesting.sh
 creduce-README.md
 high_res_analysis_*/*
 **/*.json
+**/*.png
+**/*.bmp
+**/*.jpg
