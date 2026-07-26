@@ -16,7 +16,7 @@ struct BenchPayload {
 }
 
 struct PartialReader {
-    data: Vec<u8>,
+    data: std::sync::Arc<[u8]>,
     yields: usize,
     pos: usize,
 }
@@ -45,7 +45,7 @@ impl AsyncRead for PartialReader {
 }
 
 async fn run_worker(
-    encoded: Vec<u8>
+    encoded: std::sync::Arc<[u8]>
 ) -> core::result::Result<(), bincode_next::error::DecodeError> {
     let reader = PartialReader {
         data: encoded,
@@ -63,7 +63,7 @@ async fn test_high_concurrency() {
         id: 123456789,
         data: "High concurrency testing payload".to_string(),
     };
-    let encoded = bincode_next::encode_to_vec(&payload, config::standard()).unwrap();
+    let encoded: std::sync::Arc<[u8]> = bincode_next::encode_to_vec(&payload, config::standard()).unwrap().into();
 
     let total_tasks: usize = 5_000_000;
     let batch_size: usize = 50_000;
@@ -113,7 +113,7 @@ async fn test_high_concurrency_no_batching() {
         id: 123456789,
         data: "High concurrency testing payload".to_string(),
     };
-    let encoded = bincode_next::encode_to_vec(&payload, config::standard()).unwrap();
+    let encoded: std::sync::Arc<[u8]> = bincode_next::encode_to_vec(&payload, config::standard()).unwrap().into();
 
     let concurrency = 5_000_000;
     println!(
