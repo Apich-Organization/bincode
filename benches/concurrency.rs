@@ -13,6 +13,7 @@ use futures_io::AsyncRead;
 use serde::Deserialize;
 use serde::Serialize;
 use std::pin::Pin;
+use std::sync::Arc;
 use std::task::Context;
 use std::task::Poll;
 use std::time::Duration;
@@ -28,7 +29,7 @@ struct BenchPayload {
 
 #[derive(Clone)]
 struct YieldingReader {
-    data: Vec<u8>,
+    data: Arc<Vec<u8>>,
     pos: usize,
     chunk_size: usize,
 }
@@ -92,7 +93,7 @@ pub fn bench_concurrency(c: &mut Criterion) {
         metadata: vec![1, 2, 3, 4, 5, 255, 128, 64, 32],
     };
 
-    let encoded_next = bincode_next::encode_to_vec(&payload, config::standard()).unwrap();
+    let encoded_next = Arc::new(bincode_next::encode_to_vec(&payload, config::standard()).unwrap());
 
     let rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(8)
@@ -102,7 +103,7 @@ pub fn bench_concurrency(c: &mut Criterion) {
 
     let concurrency_levels = [1_000, 10_000, 50_000, 500_000, 5_000_000, 50_000_000];
     let mut group = c.benchmark_group("High Concurrency");
-    let encoded_for_async = rt.block_on(serialize_for_async_bincode(&payload));
+    let encoded_for_async = Arc::new(rt.block_on(serialize_for_async_bincode(&payload)));
     group.sample_size(10); // Reduce samples for heavy concurrency tests
 
     for concurrency in concurrency_levels.iter() {

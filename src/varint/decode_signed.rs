@@ -94,11 +94,9 @@ pub fn varint_decode_isize<R: Reader>(
     endian: Endianness,
 ) -> Result<isize, DecodeError> {
     match varint_decode_i64(read, endian) {
-        | Ok(val) => {
-            val.try_into().map_err(|_| {
-                crate::error::cold_decode_error_outside_isize_range::<()>(val).unwrap_err()
-            })
-        },
+        | Ok(val) => val.try_into().map_err(|_| {
+            crate::error::cold_decode_error_outside_isize_range::<()>(val).unwrap_err()
+        }),
         | Err(DecodeError::InvalidIntegerType { found, .. }) => {
             crate::error::cold_decode_error_invalid_integer_type(
                 IntegerType::Isize,
