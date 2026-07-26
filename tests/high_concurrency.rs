@@ -63,7 +63,9 @@ async fn test_high_concurrency() {
         id: 123456789,
         data: "High concurrency testing payload".to_string(),
     };
-    let encoded: std::sync::Arc<[u8]> = bincode_next::encode_to_vec(&payload, config::standard()).unwrap().into();
+    let encoded: std::sync::Arc<[u8]> = bincode_next::encode_to_vec(&payload, config::standard())
+        .unwrap()
+        .into();
 
     let total_tasks: usize = 5_000_000;
     let batch_size: usize = 50_000;
@@ -113,7 +115,9 @@ async fn test_high_concurrency_no_batching() {
         id: 123456789,
         data: "High concurrency testing payload".to_string(),
     };
-    let encoded: std::sync::Arc<[u8]> = bincode_next::encode_to_vec(&payload, config::standard()).unwrap().into();
+    let encoded: std::sync::Arc<[u8]> = bincode_next::encode_to_vec(&payload, config::standard())
+        .unwrap()
+        .into();
 
     let concurrency = 5_000_000;
     println!(
