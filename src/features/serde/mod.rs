@@ -209,6 +209,21 @@ pub enum EncodeError {
     CustomError,
 }
 
+impl core::fmt::Display for EncodeError {
+    fn fmt(
+        &self,
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> core::fmt::Result {
+        match self {
+            Self::SequenceMustHaveLength => write!(f, "Sequence must have length"),
+            #[cfg(not(feature = "alloc"))]
+            Self::CannotCollectStr => write!(f, "Cannot collect str"),
+            #[cfg(not(feature = "alloc"))]
+            Self::CustomError => write!(f, "Custom error"),
+        }
+    }
+}
+
 #[allow(clippy::from_over_into)]
 impl Into<crate::error::EncodeError> for EncodeError {
     fn into(self) -> crate::error::EncodeError {
