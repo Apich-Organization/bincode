@@ -115,14 +115,46 @@ fn test_decode_i16() {
         (&[0], &[0], 0),
         (&[4], &[4], 2),
         (&[3], &[3], -2),
-        (&[crate::varint::U16_BYTE, 0, 2], &[crate::varint::U16_BYTE, 2, 0], 256),
-        (&[crate::varint::U16_BYTE, 255, 1], &[crate::varint::U16_BYTE, 1, 255], -256),
-        (&[crate::varint::U16_BYTE, 0, 125], &[crate::varint::U16_BYTE, 125, 0], 16000),
-        (&[crate::varint::U16_BYTE, 255, 124], &[crate::varint::U16_BYTE, 124, 255], -16000),
-        (&[crate::varint::U16_BYTE, 252, 255], &[crate::varint::U16_BYTE, 255, 252], 32766),
-        (&[crate::varint::U16_BYTE, 254, 255], &[crate::varint::U16_BYTE, 255, 254], 32767),
-        (&[crate::varint::U16_BYTE, 253, 255], &[crate::varint::U16_BYTE, 255, 253], -32767),
-        (&[crate::varint::U16_BYTE, 255, 255], &[crate::varint::U16_BYTE, 255, 255], -32768),
+        (
+            &[crate::varint::U16_BYTE, 0, 2],
+            &[crate::varint::U16_BYTE, 2, 0],
+            256,
+        ),
+        (
+            &[crate::varint::U16_BYTE, 255, 1],
+            &[crate::varint::U16_BYTE, 1, 255],
+            -256,
+        ),
+        (
+            &[crate::varint::U16_BYTE, 0, 125],
+            &[crate::varint::U16_BYTE, 125, 0],
+            16000,
+        ),
+        (
+            &[crate::varint::U16_BYTE, 255, 124],
+            &[crate::varint::U16_BYTE, 124, 255],
+            -16000,
+        ),
+        (
+            &[crate::varint::U16_BYTE, 252, 255],
+            &[crate::varint::U16_BYTE, 255, 252],
+            32766,
+        ),
+        (
+            &[crate::varint::U16_BYTE, 254, 255],
+            &[crate::varint::U16_BYTE, 255, 254],
+            32767,
+        ),
+        (
+            &[crate::varint::U16_BYTE, 253, 255],
+            &[crate::varint::U16_BYTE, 255, 253],
+            -32767,
+        ),
+        (
+            &[crate::varint::U16_BYTE, 255, 255],
+            &[crate::varint::U16_BYTE, 255, 255],
+            -32768,
+        ),
     ];
 
     for &(slice_le, slice_be, expected) in cases {
@@ -157,8 +189,14 @@ fn test_decode_i16() {
                 found: IntegerType::I128,
             },
         ),
-        (&[crate::varint::U16_BYTE], DecodeError::UnexpectedEnd { additional: 2 }),
-        (&[crate::varint::U16_BYTE, 0], DecodeError::UnexpectedEnd { additional: 1 }),
+        (
+            &[crate::varint::U16_BYTE],
+            DecodeError::UnexpectedEnd { additional: 2 },
+        ),
+        (
+            &[crate::varint::U16_BYTE, 0],
+            DecodeError::UnexpectedEnd { additional: 1 },
+        ),
     ];
 
     for (slice, expected) in errors {
