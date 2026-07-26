@@ -2,9 +2,7 @@
 
 use bincode::Decode;
 use bincode::Encode;
-use bincode::config::{
-    self,
-};
+use bincode::config::{self};
 use bincode::decode_from_slice;
 use bincode::encode_to_vec;
 use bincode_next as bincode;
