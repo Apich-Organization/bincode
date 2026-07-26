@@ -422,8 +422,8 @@ where
                 super::impl_core::collect_into_array(&mut (0..N).map(|_| T::decode(decoder)));
 
             match result {
-                Some(r) => r,
-                None => crate::error::cold_decode_error_array_length_mismatch(N, 0),
+                | Some(r) => r,
+                | None => crate::error::cold_decode_error_array_length_mismatch(N, 0),
             }
         }
     }
@@ -503,8 +503,8 @@ where
             );
 
             match result {
-                Some(r) => r,
-                None => crate::error::cold_decode_error_array_length_mismatch(N, 0),
+                | Some(r) => r,
+                | None => crate::error::cold_decode_error_array_length_mismatch(N, 0),
             }
         }
     }
