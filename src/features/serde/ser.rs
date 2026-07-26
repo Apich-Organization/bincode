@@ -231,13 +231,13 @@ where
     }
 
     fn serialize_some<T>(
-        mut self,
+        self,
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
         T: Serialize + ?Sized,
     {
-        1u8.encode(&mut self.enc)?;
+        1u8.encode(&mut *self.enc)?;
         value.serialize(self)
     }
 
@@ -273,7 +273,7 @@ where
     }
 
     fn serialize_newtype_variant<T>(
-        mut self,
+        self,
         _name: &'static str,
         variant_index: u32,
         _variant: &'static str,
@@ -282,16 +282,16 @@ where
     where
         T: Serialize + ?Sized,
     {
-        variant_index.encode(&mut self.enc)?;
+        variant_index.encode(&mut *self.enc)?;
         value.serialize(self)
     }
 
     fn serialize_seq(
-        mut self,
+        self,
         len: Option<usize>,
     ) -> Result<Self::SerializeSeq, Self::Error> {
         let len = len.ok_or_else(|| SerdeEncodeError::SequenceMustHaveLength.into())?;
-        len.encode(&mut self.enc)?;
+        len.encode(&mut *self.enc)?;
         Ok(self)
     }
 
@@ -311,22 +311,22 @@ where
     }
 
     fn serialize_tuple_variant(
-        mut self,
+        self,
         _name: &'static str,
         variant_index: u32,
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-        variant_index.encode(&mut self.enc)?;
+        variant_index.encode(&mut *self.enc)?;
         Ok(self)
     }
 
     fn serialize_map(
-        mut self,
+        self,
         len: Option<usize>,
     ) -> Result<Self::SerializeMap, Self::Error> {
         let len = len.ok_or_else(|| SerdeEncodeError::SequenceMustHaveLength.into())?;
-        len.encode(&mut self.enc)?;
+        len.encode(&mut *self.enc)?;
         Ok(self)
     }
 
@@ -339,13 +339,13 @@ where
     }
 
     fn serialize_struct_variant(
-        mut self,
+        self,
         _name: &'static str,
         variant_index: u32,
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
-        variant_index.encode(&mut self.enc)?;
+        variant_index.encode(&mut *self.enc)?;
         Ok(self)
     }
 
