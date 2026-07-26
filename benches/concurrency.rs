@@ -92,9 +92,8 @@ pub fn bench_concurrency(c: &mut Criterion) {
         metadata: vec![1, 2, 3, 4, 5, 255, 128, 64, 32],
     };
 
-    let encoded_next = std::sync::Arc::new(
-        bincode_next::encode_to_vec(&payload, config::standard()).unwrap(),
-    );
+    let encoded_next =
+        std::sync::Arc::new(bincode_next::encode_to_vec(&payload, config::standard()).unwrap());
 
     let rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(8)
