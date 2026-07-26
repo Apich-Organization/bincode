@@ -101,13 +101,21 @@ pub use self::decoder::DecoderImpl;
 /// You can use `Context` to require contexts for decoding a type:
 /// ```
 /// # /// # use bumpalo::Bump;
-/// use bincode_next::de::Decoder;
+/// use bincode_next::de::{Decode, Decoder};
 /// use bincode_next::error::DecodeError;
 /// struct BytesInArena<'a>(bumpalo::collections::Vec<'a, u8>);
 /// impl<'a> bincode_next::Decode<&'a bumpalo::Bump> for BytesInArena<'a> {
 ///
-/// fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-///         todo!()
+///     fn decode<D: Decoder<Context = &'a bumpalo::Bump>>(decoder: &mut D) -> Result<Self, DecodeError> {
+///         let len = u64::decode(decoder)?;
+///         let len: usize = len.try_into().map_err(|_| DecodeError::OutsideUsizeRange(len))?;
+///         decoder.claim_bytes_read(len)?;
+///         let mut vec = bumpalo::collections::Vec::with_capacity_in(len, decoder.context());
+///         for _ in 0..len {
+///             decoder.unclaim_bytes_read(1);
+///             vec.push(u8::decode(decoder)?);
+///         }
+///         Ok(Self(vec))
 ///     }
 /// # }
 /// ```
