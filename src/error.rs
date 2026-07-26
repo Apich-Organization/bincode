@@ -303,8 +303,35 @@ impl core::fmt::Display for DecodeError {
         &self,
         f: &mut core::fmt::Formatter<'_>,
     ) -> core::fmt::Result {
-        // TODO: Improve this?
-        write!(f, "{self:?}")
+        match self {
+            Self::UnexpectedEnd { additional } => write!(f, "Unexpected end of input. Needed {} more bytes", additional),
+            Self::LimitExceeded => write!(f, "The given configuration limit was exceeded"),
+            Self::InvalidIntegerType { expected, found } => write!(f, "Invalid type was found. Expected {}, but found {}", expected, found),
+            Self::NonZeroTypeIsZero { non_zero_type } => write!(f, "The decoder tried to decode a NonZero{} but the value was zero", non_zero_type),
+            Self::UnexpectedVariant { type_name, allowed, found } => write!(f, "Invalid enum variant was found for {}. Expected {}, but found {}", type_name, allowed, found),
+            Self::Utf8 { inner } => write!(f, "{}", inner),
+            Self::InvalidCharEncoding(inner) => write!(f, "Failed to decode a char. Bytes: {:?}", inner),
+            Self::InvalidBooleanValue(inner) => write!(f, "Failed to decode a bool. Value: {}", inner),
+            Self::InvalidCborInfo(inner) => write!(f, "Invalid CBOR additional info value: {}", inner),
+            Self::ArrayLengthMismatch { required, found } => write!(f, "Array length mismatch. Expected length {}, but found {}", required, found),
+            Self::OutsideUsizeRange(inner) => write!(f, "The encoded value {} is outside the range of the target usize type", inner),
+            Self::OutsideIsizeRange(inner) => write!(f, "The encoded value {} is outside the range of the target isize type", inner),
+            Self::EmptyEnum { type_name } => write!(f, "Tried to decode an enum with no variants: {}", type_name),
+            Self::InvalidDuration { secs, nanos } => write!(f, "Failed to decode a Duration. Seconds: {}, Nanoseconds: {}", secs, nanos),
+            Self::InvalidSystemTime { duration } => write!(f, "Failed to decode a SystemTime. Duration {:?} could not be added to UNIX_EPOCH", duration),
+            #[cfg(feature = "std")]
+            Self::CStringNulError { position } => write!(f, "Incoming data contained a 0 byte at position {}", position),
+            #[cfg(feature = "std")]
+            Self::Io { inner, additional } => write!(f, "IO error: {}. Needed {} more bytes", inner, additional),
+            Self::Other(inner) => write!(f, "{}", inner),
+            #[cfg(feature = "alloc")]
+            Self::OtherString(inner) => write!(f, "{}", inner),
+            #[cfg(feature = "serde")]
+            Self::Serde(inner) => write!(f, "{}", inner),
+            Self::SchemaMismatch { expected, actual } => write!(f, "Schema mismatch. Expected hash {}, but found {}", expected, actual),
+            Self::DuplicateMapKey => write!(f, "The decoder tried to decode a map, but a duplicate key was found"),
+            Self::InvalidMapOrder => write!(f, "The decoder tried to decode a map, but the keys were not in the correct order"),
+        }
     }
 }
 
@@ -340,6 +367,17 @@ pub enum AllowedEnumVariants {
     Allowed(&'static [u32]),
 }
 
+impl core::fmt::Display for AllowedEnumVariants {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Range { min, max } => write!(f, "min: {}, max: {}", min, max),
+            Self::Allowed(allowed) => {
+                write!(f, "allowed: {:?}", allowed)
+            }
+        }
+    }
+}
+
 /// Integer types. Used by [`DecodeError`\]. These types have no purpose other than being shown in errors.
 #[non_exhaustive]
 #[derive(Debug, PartialEq, Eq)]
@@ -360,6 +398,26 @@ pub enum IntegerType {
     Isize,
 
     Reserved,
+}
+
+impl core::fmt::Display for IntegerType {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::U8 => write!(f, "u8"),
+            Self::U16 => write!(f, "u16"),
+            Self::U32 => write!(f, "u32"),
+            Self::U64 => write!(f, "u64"),
+            Self::U128 => write!(f, "u128"),
+            Self::Usize => write!(f, "usize"),
+            Self::I8 => write!(f, "i8"),
+            Self::I16 => write!(f, "i16"),
+            Self::I32 => write!(f, "i32"),
+            Self::I64 => write!(f, "i64"),
+            Self::I128 => write!(f, "i128"),
+            Self::Isize => write!(f, "isize"),
+            Self::Reserved => write!(f, "reserved"),
+        }
+    }
 }
 
 impl IntegerType {
