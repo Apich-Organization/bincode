@@ -1,5 +1,6 @@
 use crate::attribute::ContainerAttributes;
 use crate::attribute::FieldAttributes;
+use crate::stream_builder_ext::StreamBuilderExt;
 use virtue::prelude::*;
 
 const TUPLE_FIELD_PREFIX: &str = "field_";
@@ -61,7 +62,7 @@ impl DeriveEnum {
                         // Self::Variant
                         match_body.ident_str("Self");
                         match_body.puncts("::");
-                        match_body.ident(variant.name.clone());
+                        match_body.ident_ref(&variant.name);
 
                         // if we have any fields, declare them here
                         // Self::Variant { a, b, c }
@@ -280,7 +281,7 @@ impl DeriveEnum {
                                 arm_body.group(Delimiter::Parenthesis, |variant_case_body| {
                                     variant_case_body.ident_str("Self");
                                     variant_case_body.puncts("::");
-                                    variant_case_body.ident(variant.name.clone());
+                                    variant_case_body.ident_ref(&variant.name);
 
                                     variant_case_body.group(Delimiter::Brace, |variant_body| {
                                         if let Some(fields) = variant.fields.as_ref() {
@@ -290,7 +291,7 @@ impl DeriveEnum {
                                                 if is_tuple {
                                                     variant_body.lit_usize(idx);
                                                 } else {
-                                                    variant_body.ident(field.unwrap_ident().clone());
+                                                    variant_body.ident_ref(&field.unwrap_ident());
                                                 }
                                                 variant_body.punct(':');
                                                 let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
@@ -401,7 +402,7 @@ impl DeriveEnum {
                                 arm_body.group(Delimiter::Parenthesis, |variant_case_body| {
                                     variant_case_body.ident_str("Self");
                                     variant_case_body.puncts("::");
-                                    variant_case_body.ident(variant.name.clone());
+                                    variant_case_body.ident_ref(&variant.name);
 
                                     variant_case_body.group(Delimiter::Brace, |variant_body| {
                                         if let Some(fields) = variant.fields.as_ref() {
@@ -411,7 +412,7 @@ impl DeriveEnum {
                                                 if is_tuple {
                                                     variant_body.lit_usize(idx);
                                                 } else {
-                                                    variant_body.ident(field.unwrap_ident().clone());
+                                                    variant_body.ident_ref(&field.unwrap_ident());
                                                 }
                                                 variant_body.punct(':');
                                                 let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();

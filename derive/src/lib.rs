@@ -6,6 +6,7 @@
 #![allow(unused_must_use)]
 
 mod attribute;
+mod stream_builder_ext;
 mod derive_bit_packed;
 mod derive_enum;
 mod derive_fingerprint;
