@@ -173,16 +173,40 @@ bincode_error_serde! {
 }
 
 impl core::fmt::Display for DecodeError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> core::fmt::Result {
         match self {
-            Self::AnyNotSupported => write!(f, "Bincode does not support serde's `any` decoding feature."),
-            Self::IdentifierNotSupported => write!(f, "Bincode does not support serde identifiers"),
-            Self::IgnoredAnyNotSupported => write!(f, "Bincode does not support serde's `ignored_any`."),
-            Self::CannotBorrowOwnedData => write!(f, "Serde tried decoding a borrowed value from an owned reader. Use `serde_decode_borrowed_from_*` instead"),
+            | Self::AnyNotSupported => {
+                write!(
+                    f,
+                    "Bincode does not support serde's `any` decoding feature."
+                )
+            },
+            | Self::IdentifierNotSupported => {
+                write!(f, "Bincode does not support serde identifiers")
+            },
+            | Self::IgnoredAnyNotSupported => {
+                write!(f, "Bincode does not support serde's `ignored_any`.")
+            },
+            | Self::CannotBorrowOwnedData => {
+                write!(
+                    f,
+                    "Serde tried decoding a borrowed value from an owned reader. Use `serde_decode_borrowed_from_*` instead"
+                )
+            },
             #[cfg(not(feature = "alloc"))]
-            Self::CannotAllocate => write!(f, "Could not allocate data like `String` and `Vec<u8>`"),
+            | Self::CannotAllocate => {
+                write!(f, "Could not allocate data like `String` and `Vec<u8>`")
+            },
             #[cfg(not(feature = "alloc"))]
-            Self::CustomError => write!(f, "Custom serde error but bincode is unable to allocate a string. Set a breakpoint where this is thrown for more information."),
+            | Self::CustomError => {
+                write!(
+                    f,
+                    "Custom serde error but bincode is unable to allocate a string. Set a breakpoint where this is thrown for more information."
+                )
+            },
         }
     }
 }
@@ -225,13 +249,31 @@ pub enum EncodeError {
 }
 
 impl core::fmt::Display for EncodeError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> core::fmt::Result {
         match self {
-            Self::SequenceMustHaveLength => write!(f, "Serde provided bincode with a sequence without a length, which is not supported in bincode"),
+            | Self::SequenceMustHaveLength => {
+                write!(
+                    f,
+                    "Serde provided bincode with a sequence without a length, which is not supported in bincode"
+                )
+            },
             #[cfg(not(feature = "alloc"))]
-            Self::CannotCollectStr => write!(f, "Serializer::collect_str got called but bincode was unable to allocate memory."),
+            | Self::CannotCollectStr => {
+                write!(
+                    f,
+                    "Serializer::collect_str got called but bincode was unable to allocate memory."
+                )
+            },
             #[cfg(not(feature = "alloc"))]
-            Self::CustomError => write!(f, "Custom serde error but bincode is unable to allocate a string. Set a breakpoint where this is thrown for more information."),
+            | Self::CustomError => {
+                write!(
+                    f,
+                    "Custom serde error but bincode is unable to allocate a string. Set a breakpoint where this is thrown for more information."
+                )
+            },
         }
     }
 }
