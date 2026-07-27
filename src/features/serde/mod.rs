@@ -207,6 +207,10 @@ pub enum EncodeError {
     /// Custom serde error but bincode is unable to allocate a string. Set a breakpoint where this is thrown for more information.
     #[cfg(not(feature = "alloc"))]
     CustomError,
+
+    /// Custom error message.
+    #[cfg(feature = "alloc")]
+    Custom(alloc::string::String),
 }
 
 impl core::fmt::Display for EncodeError {
@@ -215,11 +219,13 @@ impl core::fmt::Display for EncodeError {
         f: &mut core::fmt::Formatter<'_>,
     ) -> core::fmt::Result {
         match self {
-            | Self::SequenceMustHaveLength => write!(f, "Sequence must have length"),
+            Self::SequenceMustHaveLength => write!(f, "Sequence must have length"),
             #[cfg(not(feature = "alloc"))]
-            | Self::CannotCollectStr => write!(f, "Cannot collect str"),
+            Self::CannotCollectStr => write!(f, "Cannot collect str"),
             #[cfg(not(feature = "alloc"))]
-            | Self::CustomError => write!(f, "Custom error"),
+            Self::CustomError => write!(f, "Custom error"),
+            #[cfg(feature = "alloc")]
+            Self::Custom(msg) => write!(f, "Custom error: {msg}"),
         }
     }
 }

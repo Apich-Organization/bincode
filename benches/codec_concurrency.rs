@@ -577,7 +577,7 @@ fn bench_decode_stream(c: &mut Criterion) {
                                         );
                                         let buf = &mut buf[..e.len()];
                                         reader.read_exact(buf).await.unwrap();
-                                        let v: NetworkFrame = postcard::from_bytes(buf).unwrap();
+                                        let v: NetworkFrame = postcard::from_bytes(&buf).unwrap();
                                         black_box(v);
                                     }));
                                 }
@@ -617,7 +617,7 @@ fn bench_decode_stream(c: &mut Criterion) {
                                         );
                                         let buf = &mut buf[..e.len()];
                                         reader.read_exact(buf).await.unwrap();
-                                        let v: NetworkFrame = bincode_1::deserialize(buf).unwrap();
+                                        let v: NetworkFrame = bincode_1::deserialize(&buf).unwrap();
                                         black_box(v);
                                     }));
                                 }
@@ -659,7 +659,7 @@ fn bench_decode_stream(c: &mut Criterion) {
                                         reader.read_exact(buf).await.unwrap();
                                         let (v, _): (NetworkFrame, usize) =
                                             bincode_v2::serde::decode_from_slice(
-                                                buf,
+                                                &buf,
                                                 bincode_v2::config::standard(),
                                             )
                                             .unwrap();
@@ -859,7 +859,7 @@ fn bench_roundtrip_stream(c: &mut Criterion) {
                                             let buf = &mut buf[..e.len()];
                                             reader.read_exact(buf).await.unwrap();
                                             let v: NetworkFrame =
-                                                postcard::from_bytes(buf).unwrap();
+                                                postcard::from_bytes(&buf).unwrap();
                                             black_box(v);
                                         }
                                     }));
@@ -909,7 +909,7 @@ fn bench_roundtrip_stream(c: &mut Criterion) {
                                             let buf = &mut buf[..e.len()];
                                             reader.read_exact(buf).await.unwrap();
                                             let v: NetworkFrame =
-                                                bincode_1::deserialize(buf).unwrap();
+                                                bincode_1::deserialize(&buf).unwrap();
                                             black_box(v);
                                         }
                                     }));
@@ -964,7 +964,7 @@ fn bench_roundtrip_stream(c: &mut Criterion) {
                                             reader.read_exact(buf).await.unwrap();
                                             let (v, _): (NetworkFrame, usize) =
                                                 bincode_v2::serde::decode_from_slice(
-                                                    buf,
+                                                    &buf,
                                                     bincode_v2::config::standard(),
                                                 )
                                                 .unwrap();
