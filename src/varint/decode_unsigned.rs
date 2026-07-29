@@ -267,7 +267,7 @@ pub fn varint_decode_u32<R: Reader>(
             read.consume(1);
             return Ok(u32::from(b));
         }
-        if crate::utils::is_unlikely!(b == U32_BYTE) {
+        if b == U32_BYTE {
             let v = unsafe {
                 let ptr = bytes.as_ptr().add(1).cast::<u32>();
                 let val = ptr.read_unaligned();
@@ -278,6 +278,18 @@ pub fn varint_decode_u32<R: Reader>(
             };
             read.consume(5);
             return Ok(v);
+        }
+        if b == U16_BYTE {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u16>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u16::from_le(val),
+                    | Endianness::Big => u16::from_be(val),
+                }
+            };
+            read.consume(3);
+            return Ok(u32::from(v));
         }
     }
     deserialize_varint_cold_u32(read, endian)
@@ -294,7 +306,7 @@ pub fn varint_decode_u64<R: Reader>(
             read.consume(1);
             return Ok(u64::from(b));
         }
-        if crate::utils::is_unlikely!(b == U64_BYTE) {
+        if b == U64_BYTE {
             let v = unsafe {
                 let ptr = bytes.as_ptr().add(1).cast::<u64>();
                 let val = ptr.read_unaligned();
@@ -305,6 +317,30 @@ pub fn varint_decode_u64<R: Reader>(
             };
             read.consume(9);
             return Ok(v);
+        }
+        if b == U32_BYTE {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u32>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u32::from_le(val),
+                    | Endianness::Big => u32::from_be(val),
+                }
+            };
+            read.consume(5);
+            return Ok(u64::from(v));
+        }
+        if b == U16_BYTE {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u16>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u16::from_le(val),
+                    | Endianness::Big => u16::from_be(val),
+                }
+            };
+            read.consume(3);
+            return Ok(u64::from(v));
         }
     }
     deserialize_varint_cold_u64(read, endian)
@@ -321,7 +357,7 @@ pub fn varint_decode_usize<R: Reader>(
             read.consume(1);
             return Ok(b as usize);
         }
-        if crate::utils::is_unlikely!(b == U64_BYTE) {
+        if b == U64_BYTE {
             let v = unsafe {
                 let ptr = bytes.as_ptr().add(1).cast::<u64>();
                 let val = ptr.read_unaligned();
@@ -335,6 +371,30 @@ pub fn varint_decode_usize<R: Reader>(
             })?;
             read.consume(9);
             return Ok(res);
+        }
+        if b == U32_BYTE {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u32>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u32::from_le(val),
+                    | Endianness::Big => u32::from_be(val),
+                }
+            };
+            read.consume(5);
+            return Ok(v as usize);
+        }
+        if b == U16_BYTE {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u16>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u16::from_le(val),
+                    | Endianness::Big => u16::from_be(val),
+                }
+            };
+            read.consume(3);
+            return Ok(v as usize);
         }
     }
     deserialize_varint_cold_usize(read, endian)
@@ -351,7 +411,7 @@ pub fn varint_decode_u128<R: Reader>(
             read.consume(1);
             return Ok(u128::from(b));
         }
-        if crate::utils::is_unlikely!(b == U128_BYTE) {
+        if b == U128_BYTE {
             let v = unsafe {
                 let ptr = bytes.as_ptr().add(1).cast::<u128>();
                 let val = ptr.read_unaligned();
@@ -362,6 +422,42 @@ pub fn varint_decode_u128<R: Reader>(
             };
             read.consume(17);
             return Ok(v);
+        }
+        if b == U64_BYTE {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u64>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u64::from_le(val),
+                    | Endianness::Big => u64::from_be(val),
+                }
+            };
+            read.consume(9);
+            return Ok(u128::from(v));
+        }
+        if b == U32_BYTE {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u32>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u32::from_le(val),
+                    | Endianness::Big => u32::from_be(val),
+                }
+            };
+            read.consume(5);
+            return Ok(u128::from(v));
+        }
+        if b == U16_BYTE {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u16>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u16::from_le(val),
+                    | Endianness::Big => u16::from_be(val),
+                }
+            };
+            read.consume(3);
+            return Ok(u128::from(v));
         }
     }
     deserialize_varint_cold_u128(read, endian)
