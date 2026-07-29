@@ -363,6 +363,33 @@ pub fn varint_decode_usize<R: Reader>(
             read.consume(1);
             return Ok(b as usize);
         }
+        // ⚡ Bolt Optimization: Fast paths for intermediate sizes (U16, U32) in usize.
+        if crate::utils::is_unlikely!(b == U16_BYTE) {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u16>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u16::from_le(val),
+                    | Endianness::Big => u16::from_be(val),
+                }
+            };
+            read.consume(3);
+            return Ok(v as usize);
+        }
+        if crate::utils::is_unlikely!(b == U32_BYTE) {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u32>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u32::from_le(val),
+                    | Endianness::Big => u32::from_be(val),
+                }
+            };
+            read.consume(5);
+            return usize::try_from(v).map_err(|_| {
+                crate::error::cold_decode_error_outside_usize_range::<()>(v as u64).unwrap_err()
+            });
+        }
         if crate::utils::is_unlikely!(b == U64_BYTE) {
             let v = unsafe {
                 let ptr = bytes.as_ptr().add(1).cast::<u64>();
