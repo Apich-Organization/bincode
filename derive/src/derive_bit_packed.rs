@@ -1,5 +1,6 @@
 use crate::attribute::ContainerAttributes;
 use crate::attribute::FieldAttributes;
+use crate::stream_builder_ext::StreamBuilderExt;
 use virtue::prelude::*;
 
 pub(crate) struct DeriveBitPacked {
@@ -421,7 +422,7 @@ impl DeriveBitPackedEnum {
                     for (variant_index, variant) in self.variants.iter().enumerate() {
                         match_body.ident_str("Self");
                         match_body.puncts("::");
-                        match_body.ident(variant.name.clone());
+                        match_body.ident_ref(&variant.name);
 
                         if let Some(fields) = variant.fields.as_ref() {
                             let delimiter = fields.delimiter();
@@ -576,7 +577,7 @@ impl DeriveBitPackedEnum {
                             if idx != 0 {
                                 allowed_slice.punct(',');
                             }
-                            allowed_slice.ident(variant.name.clone());
+                            allowed_slice.ident_ref(&variant.name);
                         }
                         Ok(())
                     })?;
@@ -723,7 +724,7 @@ impl DeriveBitPackedEnum {
                                     arm_body.group(Delimiter::Parenthesis, |variant_case_body| {
                                         variant_case_body.ident_str("Self");
                                         variant_case_body.puncts("::");
-                                        variant_case_body.ident(variant.name.clone());
+                                        variant_case_body.ident_ref(&variant.name);
 
                                         if let Some(fields) = variant.fields.as_ref() {
                                             let is_tuple = matches!(fields, Fields::Tuple(_));
@@ -732,7 +733,7 @@ impl DeriveBitPackedEnum {
                                                 |variant_body| {
                                                     for field in fields.names() {
                                                         if !is_tuple {
-                                                            variant_body.ident(field.unwrap_ident().clone());
+                                                            variant_body.ident_ref(&field.unwrap_ident());
                                                             variant_body.punct(':');
                                                         }
                                                         variant_body.push_parsed(format!("__{},", field.to_string_with_prefix("field_")))?;
@@ -781,7 +782,7 @@ impl DeriveBitPackedEnum {
                                     arm_body.group(Delimiter::Parenthesis, |variant_case_body| {
                                         variant_case_body.ident_str("Self");
                                         variant_case_body.puncts("::");
-                                        variant_case_body.ident(variant.name.clone());
+                                        variant_case_body.ident_ref(&variant.name);
 
                                         if let Some(fields) = variant.fields.as_ref() {
                                             let is_tuple = matches!(fields, Fields::Tuple(_));
@@ -790,7 +791,7 @@ impl DeriveBitPackedEnum {
                                                 |variant_body| {
                                                     for field in fields.names() {
                                                         if !is_tuple {
-                                                            variant_body.ident(field.unwrap_ident().clone());
+                                                            variant_body.ident_ref(&field.unwrap_ident());
                                                             variant_body.punct(':');
                                                         }
                                                         variant_body.push_parsed(format!("__{},", field.to_string_with_prefix("field_")))?;
@@ -946,7 +947,7 @@ impl DeriveBitPackedEnum {
                                     arm_body.group(Delimiter::Parenthesis, |variant_case_body| {
                                         variant_case_body.ident_str("Self");
                                         variant_case_body.puncts("::");
-                                        variant_case_body.ident(variant.name.clone());
+                                        variant_case_body.ident_ref(&variant.name);
 
                                         if let Some(fields) = variant.fields.as_ref() {
                                             let is_tuple = matches!(fields, Fields::Tuple(_));
@@ -955,7 +956,7 @@ impl DeriveBitPackedEnum {
                                                 |variant_body| {
                                                     for field in fields.names() {
                                                         if !is_tuple {
-                                                            variant_body.ident(field.unwrap_ident().clone());
+                                                            variant_body.ident_ref(&field.unwrap_ident());
                                                             variant_body.punct(':');
                                                         }
                                                         variant_body.push_parsed(format!("__{},", field.to_string_with_prefix("field_")))?;
@@ -1004,7 +1005,7 @@ impl DeriveBitPackedEnum {
                                     arm_body.group(Delimiter::Parenthesis, |variant_case_body| {
                                         variant_case_body.ident_str("Self");
                                         variant_case_body.puncts("::");
-                                        variant_case_body.ident(variant.name.clone());
+                                        variant_case_body.ident_ref(&variant.name);
 
                                         if let Some(fields) = variant.fields.as_ref() {
                                             let is_tuple = matches!(fields, Fields::Tuple(_));
@@ -1013,7 +1014,7 @@ impl DeriveBitPackedEnum {
                                                 |variant_body| {
                                                     for field in fields.names() {
                                                         if !is_tuple {
-                                                            variant_body.ident(field.unwrap_ident().clone());
+                                                            variant_body.ident_ref(&field.unwrap_ident());
                                                             variant_body.punct(':');
                                                         }
                                                         variant_body.push_parsed(format!("__{},", field.to_string_with_prefix("field_")))?;

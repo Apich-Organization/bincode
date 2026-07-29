@@ -12,6 +12,7 @@ mod derive_fingerprint;
 mod derive_static_size;
 mod derive_struct;
 mod derive_zerocopy;
+mod stream_builder_ext;
 
 use attribute::ContainerAttributes;
 use virtue::prelude::AttributeAccess;
