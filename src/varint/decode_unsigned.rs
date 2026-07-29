@@ -267,6 +267,21 @@ pub fn varint_decode_u32<R: Reader>(
             read.consume(1);
             return Ok(u32::from(b));
         }
+        // ⚡ Bolt Optimization: Fast path for U16_BYTE.
+        // Prevents falling back to the slow, non-inlined cold path
+        // when we already have enough bytes buffered.
+        if crate::utils::is_unlikely!(b == U16_BYTE) {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u16>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u16::from_le(val),
+                    | Endianness::Big => u16::from_be(val),
+                }
+            };
+            read.consume(3);
+            return Ok(u32::from(v));
+        }
         if crate::utils::is_unlikely!(b == U32_BYTE) {
             let v = unsafe {
                 let ptr = bytes.as_ptr().add(1).cast::<u32>();
@@ -293,6 +308,33 @@ pub fn varint_decode_u64<R: Reader>(
         if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(u64::from(b));
+        }
+        // ⚡ Bolt Optimization: Fast paths for U16_BYTE and U32_BYTE.
+        // Avoids falling back to the cold path when intermediate sizes are decoded
+        // but sufficient bytes are already buffered by peek_read.
+        if crate::utils::is_unlikely!(b == U16_BYTE) {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u16>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u16::from_le(val),
+                    | Endianness::Big => u16::from_be(val),
+                }
+            };
+            read.consume(3);
+            return Ok(u64::from(v));
+        }
+        if crate::utils::is_unlikely!(b == U32_BYTE) {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u32>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u32::from_le(val),
+                    | Endianness::Big => u32::from_be(val),
+                }
+            };
+            read.consume(5);
+            return Ok(u64::from(v));
         }
         if crate::utils::is_unlikely!(b == U64_BYTE) {
             let v = unsafe {
@@ -350,6 +392,45 @@ pub fn varint_decode_u128<R: Reader>(
         if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(u128::from(b));
+        }
+        // ⚡ Bolt Optimization: Fast paths for intermediate sizes.
+        // Avoids falling back to the cold path when smaller values are decoded
+        // within a large u128 frame and sufficient bytes are buffered.
+        if crate::utils::is_unlikely!(b == U16_BYTE) {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u16>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u16::from_le(val),
+                    | Endianness::Big => u16::from_be(val),
+                }
+            };
+            read.consume(3);
+            return Ok(u128::from(v));
+        }
+        if crate::utils::is_unlikely!(b == U32_BYTE) {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u32>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u32::from_le(val),
+                    | Endianness::Big => u32::from_be(val),
+                }
+            };
+            read.consume(5);
+            return Ok(u128::from(v));
+        }
+        if crate::utils::is_unlikely!(b == U64_BYTE) {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u64>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u64::from_le(val),
+                    | Endianness::Big => u64::from_be(val),
+                }
+            };
+            read.consume(9);
+            return Ok(u128::from(v));
         }
         if crate::utils::is_unlikely!(b == U128_BYTE) {
             let v = unsafe {
