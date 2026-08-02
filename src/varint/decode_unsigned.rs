@@ -1,10 +1,10 @@
 #![allow(unsafe_code)]
 #![allow(clippy::cast_ptr_alignment)]
 use super::SINGLE_BYTE_MAX;
-use super::U128_BYTE;
 use super::U16_BYTE;
 use super::U32_BYTE;
 use super::U64_BYTE;
+use super::U128_BYTE;
 use crate::config::Endianness;
 use crate::de::read::Reader;
 use crate::error::DecodeError;
@@ -148,12 +148,14 @@ where
             let mut bytes = [0u8; 8];
             read.read(&mut bytes)?;
             Ok(match endian {
-                | Endianness::Big => usize::try_from(u64::from_be_bytes(bytes)).map_err(|_| {
-                    crate::error::cold_decode_error_outside_usize_range::<()>(u64::from_be_bytes(
-                        bytes,
-                    ))
-                    .unwrap_err()
-                })?,
+                | Endianness::Big => {
+                    usize::try_from(u64::from_be_bytes(bytes)).map_err(|_| {
+                        crate::error::cold_decode_error_outside_usize_range::<()>(
+                            u64::from_be_bytes(bytes),
+                        )
+                        .unwrap_err()
+                    })?
+                },
                 | Endianness::Little => {
                     usize::try_from(u64::from_le_bytes(bytes)).map_err(|_| {
                         crate::error::cold_decode_error_outside_usize_range::<()>(
