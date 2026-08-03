@@ -148,14 +148,12 @@ where
             let mut bytes = [0u8; 8];
             read.read(&mut bytes)?;
             Ok(match endian {
-                | Endianness::Big => {
-                    usize::try_from(u64::from_be_bytes(bytes)).map_err(|_| {
-                        crate::error::cold_decode_error_outside_usize_range::<()>(
-                            u64::from_be_bytes(bytes),
-                        )
-                        .unwrap_err()
-                    })?
-                },
+                | Endianness::Big => usize::try_from(u64::from_be_bytes(bytes)).map_err(|_| {
+                    crate::error::cold_decode_error_outside_usize_range::<()>(u64::from_be_bytes(
+                        bytes,
+                    ))
+                    .unwrap_err()
+                })?,
                 | Endianness::Little => {
                     usize::try_from(u64::from_le_bytes(bytes)).map_err(|_| {
                         crate::error::cold_decode_error_outside_usize_range::<()>(
@@ -362,6 +360,36 @@ pub fn varint_decode_usize<R: Reader>(
         if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(b as usize);
+        }
+        // ⚡ Bolt Optimization: Fast paths for intermediate sizes.
+        // Avoids falling back to the cold path when intermediate sizes are decoded
+        // but sufficient bytes are already buffered by peek_read.
+        if crate::utils::is_unlikely!(b == U16_BYTE) {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u16>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u16::from_le(val),
+                    | Endianness::Big => u16::from_be(val),
+                }
+            };
+            read.consume(3);
+            return Ok(usize::from(v));
+        }
+        if crate::utils::is_unlikely!(b == U32_BYTE) {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u32>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u32::from_le(val),
+                    | Endianness::Big => u32::from_be(val),
+                }
+            };
+            let res = usize::try_from(v).map_err(|_| {
+                crate::error::cold_decode_error_outside_usize_range::<()>(u64::from(v)).unwrap_err()
+            })?;
+            read.consume(5);
+            return Ok(res);
         }
         if crate::utils::is_unlikely!(b == U64_BYTE) {
             let v = unsafe {

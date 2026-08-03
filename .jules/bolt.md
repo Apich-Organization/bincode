@@ -1,3 +1,7 @@
 ## 2024-07-28 - Fast Paths for Intermediate Varint Sizes
 **Learning:** The previous varint decoding implementation in bincode successfully optimized decoding for the largest integer size (e.g. u64 encoded as U64_BYTE) when `peek_read` could supply enough bytes. However, it neglected intermediate sizes (e.g. u16 encoded as U16_BYTE inside a u64 or u128 field), forcing them to fall back to a non-inlined `cold` function, severely degrading performance for intermediate varints despite having enough bytes buffered.
 **Action:** Always verify if an inline optimization (e.g. buffer checks) applies to the entire range of possibilities or if it inadvertently penalizes intermediate states. Providing fast paths for intermediate values inside larger functions resolves this bottleneck efficiently.
+
+## 2024-08-03 - Fast Paths for Intermediate Varint Sizes decoded as `usize`
+**Learning:** `usize` encoding for 64-bit systems requires mapping intermediate varints using `usize::try_from` correctly, similar to what was previously learned for large functions like `varint_decode_u128`. By adding intermediate `U16_BYTE` and `U32_BYTE` fast paths using `peek_read` buffer sizes, decoding small varints directly to `usize` bypasses expensive non-inlined `cold` path fallbacks.
+**Action:** When working on varints or varying int lengths, ensure intermediate types have early returns and mapping errors via correct internal methods (`cold_decode_error_outside_usize_range`) to preserve speed and avoid unchecked truncation.
