@@ -56,3 +56,4 @@ high_res_analysis_*/*
 **/*.zip
 **/*.xz
 **/*.7z
+scc-report.html
