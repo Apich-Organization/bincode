@@ -118,11 +118,13 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_encode_u16(
-                        self.writer(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                        val,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_encode_u16(
+                            self.writer(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                            val,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
                             | Endianness::Big => self.writer().write_u16(val.to_be()),
@@ -153,11 +155,13 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_encode_u32(
-                        self.writer(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                        val,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_encode_u32(
+                            self.writer(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                            val,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
                             | Endianness::Big => self.writer().write_u32(val.to_be()),
@@ -188,11 +192,13 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_encode_u64(
-                        self.writer(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                        val,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_encode_u64(
+                            self.writer(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                            val,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
                             | Endianness::Big => self.writer().write_u64(val.to_be()),
@@ -223,11 +229,13 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_encode_u128(
-                        self.writer(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                        val,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_encode_u128(
+                            self.writer(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                            val,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
                             | Endianness::Big => self.writer().write_u128(val.to_be()),
@@ -296,11 +304,13 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_encode_i16(
-                        self.writer(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                        val,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_encode_i16(
+                            self.writer(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                            val,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
                             | Endianness::Big => self.writer().write_u16(val.to_be() as u16),
@@ -331,11 +341,13 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_encode_i32(
-                        self.writer(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                        val,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_encode_i32(
+                            self.writer(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                            val,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
                             | Endianness::Big => self.writer().write_u32(val.to_be() as u32),
@@ -366,11 +378,13 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_encode_i64(
-                        self.writer(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                        val,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_encode_i64(
+                            self.writer(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                            val,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
                             | Endianness::Big => self.writer().write_u64(val.to_be() as u64),
@@ -401,11 +415,13 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
             | Format::Bincode | Format::BincodeDeterministic => {
                 match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => crate::varint::varint_encode_i128(
-                        self.writer(),
-                        <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                        val,
-                    ),
+                    | IntEncoding::Variable => {
+                        crate::varint::varint_encode_i128(
+                            self.writer(),
+                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
+                            val,
+                        )
+                    },
                     | IntEncoding::Fixed => {
                         match <Self::C as crate::config::InternalEndianConfig>::ENDIAN {
                             | Endianness::Big => self.writer().write_u128(val.to_be() as u128),
