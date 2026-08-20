@@ -72,3 +72,100 @@ pub fn varint_decode_isize<R: Reader>(
         !(n / 2) as _
     })
 }
+
+#[test]
+fn test_decode_i16() {
+    let cases: &[(&[u8], &[u8], i16)] = &[
+        (&[0], &[0], 0),
+        (&[4], &[4], 2),
+        (&[3], &[3], -2),
+        (
+            &[crate::varint::U16_BYTE, 0, 2],
+            &[crate::varint::U16_BYTE, 2, 0],
+            256,
+        ),
+        (
+            &[crate::varint::U16_BYTE, 255, 1],
+            &[crate::varint::U16_BYTE, 1, 255],
+            -256,
+        ),
+        (
+            &[crate::varint::U16_BYTE, 0, 125],
+            &[crate::varint::U16_BYTE, 125, 0],
+            16000,
+        ),
+        (
+            &[crate::varint::U16_BYTE, 255, 124],
+            &[crate::varint::U16_BYTE, 124, 255],
+            -16000,
+        ),
+        (
+            &[crate::varint::U16_BYTE, 252, 255],
+            &[crate::varint::U16_BYTE, 255, 252],
+            32766,
+        ),
+        (
+            &[crate::varint::U16_BYTE, 254, 255],
+            &[crate::varint::U16_BYTE, 255, 254],
+            32767,
+        ),
+        (
+            &[crate::varint::U16_BYTE, 253, 255],
+            &[crate::varint::U16_BYTE, 255, 253],
+            -32767,
+        ),
+        (
+            &[crate::varint::U16_BYTE, 255, 255],
+            &[crate::varint::U16_BYTE, 255, 255],
+            -32768,
+        ),
+    ];
+
+    for &(slice_le, slice_be, expected) in cases {
+        let mut reader = crate::de::read::SliceReader::new(slice_le);
+        let found = varint_decode_i16(&mut reader, Endianness::Little).unwrap();
+        assert_eq!(expected, found);
+
+        let mut reader = crate::de::read::SliceReader::new(slice_be);
+        let found = varint_decode_i16(&mut reader, Endianness::Big).unwrap();
+        assert_eq!(expected, found);
+    }
+
+    let errors: &[(&[u8], DecodeError)] = &[
+        (
+            &[crate::varint::U32_BYTE],
+            DecodeError::InvalidIntegerType {
+                expected: IntegerType::I16,
+                found: IntegerType::I32,
+            },
+        ),
+        (
+            &[crate::varint::U64_BYTE],
+            DecodeError::InvalidIntegerType {
+                expected: IntegerType::I16,
+                found: IntegerType::I64,
+            },
+        ),
+        (
+            &[crate::varint::U128_BYTE],
+            DecodeError::InvalidIntegerType {
+                expected: IntegerType::I16,
+                found: IntegerType::I128,
+            },
+        ),
+        (
+            &[crate::varint::U16_BYTE],
+            DecodeError::UnexpectedEnd { additional: 2 },
+        ),
+        (
+            &[crate::varint::U16_BYTE, 0],
+            DecodeError::UnexpectedEnd { additional: 1 },
+        ),
+    ];
+
+    for (slice, expected) in errors {
+        let mut reader = crate::de::read::SliceReader::new(slice);
+        let found = varint_decode_i16(&mut reader, Endianness::Little).unwrap_err();
+        assert_eq!(std::format!("{expected:?}"), std::format!("{found:?}"));
+    }
+}
