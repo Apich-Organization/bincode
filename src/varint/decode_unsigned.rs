@@ -234,12 +234,17 @@ pub fn varint_decode_u16<R: Reader>(
     read: &mut R,
     endian: Endianness,
 ) -> Result<u16, DecodeError> {
-    if let Some(bytes) = read.peek_read(3) {
+    // By checking for 1 byte first, we avoid falling back to the slow cold path
+    // when decoding small values near the end of the buffer where peek_read(MAX_SIZE) would fail.
+    if let Some(bytes) = read.peek_read(1) {
         let b = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(u16::from(b));
         }
+    }
+    if let Some(bytes) = read.peek_read(3) {
+        let b = unsafe { *bytes.as_ptr() };
         if crate::utils::is_unlikely!(b == U16_BYTE) {
             let v = unsafe {
                 let ptr = bytes.as_ptr().add(1).cast::<u16>();
@@ -261,13 +266,17 @@ pub fn varint_decode_u32<R: Reader>(
     read: &mut R,
     endian: Endianness,
 ) -> Result<u32, DecodeError> {
-    if let Some(bytes) = read.peek_read(5) {
+    // By checking for 1 byte first, we avoid falling back to the slow cold path
+    // when decoding small values near the end of the buffer where peek_read(MAX_SIZE) would fail.
+    if let Some(bytes) = read.peek_read(1) {
         let b = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(u32::from(b));
         }
-        // ⚡ Bolt Optimization: Fast path for U16_BYTE.
+    }
+    if let Some(bytes) = read.peek_read(5) {
+        let b = unsafe { *bytes.as_ptr() };
         // Prevents falling back to the slow, non-inlined cold path
         // when we already have enough bytes buffered.
         if crate::utils::is_unlikely!(b == U16_BYTE) {
@@ -303,13 +312,17 @@ pub fn varint_decode_u64<R: Reader>(
     read: &mut R,
     endian: Endianness,
 ) -> Result<u64, DecodeError> {
-    if let Some(bytes) = read.peek_read(9) {
+    // By checking for 1 byte first, we avoid falling back to the slow cold path
+    // when decoding small values near the end of the buffer where peek_read(MAX_SIZE) would fail.
+    if let Some(bytes) = read.peek_read(1) {
         let b = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(u64::from(b));
         }
-        // ⚡ Bolt Optimization: Fast paths for U16_BYTE and U32_BYTE.
+    }
+    if let Some(bytes) = read.peek_read(9) {
+        let b = unsafe { *bytes.as_ptr() };
         // Avoids falling back to the cold path when intermediate sizes are decoded
         // but sufficient bytes are already buffered by peek_read.
         if crate::utils::is_unlikely!(b == U16_BYTE) {
@@ -357,11 +370,43 @@ pub fn varint_decode_usize<R: Reader>(
     read: &mut R,
     endian: Endianness,
 ) -> Result<usize, DecodeError> {
-    if let Some(bytes) = read.peek_read(9) {
+    // By checking for 1 byte first, we avoid falling back to the slow cold path
+    // when decoding small values near the end of the buffer where peek_read(MAX_SIZE) would fail.
+    if let Some(bytes) = read.peek_read(1) {
         let b = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(b as usize);
+        }
+    }
+    if let Some(bytes) = read.peek_read(9) {
+        let b = unsafe { *bytes.as_ptr() };
+        if crate::utils::is_unlikely!(b == U16_BYTE) {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u16>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u16::from_le(val),
+                    | Endianness::Big => u16::from_be(val),
+                }
+            };
+            read.consume(3);
+            return Ok(usize::from(v));
+        }
+        if crate::utils::is_unlikely!(b == U32_BYTE) {
+            let v = unsafe {
+                let ptr = bytes.as_ptr().add(1).cast::<u32>();
+                let val = ptr.read_unaligned();
+                match endian {
+                    | Endianness::Little => u32::from_le(val),
+                    | Endianness::Big => u32::from_be(val),
+                }
+            };
+            let res = usize::try_from(v).map_err(|_| {
+                crate::error::cold_decode_error_outside_usize_range::<()>(u64::from(v)).unwrap_err()
+            })?;
+            read.consume(5);
+            return Ok(res);
         }
         if crate::utils::is_unlikely!(b == U64_BYTE) {
             let v = unsafe {
@@ -387,13 +432,17 @@ pub fn varint_decode_u128<R: Reader>(
     read: &mut R,
     endian: Endianness,
 ) -> Result<u128, DecodeError> {
-    if let Some(bytes) = read.peek_read(17) {
+    // By checking for 1 byte first, we avoid falling back to the slow cold path
+    // when decoding small values near the end of the buffer where peek_read(MAX_SIZE) would fail.
+    if let Some(bytes) = read.peek_read(1) {
         let b = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(u128::from(b));
         }
-        // ⚡ Bolt Optimization: Fast paths for intermediate sizes.
+    }
+    if let Some(bytes) = read.peek_read(17) {
+        let b = unsafe { *bytes.as_ptr() };
         // Avoids falling back to the cold path when smaller values are decoded
         // within a large u128 frame and sufficient bytes are buffered.
         if crate::utils::is_unlikely!(b == U16_BYTE) {
