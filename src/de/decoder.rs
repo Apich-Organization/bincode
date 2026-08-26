@@ -89,18 +89,12 @@ impl<R: Reader, C: Config, Context> Decoder for DecoderImpl<R, C, Context> {
         // C::LIMIT is a const so this check should get compiled away
         if let Some(limit) = C::LIMIT {
             // Make sure we don't accidentally overflow `bytes_read`
-            if let Some(sum) = self.bytes_read.checked_add(n) {
-                if sum > limit {
-                    return crate::error::cold_decode_error_limit_exceeded();
-                }
-                self.bytes_read = sum;
-                Ok(())
-            } else {
-                crate::error::cold_decode_error_limit_exceeded()
+            if n > limit - self.bytes_read {
+                return crate::error::cold_decode_error_limit_exceeded();
             }
-        } else {
-            Ok(())
+            self.bytes_read += n;
         }
+        Ok(())
     }
 
     #[inline(always)]
