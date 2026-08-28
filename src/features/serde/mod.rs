@@ -219,13 +219,13 @@ impl core::fmt::Display for EncodeError {
         f: &mut core::fmt::Formatter<'_>,
     ) -> core::fmt::Result {
         match self {
-            Self::SequenceMustHaveLength => write!(f, "Sequence must have length"),
+            | Self::SequenceMustHaveLength => write!(f, "Sequence must have length"),
             #[cfg(not(feature = "alloc"))]
-            Self::CannotCollectStr => write!(f, "Cannot collect str"),
+            | Self::CannotCollectStr => write!(f, "Cannot collect str"),
             #[cfg(not(feature = "alloc"))]
-            Self::CustomError => write!(f, "Custom error"),
+            | Self::CustomError => write!(f, "Custom error"),
             #[cfg(feature = "alloc")]
-            Self::Custom(msg) => write!(f, "Custom error: {msg}"),
+            | Self::Custom(msg) => write!(f, "Custom error: {msg}"),
         }
     }
 }

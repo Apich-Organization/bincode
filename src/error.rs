@@ -104,21 +104,23 @@ impl core::fmt::Display for EncodeError {
         f: &mut core::fmt::Formatter<'_>,
     ) -> core::fmt::Result {
         match self {
-            Self::UnexpectedEnd => write!(f, "Unexpected end of file"),
-            Self::RefCellAlreadyBorrowed { inner, type_name } => write!(f, "RefCell<{type_name}> already borrowed: {inner}"),
-            Self::Other(inner) => write!(f, "{inner}"),
+            | Self::UnexpectedEnd => write!(f, "Unexpected end of file"),
+            | Self::RefCellAlreadyBorrowed { inner, type_name } => {
+                write!(f, "RefCell<{type_name}> already borrowed: {inner}")
+            },
+            | Self::Other(inner) => write!(f, "{inner}"),
             #[cfg(feature = "alloc")]
-            Self::OtherString(inner) => write!(f, "{inner}"),
+            | Self::OtherString(inner) => write!(f, "{inner}"),
             #[cfg(feature = "std")]
-            Self::InvalidPathCharacters => write!(f, "Invalid path characters"),
+            | Self::InvalidPathCharacters => write!(f, "Invalid path characters"),
             #[cfg(feature = "std")]
-            Self::Io { inner, index } => write!(f, "Io error: {inner} at index {index}"),
+            | Self::Io { inner, index } => write!(f, "Io error: {inner} at index {index}"),
             #[cfg(feature = "std")]
-            Self::LockFailed { type_name } => write!(f, "Lock failed for {type_name}"),
+            | Self::LockFailed { type_name } => write!(f, "Lock failed for {type_name}"),
             #[cfg(feature = "std")]
-            Self::InvalidSystemTime { inner, .. } => write!(f, "Invalid system time: {inner}"),
+            | Self::InvalidSystemTime { inner, .. } => write!(f, "Invalid system time: {inner}"),
             #[cfg(feature = "serde")]
-            Self::Serde(inner) => write!(f, "{inner}"),
+            | Self::Serde(inner) => write!(f, "{inner}"),
         }
     }
 }
