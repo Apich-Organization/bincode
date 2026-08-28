@@ -466,24 +466,27 @@ where
     let len = iter.len();
     encode_map_len::<_, E::C>(encoder.writer(), len)?;
 
+    let mut buffer = crate::alloc::vec::Vec::new();
     let mut entries = crate::alloc::vec::Vec::with_capacity(len);
     for (k, v) in iter {
-        let mut key_bytes = crate::alloc::vec::Vec::new();
+        let start = buffer.len();
         let mut key_encoder =
-            crate::enc::EncoderImpl::<_, E::C>::new(&mut key_bytes, *encoder.config());
+            crate::enc::EncoderImpl::<_, E::C>::new(&mut buffer, *encoder.config());
         k.encode(&mut key_encoder)?;
-        entries.push((key_bytes, v));
+        entries.push((start..buffer.len(), v));
     }
 
-    entries.sort_by(|(ka, _), (kb, _)| {
+    entries.sort_unstable_by(|(a, _), (b, _)| {
+        let slice_a = &buffer[a.clone()];
+        let slice_b = &buffer[b.clone()];
         match <E::C as crate::config::InternalFormatConfig>::CBOR_OPTIONS.deterministic_mode {
-            | CborDeterministicMode::LengthFirst => ka.len().cmp(&kb.len()).then(ka.cmp(kb)),
-            | _ => ka.cmp(kb),
+            | CborDeterministicMode::LengthFirst => slice_a.len().cmp(&slice_b.len()).then(slice_a.cmp(slice_b)),
+            | _ => slice_a.cmp(slice_b),
         }
     });
 
-    for (k_bytes, v) in entries {
-        encoder.writer().write(&k_bytes)?;
+    for (range, v) in entries {
+        encoder.writer().write(&buffer[range])?;
         v.encode(encoder)?;
     }
 
@@ -513,24 +516,27 @@ where
     let len = iter.len();
     encode_slice_len::<_, E::C>(encoder.writer(), len)?;
 
-    let mut entries = crate::alloc::vec::Vec::with_capacity(len);
+    let mut buffer = crate::alloc::vec::Vec::new();
+    let mut indices = crate::alloc::vec::Vec::with_capacity(len);
     for item in iter {
-        let mut bytes = crate::alloc::vec::Vec::new();
+        let start = buffer.len();
         let mut key_encoder =
-            crate::enc::EncoderImpl::<_, E::C>::new(&mut bytes, *encoder.config());
+            crate::enc::EncoderImpl::<_, E::C>::new(&mut buffer, *encoder.config());
         item.encode(&mut key_encoder)?;
-        entries.push(bytes);
+        indices.push(start..buffer.len());
     }
 
-    entries.sort_by(|a, b| {
+    indices.sort_unstable_by(|a, b| {
+        let slice_a = &buffer[a.clone()];
+        let slice_b = &buffer[b.clone()];
         match <E::C as crate::config::InternalFormatConfig>::CBOR_OPTIONS.deterministic_mode {
-            | CborDeterministicMode::LengthFirst => a.len().cmp(&b.len()).then(a.cmp(b)),
-            | _ => a.cmp(b),
+            | CborDeterministicMode::LengthFirst => slice_a.len().cmp(&slice_b.len()).then(slice_a.cmp(slice_b)),
+            | _ => slice_a.cmp(slice_b),
         }
     });
 
-    for bytes in entries {
-        encoder.writer().write(&bytes)?;
+    for range in indices {
+        encoder.writer().write(&buffer[range])?;
     }
 
     Ok(())
