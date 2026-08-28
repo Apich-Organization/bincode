@@ -262,19 +262,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode | Format::BincodeDeterministic => {
-                use crate::config::IntEncoding;
-                match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => {
-                        crate::varint::varint_encode_usize(
-                            self.writer(),
-                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                            val,
-                        )
-                    },
-                    | IntEncoding::Fixed => self.encode_u64(val as u64),
-                }
-            },
+            | Format::Bincode | Format::BincodeDeterministic => self.encode_u64(val as u64),
             | Format::Cbor | Format::CborDeterministic => {
                 cbor::encode_u64::<_, Self::C>(self.writer(), val as u64)
             },
@@ -460,19 +448,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode | Format::BincodeDeterministic => {
-                use crate::config::IntEncoding;
-                match <Self::C as crate::config::InternalIntEncodingConfig>::INT_ENCODING {
-                    | IntEncoding::Variable => {
-                        crate::varint::varint_encode_isize(
-                            self.writer(),
-                            <Self::C as crate::config::InternalEndianConfig>::ENDIAN,
-                            val,
-                        )
-                    },
-                    | IntEncoding::Fixed => self.encode_i64(val as i64),
-                }
-            },
+            | Format::Bincode | Format::BincodeDeterministic => self.encode_i64(val as i64),
             | Format::Cbor | Format::CborDeterministic => {
                 cbor::encode_i64::<_, Self::C>(self.writer(), val as i64)
             },

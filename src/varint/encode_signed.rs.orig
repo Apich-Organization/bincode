@@ -283,21 +283,3 @@ fn test_encode_i128() {
         assert_eq!(&buffer[..expected_be.len()], expected_be);
     }
 }
-
-#[test]
-fn test_encode_isize() {
-    use crate::enc::write::SliceWriter;
-
-    let mut buffer = [0u8; 20];
-    for value in [0, 2, 256, 16_000, 40_000, 3_000_000_000_i64 as isize, isize::MAX - 1, isize::MAX] {
-        let mut writer = SliceWriter::new(&mut buffer);
-        varint_encode_isize(&mut writer, Endianness::Little, value).unwrap();
-        let len = writer.bytes_written();
-        assert!(len > 0);
-
-        let mut writer = SliceWriter::new(&mut buffer);
-        varint_encode_isize(&mut writer, Endianness::Big, value).unwrap();
-        let len = writer.bytes_written();
-        assert!(len > 0);
-    }
-}

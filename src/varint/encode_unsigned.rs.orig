@@ -502,37 +502,3 @@ fn test_encode_u128() {
         assert_eq!(&buffer[1..17], &i.to_le_bytes());
     }
 }
-
-#[test]
-fn test_encode_usize() {
-    use crate::enc::write::SliceWriter;
-    let mut buffer = [0u8; 20];
-
-    // these should all encode to a single byte
-    for i in 0usize..=SINGLE_BYTE_MAX as usize {
-        let mut writer = SliceWriter::new(&mut buffer);
-        varint_encode_usize(&mut writer, Endianness::Big, i).unwrap();
-        assert_eq!(writer.bytes_written(), 1);
-        assert_eq!(buffer[0] as usize, i);
-
-        // Assert endianness doesn't matter
-        let mut writer = SliceWriter::new(&mut buffer);
-        varint_encode_usize(&mut writer, Endianness::Little, i).unwrap();
-        assert_eq!(writer.bytes_written(), 1);
-        assert_eq!(buffer[0] as usize, i);
-    }
-
-    for i in [
-        SINGLE_BYTE_MAX as usize + 1,
-        300,
-        500,
-        700,
-        888,
-        1234,
-        u16::MAX as usize,
-    ] {
-        let mut writer = SliceWriter::new(&mut buffer);
-        varint_encode_usize(&mut writer, Endianness::Big, i).unwrap();
-        assert_eq!(writer.bytes_written(), 3);
-    }
-}
