@@ -480,7 +480,9 @@ where
         let slice_a = &buffer[a.clone()];
         let slice_b = &buffer[b.clone()];
         match <E::C as crate::config::InternalFormatConfig>::CBOR_OPTIONS.deterministic_mode {
-            | CborDeterministicMode::LengthFirst => slice_a.len().cmp(&slice_b.len()).then(slice_a.cmp(slice_b)),
+            | CborDeterministicMode::LengthFirst => {
+                slice_a.len().cmp(&slice_b.len()).then(slice_a.cmp(slice_b))
+            },
             | _ => slice_a.cmp(slice_b),
         }
     });
@@ -530,7 +532,9 @@ where
         let slice_a = &buffer[a.clone()];
         let slice_b = &buffer[b.clone()];
         match <E::C as crate::config::InternalFormatConfig>::CBOR_OPTIONS.deterministic_mode {
-            | CborDeterministicMode::LengthFirst => slice_a.len().cmp(&slice_b.len()).then(slice_a.cmp(slice_b)),
+            | CborDeterministicMode::LengthFirst => {
+                slice_a.len().cmp(&slice_b.len()).then(slice_a.cmp(slice_b))
+            },
             | _ => slice_a.cmp(slice_b),
         }
     });
