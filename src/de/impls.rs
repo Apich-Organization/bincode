@@ -572,13 +572,11 @@ where
                 let u = U::decode(decoder)?;
                 Ok(Err(u))
             },
-            | x => {
-                crate::error::cold_decode_error_unexpected_variant(
-                    core::any::type_name::<Self>(),
-                    &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
-                    x,
-                )
-            },
+            | x => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
+                x,
+            ),
         }
     }
 }
@@ -601,13 +599,11 @@ where
                 let u = U::borrow_decode(decoder)?;
                 Ok(Err(u))
             },
-            | x => {
-                crate::error::cold_decode_error_unexpected_variant(
-                    core::any::type_name::<Self>(),
-                    &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
-                    x,
-                )
-            },
+            | x => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
+                x,
+            ),
         }
     }
 }
@@ -725,13 +721,11 @@ where
             | 0 => Ok(Self::Unbounded),
             | 1 => Ok(Self::Included(T::decode(decoder)?)),
             | 2 => Ok(Self::Excluded(T::decode(decoder)?)),
-            | x => {
-                crate::error::cold_decode_error_unexpected_variant(
-                    core::any::type_name::<Self>(),
-                    &crate::error::AllowedEnumVariants::Range { max: 2, min: 0 },
-                    x,
-                )
-            },
+            | x => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { max: 2, min: 0 },
+                x,
+            ),
         }
     }
 }
@@ -747,13 +741,11 @@ where
             | 0 => Ok(Self::Unbounded),
             | 1 => Ok(Self::Included(T::borrow_decode(decoder)?)),
             | 2 => Ok(Self::Excluded(T::borrow_decode(decoder)?)),
-            | x => {
-                crate::error::cold_decode_error_unexpected_variant(
-                    core::any::type_name::<Self>(),
-                    &crate::error::AllowedEnumVariants::Range { max: 2, min: 0 },
-                    x,
-                )
-            },
+            | x => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { max: 2, min: 0 },
+                x,
+            ),
         }
     }
 }
