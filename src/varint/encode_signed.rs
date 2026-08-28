@@ -45,7 +45,11 @@ pub fn varint_encode_isize<W: Writer>(
     endian: Endianness,
     val: isize,
 ) -> Result<(), EncodeError> {
-    varint_encode_usize(writer, endian, ((val << 1) ^ (val >> (usize::BITS - 1))) as usize)
+    varint_encode_usize(
+        writer,
+        endian,
+        ((val << 1) ^ (val >> (usize::BITS - 1))) as usize,
+    )
 }
 
 #[inline(always)]
@@ -289,7 +293,16 @@ fn test_encode_isize() {
     use crate::enc::write::SliceWriter;
 
     let mut buffer = [0u8; 20];
-    for value in [0, 2, 256, 16_000, 40_000, 3_000_000_000_i64 as isize, isize::MAX - 1, isize::MAX] {
+    for value in [
+        0,
+        2,
+        256,
+        16_000,
+        40_000,
+        3_000_000_000_i64 as isize,
+        isize::MAX - 1,
+        isize::MAX,
+    ] {
         let mut writer = SliceWriter::new(&mut buffer);
         varint_encode_isize(&mut writer, Endianness::Little, value).unwrap();
         let len = writer.bytes_written();
