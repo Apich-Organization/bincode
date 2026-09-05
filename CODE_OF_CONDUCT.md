@@ -55,7 +55,7 @@ The project welcomes discussions on AI system assisted coding and development as
 If you experience or witness a violation of this Code of Conduct or are concerned about a potential security issue, please report it immediately:
 
 * **For CoC Violations:** Contact the maintainers privately via email at **Xinyu.Yang@apich.org** or through a private message to a project maintainer.
-* **For Security Issues:** Contact **security@apich.com** or file a private issue report if available on the platform.
+* **For Security Issues:** Contact **security@apich.org** or file a private issue report if available on the platform.
 
 All reports will be handled with discretion and treated with seriousness. The identity of the reporter will remain confidential unless required by law.
 
