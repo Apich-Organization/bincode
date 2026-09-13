@@ -29,19 +29,21 @@ where
     let len = iter.len();
     encoder.encode_map_len(len)?;
 
+    let mut buffer = Vec::new();
     let mut entries = Vec::with_capacity(len);
+
     for (k, v) in iter {
-        let mut key_bytes = Vec::new();
+        let start = buffer.len();
         let mut key_encoder =
-            crate::enc::EncoderImpl::<_, E::C>::new(&mut key_bytes, *encoder.config());
+            crate::enc::EncoderImpl::<_, E::C>::new(&mut buffer, *encoder.config());
         k.encode(&mut key_encoder)?;
-        entries.push((key_bytes, v));
+        entries.push((start..buffer.len(), v));
     }
 
-    entries.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
+    entries.sort_unstable_by_key(|(range, _)| &buffer[range.clone()]);
 
-    for (k_bytes, v) in entries {
-        encoder.writer().write(&k_bytes)?;
+    for (range, v) in entries {
+        encoder.writer().write(&buffer[range])?;
         v.encode(encoder)?;
     }
 
@@ -71,19 +73,21 @@ where
     let len = iter.len();
     encoder.encode_slice_len(len)?;
 
-    let mut entries = Vec::with_capacity(len);
+    let mut buffer = Vec::new();
+    let mut indices = Vec::with_capacity(len);
+
     for item in iter {
-        let mut bytes = Vec::new();
+        let start = buffer.len();
         let mut key_encoder =
-            crate::enc::EncoderImpl::<_, E::C>::new(&mut bytes, *encoder.config());
+            crate::enc::EncoderImpl::<_, E::C>::new(&mut buffer, *encoder.config());
         item.encode(&mut key_encoder)?;
-        entries.push(bytes);
+        indices.push(start..buffer.len());
     }
 
-    entries.sort();
+    indices.sort_unstable_by_key(|range| &buffer[range.clone()]);
 
-    for bytes in entries {
-        encoder.writer().write(&bytes)?;
+    for range in indices {
+        encoder.writer().write(&buffer[range])?;
     }
 
     Ok(())
