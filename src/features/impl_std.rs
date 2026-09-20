@@ -1,3 +1,5 @@
+#![allow(unsafe_code)]
+
 use crate::config::Config;
 use crate::config::internal::InternalFingerprintGuard;
 use crate::de::BorrowDecode;
@@ -141,6 +143,71 @@ where
         n: usize,
     ) {
         <Self as std::io::BufRead>::consume(self, n);
+    }
+
+    #[inline(always)]
+    fn read_u8(&mut self) -> Result<u8, DecodeError> {
+        if let Some(buf) = self.peek_read(1) {
+            let val = buf[0];
+            self.consume(1);
+            Ok(val)
+        } else {
+            let mut byte = [0u8; 1];
+            Reader::read(self, &mut byte)?;
+            Ok(byte[0])
+        }
+    }
+
+    #[inline(always)]
+    fn read_u16(&mut self) -> Result<u16, DecodeError> {
+        if let Some(buf) = self.peek_read(2) {
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u16>()) };
+            self.consume(2);
+            Ok(val)
+        } else {
+            let mut bytes = [0u8; 2];
+            Reader::read(self, &mut bytes)?;
+            Ok(u16::from_ne_bytes(bytes))
+        }
+    }
+
+    #[inline(always)]
+    fn read_u32(&mut self) -> Result<u32, DecodeError> {
+        if let Some(buf) = self.peek_read(4) {
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u32>()) };
+            self.consume(4);
+            Ok(val)
+        } else {
+            let mut bytes = [0u8; 4];
+            Reader::read(self, &mut bytes)?;
+            Ok(u32::from_ne_bytes(bytes))
+        }
+    }
+
+    #[inline(always)]
+    fn read_u64(&mut self) -> Result<u64, DecodeError> {
+        if let Some(buf) = self.peek_read(8) {
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u64>()) };
+            self.consume(8);
+            Ok(val)
+        } else {
+            let mut bytes = [0u8; 8];
+            Reader::read(self, &mut bytes)?;
+            Ok(u64::from_ne_bytes(bytes))
+        }
+    }
+
+    #[inline(always)]
+    fn read_u128(&mut self) -> Result<u128, DecodeError> {
+        if let Some(buf) = self.peek_read(16) {
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u128>()) };
+            self.consume(16);
+            Ok(val)
+        } else {
+            let mut bytes = [0u8; 16];
+            Reader::read(self, &mut bytes)?;
+            Ok(u128::from_ne_bytes(bytes))
+        }
     }
 }
 
