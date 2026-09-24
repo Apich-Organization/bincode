@@ -3,6 +3,7 @@ use super::varint_encode_u16;
 use super::varint_encode_u32;
 use super::varint_encode_u64;
 use super::varint_encode_u128;
+use super::varint_encode_usize;
 use crate::config::Endianness;
 
 use crate::enc::write::Writer;
@@ -36,6 +37,19 @@ pub fn varint_encode_i64<W: Writer>(
     val: i64,
 ) -> Result<(), EncodeError> {
     varint_encode_u64(writer, endian, ((val << 1) ^ (val >> 63)) as u64)
+}
+
+#[inline(always)]
+pub fn varint_encode_isize<W: Writer>(
+    writer: &mut W,
+    endian: Endianness,
+    val: isize,
+) -> Result<(), EncodeError> {
+    varint_encode_usize(
+        writer,
+        endian,
+        ((val << 1) ^ (val >> (usize::BITS - 1))) as usize,
+    )
 }
 
 #[inline(always)]
@@ -271,5 +285,32 @@ fn test_encode_i128() {
 
         assert_eq!(writer.bytes_written(), expected_be.len());
         assert_eq!(&buffer[..expected_be.len()], expected_be);
+    }
+}
+
+#[test]
+fn test_encode_isize() {
+    use crate::enc::write::SliceWriter;
+
+    let mut buffer = [0u8; 20];
+    for value in [
+        0,
+        2,
+        256,
+        16_000,
+        40_000,
+        3_000_000_000_i64 as isize,
+        isize::MAX - 1,
+        isize::MAX,
+    ] {
+        let mut writer = SliceWriter::new(&mut buffer);
+        varint_encode_isize(&mut writer, Endianness::Little, value).unwrap();
+        let len = writer.bytes_written();
+        assert!(len > 0);
+
+        let mut writer = SliceWriter::new(&mut buffer);
+        varint_encode_isize(&mut writer, Endianness::Big, value).unwrap();
+        let len = writer.bytes_written();
+        assert!(len > 0);
     }
 }
