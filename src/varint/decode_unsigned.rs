@@ -148,12 +148,14 @@ where
             let mut bytes = [0u8; 8];
             read.read(&mut bytes)?;
             Ok(match endian {
-                | Endianness::Big => usize::try_from(u64::from_be_bytes(bytes)).map_err(|_| {
-                    crate::error::cold_decode_error_outside_usize_range::<()>(u64::from_be_bytes(
-                        bytes,
-                    ))
-                    .unwrap_err()
-                })?,
+                | Endianness::Big => {
+                    usize::try_from(u64::from_be_bytes(bytes)).map_err(|_| {
+                        crate::error::cold_decode_error_outside_usize_range::<()>(
+                            u64::from_be_bytes(bytes),
+                        )
+                        .unwrap_err()
+                    })?
+                },
                 | Endianness::Little => {
                     usize::try_from(u64::from_le_bytes(bytes)).map_err(|_| {
                         crate::error::cold_decode_error_outside_usize_range::<()>(
