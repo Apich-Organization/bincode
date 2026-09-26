@@ -109,6 +109,7 @@ where
     }
 }
 
+#[allow(unsafe_code)]
 impl<R> Reader for std::io::BufReader<R>
 where
     R: std::io::Read,
@@ -141,6 +142,83 @@ where
         n: usize,
     ) {
         <Self as std::io::BufRead>::consume(self, n);
+    }
+
+    #[inline(always)]
+    fn read_u8(&mut self) -> Result<u8, DecodeError> {
+        // Fast path: if the bytes are already in the internal buffer,
+        // we can read them directly without an additional function call or buffer copy.
+        if let Some(bytes) = Reader::peek_read(self, 1) {
+            let val = bytes[0];
+            Reader::consume(self, 1);
+            Ok(val)
+        } else {
+            // Slow path: buffer is empty or doesn't have enough bytes. Fall back to `read_exact`.
+            let mut bytes = [0u8; 1];
+            Reader::read(self, &mut bytes)?;
+            Ok(bytes[0])
+        }
+    }
+
+    #[inline(always)]
+    fn read_u16(&mut self) -> Result<u16, DecodeError> {
+        // Fast path: read directly from the buffer.
+        if let Some(bytes) = Reader::peek_read(self, 2) {
+            // SAFETY: `peek_read` guarantees the slice is exactly 2 bytes long.
+            // Using `read_unaligned` is safe and native endianness is used here.
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u16>()) };
+            Reader::consume(self, 2);
+            Ok(val)
+        } else {
+            let mut bytes = [0u8; 2];
+            Reader::read(self, &mut bytes)?;
+            Ok(u16::from_ne_bytes(bytes))
+        }
+    }
+
+    #[inline(always)]
+    fn read_u32(&mut self) -> Result<u32, DecodeError> {
+        // Fast path: read directly from the buffer.
+        if let Some(bytes) = Reader::peek_read(self, 4) {
+            // SAFETY: `peek_read` guarantees the slice is exactly 4 bytes long.
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u32>()) };
+            Reader::consume(self, 4);
+            Ok(val)
+        } else {
+            let mut bytes = [0u8; 4];
+            Reader::read(self, &mut bytes)?;
+            Ok(u32::from_ne_bytes(bytes))
+        }
+    }
+
+    #[inline(always)]
+    fn read_u64(&mut self) -> Result<u64, DecodeError> {
+        // Fast path: read directly from the buffer.
+        if let Some(bytes) = Reader::peek_read(self, 8) {
+            // SAFETY: `peek_read` guarantees the slice is exactly 8 bytes long.
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u64>()) };
+            Reader::consume(self, 8);
+            Ok(val)
+        } else {
+            let mut bytes = [0u8; 8];
+            Reader::read(self, &mut bytes)?;
+            Ok(u64::from_ne_bytes(bytes))
+        }
+    }
+
+    #[inline(always)]
+    fn read_u128(&mut self) -> Result<u128, DecodeError> {
+        // Fast path: read directly from the buffer.
+        if let Some(bytes) = Reader::peek_read(self, 16) {
+            // SAFETY: `peek_read` guarantees the slice is exactly 16 bytes long.
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u128>()) };
+            Reader::consume(self, 16);
+            Ok(val)
+        } else {
+            let mut bytes = [0u8; 16];
+            Reader::read(self, &mut bytes)?;
+            Ok(u128::from_ne_bytes(bytes))
+        }
     }
 }
 
@@ -465,13 +543,11 @@ impl<Context> Decode<Context> for IpAddr {
         match u32::decode(decoder)? {
             | 0 => Ok(Self::V4(Ipv4Addr::decode(decoder)?)),
             | 1 => Ok(Self::V6(Ipv6Addr::decode(decoder)?)),
-            | found => {
-                crate::error::cold_decode_error_unexpected_variant(
-                    core::any::type_name::<Self>(),
-                    &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
-                    found,
-                )
-            },
+            | found => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                found,
+            ),
         }
     }
 }
@@ -542,13 +618,11 @@ impl<Context> Decode<Context> for SocketAddr {
         match u32::decode(decoder)? {
             | 0 => Ok(Self::V4(SocketAddrV4::decode(decoder)?)),
             | 1 => Ok(Self::V6(SocketAddrV6::decode(decoder)?)),
-            | found => {
-                crate::error::cold_decode_error_unexpected_variant(
-                    core::any::type_name::<Self>(),
-                    &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
-                    found,
-                )
-            },
+            | found => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                found,
+            ),
         }
     }
 }
