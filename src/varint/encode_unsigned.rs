@@ -188,6 +188,49 @@ fn varint_encode_u128_cold<W: Writer>(
     }
 }
 
+#[inline(always)]
+pub fn varint_encode_usize<W: Writer>(
+    writer: &mut W,
+    endian: Endianness,
+    val: usize,
+) -> Result<(), EncodeError> {
+    if crate::utils::is_likely!(val <= SINGLE_BYTE_MAX as _) {
+        writer.write_u8(val as u8)
+    } else {
+        varint_encode_usize_cold(writer, endian, val)
+    }
+}
+
+#[inline(never)]
+#[cold]
+fn varint_encode_usize_cold<W: Writer>(
+    writer: &mut W,
+    endian: Endianness,
+    val: usize,
+) -> Result<(), EncodeError> {
+    if crate::utils::is_likely!(val <= u16::MAX as _) {
+        let mut buf = [0u8; 3];
+        buf[0] = U16_BYTE;
+        let bytes = match endian {
+            | Endianness::Big => (val as u16).to_be_bytes(),
+            | Endianness::Little => (val as u16).to_le_bytes(),
+        };
+        buf[1..3].copy_from_slice(&bytes);
+        writer.write(&buf)
+    } else if crate::utils::is_likely!(val <= u32::MAX as _) {
+        let mut buf = [0u8; 5];
+        buf[0] = U32_BYTE;
+        let bytes = match endian {
+            | Endianness::Big => (val as u32).to_be_bytes(),
+            | Endianness::Little => (val as u32).to_le_bytes(),
+        };
+        buf[1..5].copy_from_slice(&bytes);
+        writer.write(&buf)
+    } else {
+        varint_encode_u64_cold(writer, endian, val as u64)
+    }
+}
+
 #[test]
 fn test_encode_u16() {
     use crate::enc::write::SliceWriter;
@@ -457,5 +500,39 @@ fn test_encode_u128() {
         assert_eq!(writer.bytes_written(), 17);
         assert_eq!(buffer[0], U128_BYTE);
         assert_eq!(&buffer[1..17], &i.to_le_bytes());
+    }
+}
+
+#[test]
+fn test_encode_usize() {
+    use crate::enc::write::SliceWriter;
+    let mut buffer = [0u8; 20];
+
+    // these should all encode to a single byte
+    for i in 0usize..=SINGLE_BYTE_MAX as usize {
+        let mut writer = SliceWriter::new(&mut buffer);
+        varint_encode_usize(&mut writer, Endianness::Big, i).unwrap();
+        assert_eq!(writer.bytes_written(), 1);
+        assert_eq!(buffer[0] as usize, i);
+
+        // Assert endianness doesn't matter
+        let mut writer = SliceWriter::new(&mut buffer);
+        varint_encode_usize(&mut writer, Endianness::Little, i).unwrap();
+        assert_eq!(writer.bytes_written(), 1);
+        assert_eq!(buffer[0] as usize, i);
+    }
+
+    for i in [
+        SINGLE_BYTE_MAX as usize + 1,
+        300,
+        500,
+        700,
+        888,
+        1234,
+        u16::MAX as usize,
+    ] {
+        let mut writer = SliceWriter::new(&mut buffer);
+        varint_encode_usize(&mut writer, Endianness::Big, i).unwrap();
+        assert_eq!(writer.bytes_written(), 3);
     }
 }

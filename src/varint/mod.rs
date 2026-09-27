@@ -18,10 +18,12 @@ pub use self::encode_signed::varint_encode_i16;
 pub use self::encode_signed::varint_encode_i32;
 pub use self::encode_signed::varint_encode_i64;
 pub use self::encode_signed::varint_encode_i128;
+pub use self::encode_signed::varint_encode_isize;
 pub use self::encode_unsigned::varint_encode_u16;
 pub use self::encode_unsigned::varint_encode_u32;
 pub use self::encode_unsigned::varint_encode_u64;
 pub use self::encode_unsigned::varint_encode_u128;
+pub use self::encode_unsigned::varint_encode_usize;
 
 const SINGLE_BYTE_MAX: u8 = 250;
 const U16_BYTE: u8 = 251;
