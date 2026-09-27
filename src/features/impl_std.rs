@@ -142,6 +142,54 @@ where
     ) {
         <Self as std::io::BufRead>::consume(self, n);
     }
+
+    #[inline(always)]
+    fn read_u16(&mut self) -> Result<u16, DecodeError> {
+        if let Some(buf) = Reader::peek_read(self, 2) {
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u16>()) };
+            Reader::consume(self, 2);
+            return Ok(val);
+        }
+        let mut bytes = [0u8; 2];
+        Reader::read(self, &mut bytes)?;
+        Ok(u16::from_ne_bytes(bytes))
+    }
+
+    #[inline(always)]
+    fn read_u32(&mut self) -> Result<u32, DecodeError> {
+        if let Some(buf) = Reader::peek_read(self, 4) {
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u32>()) };
+            Reader::consume(self, 4);
+            return Ok(val);
+        }
+        let mut bytes = [0u8; 4];
+        Reader::read(self, &mut bytes)?;
+        Ok(u32::from_ne_bytes(bytes))
+    }
+
+    #[inline(always)]
+    fn read_u64(&mut self) -> Result<u64, DecodeError> {
+        if let Some(buf) = Reader::peek_read(self, 8) {
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u64>()) };
+            Reader::consume(self, 8);
+            return Ok(val);
+        }
+        let mut bytes = [0u8; 8];
+        Reader::read(self, &mut bytes)?;
+        Ok(u64::from_ne_bytes(bytes))
+    }
+
+    #[inline(always)]
+    fn read_u128(&mut self) -> Result<u128, DecodeError> {
+        if let Some(buf) = Reader::peek_read(self, 16) {
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u128>()) };
+            Reader::consume(self, 16);
+            return Ok(val);
+        }
+        let mut bytes = [0u8; 16];
+        Reader::read(self, &mut bytes)?;
+        Ok(u128::from_ne_bytes(bytes))
+    }
 }
 
 /// Encode the given value into any type that implements `std::io::Write`, e.g. `std::fs::File`, with the given `Config`.
