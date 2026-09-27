@@ -26,9 +26,10 @@ where
         | U16_BYTE => {
             let mut bytes = [0u8; 2];
             read.read(&mut bytes)?;
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u16>()) };
             Ok(match endian {
-                | Endianness::Big => u16::from_be_bytes(bytes),
-                | Endianness::Little => u16::from_le_bytes(bytes),
+                | Endianness::Big => u16::from_be(val),
+                | Endianness::Little => u16::from_le(val),
             })
         },
         | U32_BYTE => invalid_varint_discriminant(IntegerType::U16, IntegerType::U32),
@@ -54,17 +55,19 @@ where
         | U16_BYTE => {
             let mut bytes = [0u8; 2];
             read.read(&mut bytes)?;
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u16>()) };
             Ok(match endian {
-                | Endianness::Big => u32::from(u16::from_be_bytes(bytes)),
-                | Endianness::Little => u32::from(u16::from_le_bytes(bytes)),
+                | Endianness::Big => u32::from(u16::from_be(val)),
+                | Endianness::Little => u32::from(u16::from_le(val)),
             })
         },
         | U32_BYTE => {
             let mut bytes = [0u8; 4];
             read.read(&mut bytes)?;
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u32>()) };
             Ok(match endian {
-                | Endianness::Big => u32::from_be_bytes(bytes),
-                | Endianness::Little => u32::from_le_bytes(bytes),
+                | Endianness::Big => u32::from_be(val),
+                | Endianness::Little => u32::from_le(val),
             })
         },
         | U64_BYTE => invalid_varint_discriminant(IntegerType::U32, IntegerType::U64),
@@ -89,25 +92,28 @@ where
         | U16_BYTE => {
             let mut bytes = [0u8; 2];
             read.read(&mut bytes)?;
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u16>()) };
             Ok(match endian {
-                | Endianness::Big => u64::from(u16::from_be_bytes(bytes)),
-                | Endianness::Little => u64::from(u16::from_le_bytes(bytes)),
+                | Endianness::Big => u64::from(u16::from_be(val)),
+                | Endianness::Little => u64::from(u16::from_le(val)),
             })
         },
         | U32_BYTE => {
             let mut bytes = [0u8; 4];
             read.read(&mut bytes)?;
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u32>()) };
             Ok(match endian {
-                | Endianness::Big => u64::from(u32::from_be_bytes(bytes)),
-                | Endianness::Little => u64::from(u32::from_le_bytes(bytes)),
+                | Endianness::Big => u64::from(u32::from_be(val)),
+                | Endianness::Little => u64::from(u32::from_le(val)),
             })
         },
         | U64_BYTE => {
             let mut bytes = [0u8; 8];
             read.read(&mut bytes)?;
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u64>()) };
             Ok(match endian {
-                | Endianness::Big => u64::from_be_bytes(bytes),
-                | Endianness::Little => u64::from_le_bytes(bytes),
+                | Endianness::Big => u64::from_be(val),
+                | Endianness::Little => u64::from_le(val),
             })
         },
         | U128_BYTE => invalid_varint_discriminant(IntegerType::U64, IntegerType::U128),
@@ -131,37 +137,36 @@ where
         | U16_BYTE => {
             let mut bytes = [0u8; 2];
             read.read(&mut bytes)?;
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u16>()) };
             Ok(match endian {
-                | Endianness::Big => u16::from_be_bytes(bytes) as usize,
-                | Endianness::Little => u16::from_le_bytes(bytes) as usize,
+                | Endianness::Big => u16::from_be(val) as usize,
+                | Endianness::Little => u16::from_le(val) as usize,
             })
         },
         | U32_BYTE => {
             let mut bytes = [0u8; 4];
             read.read(&mut bytes)?;
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u32>()) };
             Ok(match endian {
-                | Endianness::Big => u32::from_be_bytes(bytes) as usize,
-                | Endianness::Little => u32::from_le_bytes(bytes) as usize,
+                | Endianness::Big => u32::from_be(val) as usize,
+                | Endianness::Little => u32::from_le(val) as usize,
             })
         },
         | U64_BYTE => {
             let mut bytes = [0u8; 8];
             read.read(&mut bytes)?;
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u64>()) };
             Ok(match endian {
                 | Endianness::Big => {
-                    usize::try_from(u64::from_be_bytes(bytes)).map_err(|_| {
-                        crate::error::cold_decode_error_outside_usize_range::<()>(
-                            u64::from_be_bytes(bytes),
-                        )
-                        .unwrap_err()
+                    let v = u64::from_be(val);
+                    usize::try_from(v).map_err(|_| {
+                        crate::error::cold_decode_error_outside_usize_range::<()>(v).unwrap_err()
                     })?
                 },
                 | Endianness::Little => {
-                    usize::try_from(u64::from_le_bytes(bytes)).map_err(|_| {
-                        crate::error::cold_decode_error_outside_usize_range::<()>(
-                            u64::from_le_bytes(bytes),
-                        )
-                        .unwrap_err()
+                    let v = u64::from_le(val);
+                    usize::try_from(v).map_err(|_| {
+                        crate::error::cold_decode_error_outside_usize_range::<()>(v).unwrap_err()
                     })?
                 },
             })
@@ -187,33 +192,37 @@ where
         | U16_BYTE => {
             let mut bytes = [0u8; 2];
             read.read(&mut bytes)?;
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u16>()) };
             Ok(match endian {
-                | Endianness::Big => u128::from(u16::from_be_bytes(bytes)),
-                | Endianness::Little => u128::from(u16::from_le_bytes(bytes)),
+                | Endianness::Big => u128::from(u16::from_be(val)),
+                | Endianness::Little => u128::from(u16::from_le(val)),
             })
         },
         | U32_BYTE => {
             let mut bytes = [0u8; 4];
             read.read(&mut bytes)?;
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u32>()) };
             Ok(match endian {
-                | Endianness::Big => u128::from(u32::from_be_bytes(bytes)),
-                | Endianness::Little => u128::from(u32::from_le_bytes(bytes)),
+                | Endianness::Big => u128::from(u32::from_be(val)),
+                | Endianness::Little => u128::from(u32::from_le(val)),
             })
         },
         | U64_BYTE => {
             let mut bytes = [0u8; 8];
             read.read(&mut bytes)?;
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u64>()) };
             Ok(match endian {
-                | Endianness::Big => u128::from(u64::from_be_bytes(bytes)),
-                | Endianness::Little => u128::from(u64::from_le_bytes(bytes)),
+                | Endianness::Big => u128::from(u64::from_be(val)),
+                | Endianness::Little => u128::from(u64::from_le(val)),
             })
         },
         | U128_BYTE => {
             let mut bytes = [0u8; 16];
             read.read(&mut bytes)?;
+            let val = unsafe { core::ptr::read_unaligned(bytes.as_ptr().cast::<u128>()) };
             Ok(match endian {
-                | Endianness::Big => u128::from_be_bytes(bytes),
-                | Endianness::Little => u128::from_le_bytes(bytes),
+                | Endianness::Big => u128::from_be(val),
+                | Endianness::Little => u128::from_le(val),
             })
         },
         | _ => invalid_varint_discriminant(IntegerType::U128, IntegerType::Reserved),
