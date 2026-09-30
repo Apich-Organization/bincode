@@ -1,0 +1,3 @@
+## 2024-05-15 - Fast paths for buffered varints decoding
+**Learning:** `std::io::BufReader<R>` custom `read_u*` overrides use `peek_read` to speed up varint decoding. However, `peek_read` must proactively call `fill_buf()` if `self.buffer().len() < n` to ensure sufficient data is buffered to hit these fast paths, especially for larger varints like u32 and u64, otherwise they fall back to slow reads.
+**Action:** When implementing `peek_read` for `std::io::BufReader`, always ensure the internal buffer is populated with sufficient bytes (e.g., using `std::io::BufRead::fill_buf`) before checking the buffer slice.
