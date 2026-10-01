@@ -109,6 +109,7 @@ where
     }
 }
 
+#[allow(unsafe_code)]
 impl<R> Reader for std::io::BufReader<R>
 where
     R: std::io::Read,
@@ -132,6 +133,11 @@ where
         &mut self,
         n: usize,
     ) -> Option<&[u8]> {
+        // ⚡ Bolt: Eagerly populate the buffer if it's empty to ensure we hit
+        // the fast-path (zero-copy peek_read) instead of falling back to slow reads.
+        if self.buffer().len() < n {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
         self.buffer().get(..n)
     }
 

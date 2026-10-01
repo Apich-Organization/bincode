@@ -1,0 +1,3 @@
+## 2023-10-01 - [BufReader Peek Optimization]
+**Learning:** In `bincode-next`, `std::io::BufReader<R>` custom `read_u*` overrides use `peek_read` to speed up decoding. However, `peek_read` must proactively call `fill_buf()` if `self.buffer().len() < n` to ensure sufficient data is buffered to hit these fast paths (rather than falling back to slow reads), especially for larger integers like u32 and u64. Also, to avoid NLL borrow checker issues, we fetch the final reference at the end of the block.
+**Action:** When optimizing decoding layers relying on buffering, ensure the buffer is eagerly populated when checking for available data (`fill_buf` before `get`), and construct the reference independently after mutation.
