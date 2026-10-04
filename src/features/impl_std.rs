@@ -132,6 +132,11 @@ where
         &mut self,
         n: usize,
     ) -> Option<&[u8]> {
+        // Proactively ask underlying reader for more bytes when the buffer lacks sufficient length for fast-path reads.
+        // We intentionally ignore any error; it will bubble up in the slow-path fallback.
+        if self.buffer().len() < n {
+            let _ = <Self as std::io::BufRead>::fill_buf(self);
+        }
         self.buffer().get(..n)
     }
 
@@ -156,6 +161,7 @@ where
         }
     }
 
+    #[allow(unsafe_code)]
     #[inline(always)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 2) {
@@ -169,6 +175,7 @@ where
         }
     }
 
+    #[allow(unsafe_code)]
     #[inline(always)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 4) {
@@ -182,6 +189,7 @@ where
         }
     }
 
+    #[allow(unsafe_code)]
     #[inline(always)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 8) {
@@ -195,6 +203,7 @@ where
         }
     }
 
+    #[allow(unsafe_code)]
     #[inline(always)]
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 16) {
