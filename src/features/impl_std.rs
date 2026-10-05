@@ -132,6 +132,9 @@ where
         &mut self,
         n: usize,
     ) -> Option<&[u8]> {
+        if self.buffer().len() < n {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
         self.buffer().get(..n)
     }
 
@@ -157,6 +160,7 @@ where
     }
 
     #[inline(always)]
+    #[allow(unsafe_code)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 2) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u16>()) };
@@ -170,6 +174,7 @@ where
     }
 
     #[inline(always)]
+    #[allow(unsafe_code)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 4) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u32>()) };
@@ -183,6 +188,7 @@ where
     }
 
     #[inline(always)]
+    #[allow(unsafe_code)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 8) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u64>()) };
@@ -196,6 +202,7 @@ where
     }
 
     #[inline(always)]
+    #[allow(unsafe_code)]
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 16) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u128>()) };
