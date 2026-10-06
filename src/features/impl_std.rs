@@ -132,6 +132,12 @@ where
         &mut self,
         n: usize,
     ) -> Option<&[u8]> {
+        // PERF: Proactively fill the buffer if it has less than `n` bytes.
+        // This ensures we hit the fast path for varint decoding (e.g. read_u32)
+        // by avoiding the slow path fallback when the buffer is empty.
+        if self.buffer().len() < n {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
         self.buffer().get(..n)
     }
 

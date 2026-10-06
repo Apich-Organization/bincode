@@ -1,0 +1,3 @@
+## 2024-05-18 - Fast path optimization for BufReader
+**Learning:** `std::io::BufReader::fill_buf()` only fetches more data if its internal buffer is entirely empty. For `peek_read` implementations that try to hit fast paths for varint decoding, this creates a performance cliff right at buffer boundaries. If `peek_read` is asked for `n` bytes but the buffer is empty, it returns `None`, forcing a slow fallback path.
+**Action:** Proactively call `let _ = std::io::BufRead::fill_buf(self)` if `self.buffer().len() < n` (specifically catching the 0 length case) to keep the fast path engaged across buffer chunks.
