@@ -109,6 +109,7 @@ where
     }
 }
 
+#[allow(unsafe_code)]
 impl<R> Reader for std::io::BufReader<R>
 where
     R: std::io::Read,
@@ -132,6 +133,9 @@ where
         &mut self,
         n: usize,
     ) -> Option<&[u8]> {
+        if self.buffer().len() < n {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
         self.buffer().get(..n)
     }
 
