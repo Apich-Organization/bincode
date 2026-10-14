@@ -1,0 +1,3 @@
+## 2024-05-18 - [BufReader peek_read Optimization]
+**Learning:** In `bincode-next`, `std::io::BufReader<R>` custom `read_u*` overrides use `peek_read` to speed up varint decoding. However, `peek_read` must proactively call `fill_buf()` if `self.buffer().len() < n` to ensure sufficient data is buffered to hit these fast paths (rather than falling back to slow reads), especially for larger varints like u32 and u64.
+**Action:** When working with buffered readers and custom read overrides (like `peek_read`), proactively check buffer length and trigger a fill operation (`fill_buf`) before falling back to unbuffered/slower read loops. This ensures fast paths are consistently hit.

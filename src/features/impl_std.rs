@@ -127,11 +127,15 @@ where
         })
     }
 
+    #[allow(unsafe_code)]
     #[inline(always)]
     fn peek_read(
         &mut self,
         n: usize,
     ) -> Option<&[u8]> {
+        if self.buffer().len() < n {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
         self.buffer().get(..n)
     }
 
@@ -143,6 +147,7 @@ where
         <Self as std::io::BufRead>::consume(self, n);
     }
 
+    #[allow(unsafe_code)]
     #[inline(always)]
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 1) {
@@ -156,6 +161,7 @@ where
         }
     }
 
+    #[allow(unsafe_code)]
     #[inline(always)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 2) {
@@ -169,6 +175,7 @@ where
         }
     }
 
+    #[allow(unsafe_code)]
     #[inline(always)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 4) {
@@ -182,6 +189,7 @@ where
         }
     }
 
+    #[allow(unsafe_code)]
     #[inline(always)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 8) {
@@ -195,6 +203,7 @@ where
         }
     }
 
+    #[allow(unsafe_code)]
     #[inline(always)]
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 16) {
