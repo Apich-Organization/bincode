@@ -1,0 +1,3 @@
+## 2024-10-16 - Proactive fill_buf in BufReader peek_read
+**Learning:** In `bincode-next`, `std::io::BufReader<R>` custom `read_u*` overrides use `peek_read` to speed up varint decoding. However, `peek_read` must proactively call `fill_buf()` if `self.buffer().len() < n` to ensure sufficient data is buffered to hit these fast paths (rather than falling back to slow reads), especially for larger varints like u32 and u64. Also, to avoid NLL borrow checker issues, we need to sequentially mutate the state and fetch the final reference at the end of the block.
+**Action:** When implementing `peek_read` for `BufReader`, sequentially do `if self.buffer().len() < n { let _ = std::io::BufRead::fill_buf(self); }` before returning `self.buffer().get(..n)`.

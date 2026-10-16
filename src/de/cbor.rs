@@ -140,10 +140,9 @@ pub(crate) fn decode_i8<R: Reader>(reader: &mut R) -> Result<i8, DecodeError> {
         return cold_decode_error_unexpected_end(0);
     }
     match major {
-        | 0 => {
-            val.try_into()
-                .map_err(|_| cold_decode_error_outside_isize_range::<i8>(val as i64).unwrap_err())
-        },
+        | 0 => val
+            .try_into()
+            .map_err(|_| cold_decode_error_outside_isize_range::<i8>(val as i64).unwrap_err()),
         | 1 => {
             let res = -1 - (val as i64);
             res.try_into()
@@ -165,10 +164,9 @@ pub(crate) fn decode_i16<R: Reader>(reader: &mut R) -> Result<i16, DecodeError> 
         return cold_decode_error_unexpected_end(0);
     }
     match major {
-        | 0 => {
-            val.try_into()
-                .map_err(|_| cold_decode_error_outside_isize_range::<i16>(val as i64).unwrap_err())
-        },
+        | 0 => val
+            .try_into()
+            .map_err(|_| cold_decode_error_outside_isize_range::<i16>(val as i64).unwrap_err()),
         | 1 => {
             let res = -1 - (val as i64);
             res.try_into()
@@ -190,10 +188,9 @@ pub(crate) fn decode_i32<R: Reader>(reader: &mut R) -> Result<i32, DecodeError> 
         return cold_decode_error_unexpected_end(0);
     }
     match major {
-        | 0 => {
-            val.try_into()
-                .map_err(|_| cold_decode_error_outside_isize_range::<i32>(val as i64).unwrap_err())
-        },
+        | 0 => val
+            .try_into()
+            .map_err(|_| cold_decode_error_outside_isize_range::<i32>(val as i64).unwrap_err()),
         | 1 => {
             let res = -1 - (val as i64);
             res.try_into()
@@ -215,10 +212,9 @@ pub(crate) fn decode_i64<R: Reader>(reader: &mut R) -> Result<i64, DecodeError> 
         return cold_decode_error_unexpected_end(0);
     }
     match major {
-        | 0 => {
-            val.try_into()
-                .map_err(|_| cold_decode_error_outside_isize_range::<i64>(val as i64).unwrap_err())
-        },
+        | 0 => val
+            .try_into()
+            .map_err(|_| cold_decode_error_outside_isize_range::<i64>(val as i64).unwrap_err()),
         | 1 => {
             if val > (i64::MIN.unsigned_abs() - 1) {
                 return cold_decode_error_outside_isize_range(-1);
@@ -243,21 +239,19 @@ pub(crate) fn decode_i128<R: Reader>(reader: &mut R) -> Result<i128, DecodeError
     match major {
         | 0 => Ok(i128::from(val)),
         | 1 => Ok(-1 - i128::from(val)),
-        | 6 => {
-            match val {
-                | 2 => Ok(decode_bignum_bytes(reader)? as i128),
-                | 3 => {
-                    let magnitude = decode_bignum_bytes(reader)?;
-                    if magnitude > (i128::MAX as u128) + 1 {
-                        return cold_decode_error_outside_isize_range(-1);
-                    }
-                    if magnitude == (i128::MAX as u128) + 1 {
-                        return Ok(i128::MIN);
-                    }
-                    Ok(-1 - (magnitude as i128))
-                },
-                | _ => cold_decode_error_unexpected_end(0),
-            }
+        | 6 => match val {
+            | 2 => Ok(decode_bignum_bytes(reader)? as i128),
+            | 3 => {
+                let magnitude = decode_bignum_bytes(reader)?;
+                if magnitude > (i128::MAX as u128) + 1 {
+                    return cold_decode_error_outside_isize_range(-1);
+                }
+                if magnitude == (i128::MAX as u128) + 1 {
+                    return Ok(i128::MIN);
+                }
+                Ok(-1 - (magnitude as i128))
+            },
+            | _ => cold_decode_error_unexpected_end(0),
         },
         | _ => cold_decode_error_unexpected_end(0),
     }
