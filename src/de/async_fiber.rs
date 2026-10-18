@@ -1018,20 +1018,22 @@ where
             } else {
                 // Default 2 MiB usable stack via mmap with guard region.
                 match GuardedStack::new(2 * 1024 * 1024) {
-                    | Ok(stack) => Box::new(FiberContext {
-                        stack,
-                        regs: Registers::new(),
-                        executor_regs: Registers::new(),
-                        status: FiberStatus::Initial,
-                        panic_payload: None,
-                        trampoline: fiber_trampoline,
-                        invoke_closure: dummy_invoke,
-                        closure_ptr: core::ptr::null_mut(),
-                        result_ptr: core::ptr::null_mut(),
-                        reader_ptr: core::ptr::null_mut(),
-                        buf_ptr: core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut(), 0),
-                        read_buffer: alloc::vec![0; 8192].into_boxed_slice(),
-                    }),
+                    | Ok(stack) => {
+                        Box::new(FiberContext {
+                            stack,
+                            regs: Registers::new(),
+                            executor_regs: Registers::new(),
+                            status: FiberStatus::Initial,
+                            panic_payload: None,
+                            trampoline: fiber_trampoline,
+                            invoke_closure: dummy_invoke,
+                            closure_ptr: core::ptr::null_mut(),
+                            result_ptr: core::ptr::null_mut(),
+                            reader_ptr: core::ptr::null_mut(),
+                            buf_ptr: core::ptr::slice_from_raw_parts_mut(core::ptr::null_mut(), 0),
+                            read_buffer: alloc::vec![0; 8192].into_boxed_slice(),
+                        })
+                    },
                     | Err(e) => return Poll::Ready(Err(e)),
                 }
             };
