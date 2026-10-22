@@ -33,9 +33,15 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
-        let mut byte = [0u8; 1];
-        self.read(&mut byte)?;
-        Ok(byte[0])
+        if let Some(buf) = self.peek_read(1) {
+            let val = buf[0];
+            self.consume(1);
+            Ok(val)
+        } else {
+            let mut byte = [0u8; 1];
+            self.read(&mut byte)?;
+            Ok(byte[0])
+        }
     }
 
     /// Read a `u16` from the reader.
@@ -45,9 +51,15 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
-        let mut bytes = [0u8; 2];
-        self.read(&mut bytes)?;
-        Ok(u16::from_ne_bytes(bytes))
+        if let Some(buf) = self.peek_read(2) {
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u16>()) };
+            self.consume(2);
+            Ok(val)
+        } else {
+            let mut bytes = [0u8; 2];
+            self.read(&mut bytes)?;
+            Ok(u16::from_ne_bytes(bytes))
+        }
     }
 
     /// Read a `u32` from the reader.
@@ -57,9 +69,15 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
-        let mut bytes = [0u8; 4];
-        self.read(&mut bytes)?;
-        Ok(u32::from_ne_bytes(bytes))
+        if let Some(buf) = self.peek_read(4) {
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u32>()) };
+            self.consume(4);
+            Ok(val)
+        } else {
+            let mut bytes = [0u8; 4];
+            self.read(&mut bytes)?;
+            Ok(u32::from_ne_bytes(bytes))
+        }
     }
 
     /// Read a `u64` from the reader.
@@ -69,9 +87,15 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
-        let mut bytes = [0u8; 8];
-        self.read(&mut bytes)?;
-        Ok(u64::from_ne_bytes(bytes))
+        if let Some(buf) = self.peek_read(8) {
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u64>()) };
+            self.consume(8);
+            Ok(val)
+        } else {
+            let mut bytes = [0u8; 8];
+            self.read(&mut bytes)?;
+            Ok(u64::from_ne_bytes(bytes))
+        }
     }
 
     /// Read a `u128` from the reader.
@@ -81,9 +105,15 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
-        let mut bytes = [0u8; 16];
-        self.read(&mut bytes)?;
-        Ok(u128::from_ne_bytes(bytes))
+        if let Some(buf) = self.peek_read(16) {
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u128>()) };
+            self.consume(16);
+            Ok(val)
+        } else {
+            let mut bytes = [0u8; 16];
+            self.read(&mut bytes)?;
+            Ok(u128::from_ne_bytes(bytes))
+        }
     }
 
     /// If this reader wraps a buffer of any kind, this function lets callers access contents of

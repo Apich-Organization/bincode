@@ -2,6 +2,9 @@
 #![allow(clippy::branches_sharing_code)]
 #![allow(clippy::extra_unused_type_parameters)]
 #![allow(clippy::redundant_pub_crate)]
+#![allow(unsafe_code)]
+#![allow(clippy::cast_ptr_alignment)]
+#![allow(clippy::cast_possible_wrap)]
 
 use crate::config::CborDeterministicMode;
 use crate::config::Config;
@@ -19,21 +22,54 @@ fn encode_header<W: Writer>(
     major: u8,
     val: u64,
 ) -> Result<(), EncodeError> {
-    let major = major << 5;
+    let major_shifted = major << 5;
     if crate::utils::is_likely!(val <= 23) {
-        writer.write_u8(major | val as u8)
-    } else if val <= 0xFF {
-        writer.write_u8(major | 0x0018)?;
-        writer.write_u8(val as u8)
-    } else if val <= 0xFFFF {
-        writer.write_u8(major | 0x0019)?;
-        writer.write_u16((val as u16).to_be())
-    } else if val <= 0xFFFF_FFFF {
-        writer.write_u8(major | 0x001a)?;
-        writer.write_u32((val as u32).to_be())
+        writer.write_u8(major_shifted | val as u8)
     } else {
-        writer.write_u8(major | 0x001b)?;
-        writer.write_u64(val.to_be())
+        encode_header_cold(writer, major_shifted, val)
+    }
+}
+
+#[inline(never)]
+#[cold]
+fn encode_header_cold<W: Writer>(
+    writer: &mut W,
+    major_shifted: u8,
+    val: u64,
+) -> Result<(), EncodeError> {
+    if val <= 0xFF {
+        let buf = [major_shifted | 0x18, val as u8];
+        writer.write(&buf)
+    } else if val <= 0xFFFF {
+        let mut buf = [0u8; 3];
+        buf[0] = major_shifted | 0x19;
+        unsafe {
+            buf.as_mut_ptr()
+                .add(1)
+                .cast::<u16>()
+                .write_unaligned((val as u16).to_be());
+        }
+        writer.write(&buf)
+    } else if val <= 0xFFFF_FFFF {
+        let mut buf = [0u8; 5];
+        buf[0] = major_shifted | 0x1a;
+        unsafe {
+            buf.as_mut_ptr()
+                .add(1)
+                .cast::<u32>()
+                .write_unaligned((val as u32).to_be());
+        }
+        writer.write(&buf)
+    } else {
+        let mut buf = [0u8; 9];
+        buf[0] = major_shifted | 0x1b;
+        unsafe {
+            buf.as_mut_ptr()
+                .add(1)
+                .cast::<u64>()
+                .write_unaligned(val.to_be());
+        }
+        writer.write(&buf)
     }
 }
 
@@ -47,7 +83,7 @@ fn encode_indefinite_header<W: Writer>(
     writer: &mut W,
     major: u8,
 ) -> Result<(), EncodeError> {
-    writer.write_u8((major << 5) | 31)
+    writer.write_u8((major << 5) | 0x1f)
 }
 
 /// Encode a `u8` value into CBOR.
@@ -60,7 +96,12 @@ pub(crate) fn encode_u8<W: Writer, C: Config>(
     writer: &mut W,
     val: u8,
 ) -> Result<(), EncodeError> {
-    encode_header(writer, 0, u64::from(val))
+    if crate::utils::is_likely!(val <= 23) {
+        writer.write_u8(val)
+    } else {
+        let buf = [24, val];
+        writer.write(&buf)
+    }
 }
 
 /// Encode a `u16` value into CBOR.
@@ -73,7 +114,33 @@ pub(crate) fn encode_u16<W: Writer, C: Config>(
     writer: &mut W,
     val: u16,
 ) -> Result<(), EncodeError> {
-    encode_header(writer, 0, u64::from(val))
+    if crate::utils::is_likely!(val <= 23) {
+        writer.write_u8(val as u8)
+    } else {
+        encode_u16_cold(writer, val)
+    }
+}
+
+#[inline(never)]
+#[cold]
+fn encode_u16_cold<W: Writer>(
+    writer: &mut W,
+    val: u16,
+) -> Result<(), EncodeError> {
+    if val <= 0xFF {
+        let buf = [24, val as u8];
+        writer.write(&buf)
+    } else {
+        let mut buf = [0u8; 3];
+        buf[0] = 25;
+        unsafe {
+            buf.as_mut_ptr()
+                .add(1)
+                .cast::<u16>()
+                .write_unaligned(val.to_be());
+        }
+        writer.write(&buf)
+    }
 }
 
 /// Encode a `u32` value into CBOR.
@@ -86,7 +153,43 @@ pub(crate) fn encode_u32<W: Writer, C: Config>(
     writer: &mut W,
     val: u32,
 ) -> Result<(), EncodeError> {
-    encode_header(writer, 0, u64::from(val))
+    if crate::utils::is_likely!(val <= 23) {
+        writer.write_u8(val as u8)
+    } else {
+        encode_u32_cold(writer, val)
+    }
+}
+
+#[inline(never)]
+#[cold]
+fn encode_u32_cold<W: Writer>(
+    writer: &mut W,
+    val: u32,
+) -> Result<(), EncodeError> {
+    if val <= 0xFF {
+        let buf = [24, val as u8];
+        writer.write(&buf)
+    } else if val <= 0xFFFF {
+        let mut buf = [0u8; 3];
+        buf[0] = 25;
+        unsafe {
+            buf.as_mut_ptr()
+                .add(1)
+                .cast::<u16>()
+                .write_unaligned((val as u16).to_be());
+        }
+        writer.write(&buf)
+    } else {
+        let mut buf = [0u8; 5];
+        buf[0] = 26;
+        unsafe {
+            buf.as_mut_ptr()
+                .add(1)
+                .cast::<u32>()
+                .write_unaligned(val.to_be());
+        }
+        writer.write(&buf)
+    }
 }
 
 /// Encode a `u64` value into CBOR.
@@ -99,7 +202,11 @@ pub(crate) fn encode_u64<W: Writer, C: Config>(
     writer: &mut W,
     val: u64,
 ) -> Result<(), EncodeError> {
-    encode_header(writer, 0, val)
+    if crate::utils::is_likely!(val <= 23) {
+        writer.write_u8(val as u8)
+    } else {
+        encode_header_cold(writer, 0, val)
+    }
 }
 
 /// Encode an `i8` value into CBOR.
@@ -113,9 +220,15 @@ pub(crate) fn encode_i8<W: Writer, C: Config>(
     val: i8,
 ) -> Result<(), EncodeError> {
     if val >= 0 {
-        encode_header(writer, 0, val as u64)
+        encode_u8::<W, C>(writer, val as u8)
     } else {
-        encode_header(writer, 1, (-1 - val) as u64)
+        let neg = (-1 - val) as u8;
+        if crate::utils::is_likely!(neg <= 23) {
+            writer.write_u8(0x20 | neg)
+        } else {
+            let buf = [0x20 | 0x18, neg];
+            writer.write(&buf)
+        }
     }
 }
 
@@ -130,9 +243,36 @@ pub(crate) fn encode_i16<W: Writer, C: Config>(
     val: i16,
 ) -> Result<(), EncodeError> {
     if val >= 0 {
-        encode_header(writer, 0, val as u64)
+        encode_u16::<W, C>(writer, val as u16)
     } else {
-        encode_header(writer, 1, (-1 - val) as u64)
+        let neg = (-1 - val) as u16;
+        if crate::utils::is_likely!(neg <= 23) {
+            writer.write_u8(0x20 | (neg as u8))
+        } else {
+            encode_i16_neg_cold(writer, neg)
+        }
+    }
+}
+
+#[inline(never)]
+#[cold]
+fn encode_i16_neg_cold<W: Writer>(
+    writer: &mut W,
+    neg: u16,
+) -> Result<(), EncodeError> {
+    if neg <= 0xFF {
+        let buf = [0x20 | 0x18, neg as u8];
+        writer.write(&buf)
+    } else {
+        let mut buf = [0u8; 3];
+        buf[0] = 0x20 | 0x19;
+        unsafe {
+            buf.as_mut_ptr()
+                .add(1)
+                .cast::<u16>()
+                .write_unaligned(neg.to_be());
+        }
+        writer.write(&buf)
     }
 }
 
@@ -147,9 +287,46 @@ pub(crate) fn encode_i32<W: Writer, C: Config>(
     val: i32,
 ) -> Result<(), EncodeError> {
     if val >= 0 {
-        encode_header(writer, 0, val as u64)
+        encode_u32::<W, C>(writer, val as u32)
     } else {
-        encode_header(writer, 1, (-1 - val) as u64)
+        let neg = (-1 - val) as u32;
+        if crate::utils::is_likely!(neg <= 23) {
+            writer.write_u8(0x20 | (neg as u8))
+        } else {
+            encode_i32_neg_cold(writer, neg)
+        }
+    }
+}
+
+#[inline(never)]
+#[cold]
+fn encode_i32_neg_cold<W: Writer>(
+    writer: &mut W,
+    neg: u32,
+) -> Result<(), EncodeError> {
+    if neg <= 0xFF {
+        let buf = [0x20 | 0x18, neg as u8];
+        writer.write(&buf)
+    } else if neg <= 0xFFFF {
+        let mut buf = [0u8; 3];
+        buf[0] = 0x20 | 0x19;
+        unsafe {
+            buf.as_mut_ptr()
+                .add(1)
+                .cast::<u16>()
+                .write_unaligned((neg as u16).to_be());
+        }
+        writer.write(&buf)
+    } else {
+        let mut buf = [0u8; 5];
+        buf[0] = 0x20 | 0x1a;
+        unsafe {
+            buf.as_mut_ptr()
+                .add(1)
+                .cast::<u32>()
+                .write_unaligned(neg.to_be());
+        }
+        writer.write(&buf)
     }
 }
 
@@ -164,7 +341,7 @@ pub(crate) fn encode_i64<W: Writer, C: Config>(
     val: i64,
 ) -> Result<(), EncodeError> {
     if val >= 0 {
-        encode_header(writer, 0, val as u64)
+        encode_u64::<W, C>(writer, val as u64)
     } else {
         encode_header(writer, 1, (-1 - val) as u64)
     }
@@ -326,12 +503,26 @@ pub(crate) fn encode_f32<W: Writer, C: Config>(
     if opts.preferred_float
         && let Some(f16_bits) = f32_to_f16(val)
     {
-        writer.write_u8(0xF9)?;
-        return writer.write(&f16_bits.to_be_bytes());
+        let mut buf = [0u8; 3];
+        buf[0] = 0xF9;
+        unsafe {
+            buf.as_mut_ptr()
+                .add(1)
+                .cast::<u16>()
+                .write_unaligned(f16_bits.to_be());
+        }
+        return writer.write(&buf);
     }
 
-    writer.write_u8(0xFA)?;
-    writer.write(&val.to_be_bytes())
+    let mut buf = [0u8; 5];
+    buf[0] = 0xFA;
+    unsafe {
+        buf.as_mut_ptr()
+            .add(1)
+            .cast::<u32>()
+            .write_unaligned(val.to_bits().to_be());
+    }
+    writer.write(&buf)
 }
 
 /// Encode an `f64` value into CBOR with preferred serialization.
@@ -359,8 +550,15 @@ pub(crate) fn encode_f64<W: Writer, C: Config>(
         return encode_f32::<W, C>(writer, f32_val);
     }
 
-    writer.write_u8(0xFB)?;
-    writer.write(&val.to_be_bytes())
+    let mut buf = [0u8; 9];
+    buf[0] = 0xFB;
+    unsafe {
+        buf.as_mut_ptr()
+            .add(1)
+            .cast::<u64>()
+            .write_unaligned(val.to_bits().to_be());
+    }
+    writer.write(&buf)
 }
 
 /// Encode a `str` value into CBOR.

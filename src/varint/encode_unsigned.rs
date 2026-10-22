@@ -1,4 +1,6 @@
 #![allow(clippy::cast_lossless, clippy::cast_possible_truncation)]
+#![allow(unsafe_code)]
+#![allow(clippy::cast_ptr_alignment)]
 use super::SINGLE_BYTE_MAX;
 use super::U16_BYTE;
 use super::U32_BYTE;
@@ -30,11 +32,14 @@ fn varint_encode_u16_cold<W: Writer>(
 ) -> Result<(), EncodeError> {
     let mut buf = [0u8; 3];
     buf[0] = U16_BYTE;
-    let bytes = match endian {
-        | Endianness::Big => val.to_be_bytes(),
-        | Endianness::Little => val.to_le_bytes(),
-    };
-    buf[1..3].copy_from_slice(&bytes);
+    unsafe {
+        let ptr = buf.as_mut_ptr().add(1).cast::<u16>();
+        let val = match endian {
+            | Endianness::Big => val.to_be(),
+            | Endianness::Little => val.to_le(),
+        };
+        core::ptr::write_unaligned(ptr, val);
+    }
     writer.write(&buf)
 }
 
@@ -61,20 +66,26 @@ fn varint_encode_u32_cold<W: Writer>(
     if crate::utils::is_likely!(val <= u16::MAX as _) {
         let mut buf = [0u8; 3];
         buf[0] = U16_BYTE;
-        let bytes = match endian {
-            | Endianness::Big => (val as u16).to_be_bytes(),
-            | Endianness::Little => (val as u16).to_le_bytes(),
-        };
-        buf[1..3].copy_from_slice(&bytes);
+        unsafe {
+            let ptr = buf.as_mut_ptr().add(1).cast::<u16>();
+            let val = match endian {
+                | Endianness::Big => (val as u16).to_be(),
+                | Endianness::Little => (val as u16).to_le(),
+            };
+            core::ptr::write_unaligned(ptr, val);
+        }
         writer.write(&buf)
     } else {
         let mut buf = [0u8; 5];
         buf[0] = U32_BYTE;
-        let bytes = match endian {
-            | Endianness::Big => val.to_be_bytes(),
-            | Endianness::Little => val.to_le_bytes(),
-        };
-        buf[1..5].copy_from_slice(&bytes);
+        unsafe {
+            let ptr = buf.as_mut_ptr().add(1).cast::<u32>();
+            let val = match endian {
+                | Endianness::Big => val.to_be(),
+                | Endianness::Little => val.to_le(),
+            };
+            core::ptr::write_unaligned(ptr, val);
+        }
         writer.write(&buf)
     }
 }
@@ -102,29 +113,38 @@ fn varint_encode_u64_cold<W: Writer>(
     if crate::utils::is_likely!(val <= u16::MAX as _) {
         let mut buf = [0u8; 3];
         buf[0] = U16_BYTE;
-        let bytes = match endian {
-            | Endianness::Big => (val as u16).to_be_bytes(),
-            | Endianness::Little => (val as u16).to_le_bytes(),
-        };
-        buf[1..3].copy_from_slice(&bytes);
+        unsafe {
+            let ptr = buf.as_mut_ptr().add(1).cast::<u16>();
+            let val = match endian {
+                | Endianness::Big => (val as u16).to_be(),
+                | Endianness::Little => (val as u16).to_le(),
+            };
+            core::ptr::write_unaligned(ptr, val);
+        }
         writer.write(&buf)
     } else if crate::utils::is_likely!(val <= u32::MAX as _) {
         let mut buf = [0u8; 5];
         buf[0] = U32_BYTE;
-        let bytes = match endian {
-            | Endianness::Big => (val as u32).to_be_bytes(),
-            | Endianness::Little => (val as u32).to_le_bytes(),
-        };
-        buf[1..5].copy_from_slice(&bytes);
+        unsafe {
+            let ptr = buf.as_mut_ptr().add(1).cast::<u32>();
+            let val = match endian {
+                | Endianness::Big => (val as u32).to_be(),
+                | Endianness::Little => (val as u32).to_le(),
+            };
+            core::ptr::write_unaligned(ptr, val);
+        }
         writer.write(&buf)
     } else {
         let mut buf = [0u8; 9];
         buf[0] = U64_BYTE;
-        let bytes = match endian {
-            | Endianness::Big => val.to_be_bytes(),
-            | Endianness::Little => val.to_le_bytes(),
-        };
-        buf[1..9].copy_from_slice(&bytes);
+        unsafe {
+            let ptr = buf.as_mut_ptr().add(1).cast::<u64>();
+            let val = match endian {
+                | Endianness::Big => val.to_be(),
+                | Endianness::Little => val.to_le(),
+            };
+            core::ptr::write_unaligned(ptr, val);
+        }
         writer.write(&buf)
     }
 }
@@ -152,38 +172,50 @@ fn varint_encode_u128_cold<W: Writer>(
     if crate::utils::is_likely!(val <= u16::MAX as _) {
         let mut buf = [0u8; 3];
         buf[0] = U16_BYTE;
-        let bytes = match endian {
-            | Endianness::Big => (val as u16).to_be_bytes(),
-            | Endianness::Little => (val as u16).to_le_bytes(),
-        };
-        buf[1..3].copy_from_slice(&bytes);
+        unsafe {
+            let ptr = buf.as_mut_ptr().add(1).cast::<u16>();
+            let val = match endian {
+                | Endianness::Big => (val as u16).to_be(),
+                | Endianness::Little => (val as u16).to_le(),
+            };
+            core::ptr::write_unaligned(ptr, val);
+        }
         writer.write(&buf)
     } else if crate::utils::is_likely!(val <= u32::MAX as _) {
         let mut buf = [0u8; 5];
         buf[0] = U32_BYTE;
-        let bytes = match endian {
-            | Endianness::Big => (val as u32).to_be_bytes(),
-            | Endianness::Little => (val as u32).to_le_bytes(),
-        };
-        buf[1..5].copy_from_slice(&bytes);
+        unsafe {
+            let ptr = buf.as_mut_ptr().add(1).cast::<u32>();
+            let val = match endian {
+                | Endianness::Big => (val as u32).to_be(),
+                | Endianness::Little => (val as u32).to_le(),
+            };
+            core::ptr::write_unaligned(ptr, val);
+        }
         writer.write(&buf)
     } else if crate::utils::is_likely!(val <= u64::MAX as _) {
         let mut buf = [0u8; 9];
         buf[0] = U64_BYTE;
-        let bytes = match endian {
-            | Endianness::Big => (val as u64).to_be_bytes(),
-            | Endianness::Little => (val as u64).to_le_bytes(),
-        };
-        buf[1..9].copy_from_slice(&bytes);
+        unsafe {
+            let ptr = buf.as_mut_ptr().add(1).cast::<u64>();
+            let val = match endian {
+                | Endianness::Big => (val as u64).to_be(),
+                | Endianness::Little => (val as u64).to_le(),
+            };
+            core::ptr::write_unaligned(ptr, val);
+        }
         writer.write(&buf)
     } else {
         let mut buf = [0u8; 17];
         buf[0] = U128_BYTE;
-        let bytes = match endian {
-            | Endianness::Big => val.to_be_bytes(),
-            | Endianness::Little => val.to_le_bytes(),
-        };
-        buf[1..17].copy_from_slice(&bytes);
+        unsafe {
+            let ptr = buf.as_mut_ptr().add(1).cast::<u128>();
+            let val = match endian {
+                | Endianness::Big => val.to_be(),
+                | Endianness::Little => val.to_le(),
+            };
+            core::ptr::write_unaligned(ptr, val);
+        }
         writer.write(&buf)
     }
 }
@@ -211,20 +243,26 @@ fn varint_encode_usize_cold<W: Writer>(
     if crate::utils::is_likely!(val <= u16::MAX as _) {
         let mut buf = [0u8; 3];
         buf[0] = U16_BYTE;
-        let bytes = match endian {
-            | Endianness::Big => (val as u16).to_be_bytes(),
-            | Endianness::Little => (val as u16).to_le_bytes(),
-        };
-        buf[1..3].copy_from_slice(&bytes);
+        unsafe {
+            let ptr = buf.as_mut_ptr().add(1).cast::<u16>();
+            let val = match endian {
+                | Endianness::Big => (val as u16).to_be(),
+                | Endianness::Little => (val as u16).to_le(),
+            };
+            core::ptr::write_unaligned(ptr, val);
+        }
         writer.write(&buf)
     } else if crate::utils::is_likely!(val <= u32::MAX as _) {
         let mut buf = [0u8; 5];
         buf[0] = U32_BYTE;
-        let bytes = match endian {
-            | Endianness::Big => (val as u32).to_be_bytes(),
-            | Endianness::Little => (val as u32).to_le_bytes(),
-        };
-        buf[1..5].copy_from_slice(&bytes);
+        unsafe {
+            let ptr = buf.as_mut_ptr().add(1).cast::<u32>();
+            let val = match endian {
+                | Endianness::Big => (val as u32).to_be(),
+                | Endianness::Little => (val as u32).to_le(),
+            };
+            core::ptr::write_unaligned(ptr, val);
+        }
         writer.write(&buf)
     } else {
         varint_encode_u64_cold(writer, endian, val as u64)
