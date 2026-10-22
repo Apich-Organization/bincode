@@ -14,7 +14,7 @@ serde = { version = "1", features = ["derive"] }
 rand = "0.10"
 
 [lints.clippy]
-empty-line-after-doc-comments = "allow"
+empty_line_after_doc_comments = "allow"
 
 [lib]
 crate-type = ["cdylib", "rlib", "staticlib"]
