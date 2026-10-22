@@ -45,6 +45,15 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
+        if let Some(buf) = self.peek_read(2) {
+            #[allow(clippy::collapsible_if)]
+            if let Some(buf) = buf.get(..2) {
+                let bytes: [u8; 2] = buf.try_into().unwrap();
+                let val = u16::from_ne_bytes(bytes);
+                self.consume(2);
+                return Ok(val);
+            }
+        }
         let mut bytes = [0u8; 2];
         self.read(&mut bytes)?;
         Ok(u16::from_ne_bytes(bytes))
@@ -57,6 +66,15 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
+        if let Some(buf) = self.peek_read(4) {
+            #[allow(clippy::collapsible_if)]
+            if let Some(buf) = buf.get(..4) {
+                let bytes: [u8; 4] = buf.try_into().unwrap();
+                let val = u32::from_ne_bytes(bytes);
+                self.consume(4);
+                return Ok(val);
+            }
+        }
         let mut bytes = [0u8; 4];
         self.read(&mut bytes)?;
         Ok(u32::from_ne_bytes(bytes))
@@ -69,6 +87,15 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
+        if let Some(buf) = self.peek_read(8) {
+            #[allow(clippy::collapsible_if)]
+            if let Some(buf) = buf.get(..8) {
+                let bytes: [u8; 8] = buf.try_into().unwrap();
+                let val = u64::from_ne_bytes(bytes);
+                self.consume(8);
+                return Ok(val);
+            }
+        }
         let mut bytes = [0u8; 8];
         self.read(&mut bytes)?;
         Ok(u64::from_ne_bytes(bytes))
@@ -81,6 +108,15 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
+        if let Some(buf) = self.peek_read(16) {
+            #[allow(clippy::collapsible_if)]
+            if let Some(buf) = buf.get(..16) {
+                let bytes: [u8; 16] = buf.try_into().unwrap();
+                let val = u128::from_ne_bytes(bytes);
+                self.consume(16);
+                return Ok(val);
+            }
+        }
         let mut bytes = [0u8; 16];
         self.read(&mut bytes)?;
         Ok(u128::from_ne_bytes(bytes))
