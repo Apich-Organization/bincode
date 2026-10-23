@@ -148,7 +148,10 @@ where
 
     #[inline(always)]
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 1) {
+        if self.buffer().is_empty() {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
+        if let Some(buf) = self.buffer().get(..1) {
             let val = buf[0];
             Reader::consume(self, 1);
             Ok(val)
@@ -161,7 +164,10 @@ where
 
     #[inline(always)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 2) {
+        if self.buffer().len() < 2 {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
+        if let Some(buf) = self.buffer().get(..2) {
             let val = u16::from_ne_bytes([buf[0], buf[1]]);
             Reader::consume(self, 2);
             Ok(val)
@@ -174,7 +180,10 @@ where
 
     #[inline(always)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 4) {
+        if self.buffer().len() < 4 {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
+        if let Some(buf) = self.buffer().get(..4) {
             let val = u32::from_ne_bytes([buf[0], buf[1], buf[2], buf[3]]);
             Reader::consume(self, 4);
             Ok(val)
@@ -187,7 +196,10 @@ where
 
     #[inline(always)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 8) {
+        if self.buffer().len() < 8 {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
+        if let Some(buf) = self.buffer().get(..8) {
             let val = u64::from_ne_bytes([
                 buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
             ]);
@@ -202,7 +214,10 @@ where
 
     #[inline(always)]
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 16) {
+        if self.buffer().len() < 16 {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
+        if let Some(buf) = self.buffer().get(..16) {
             let val = u128::from_ne_bytes([
                 buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9],
                 buf[10], buf[11], buf[12], buf[13], buf[14], buf[15],
@@ -538,13 +553,11 @@ impl<Context> Decode<Context> for IpAddr {
         match u32::decode(decoder)? {
             | 0 => Ok(Self::V4(Ipv4Addr::decode(decoder)?)),
             | 1 => Ok(Self::V6(Ipv6Addr::decode(decoder)?)),
-            | found => {
-                crate::error::cold_decode_error_unexpected_variant(
-                    core::any::type_name::<Self>(),
-                    &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
-                    found,
-                )
-            },
+            | found => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                found,
+            ),
         }
     }
 }
@@ -615,13 +628,11 @@ impl<Context> Decode<Context> for SocketAddr {
         match u32::decode(decoder)? {
             | 0 => Ok(Self::V4(SocketAddrV4::decode(decoder)?)),
             | 1 => Ok(Self::V6(SocketAddrV6::decode(decoder)?)),
-            | found => {
-                crate::error::cold_decode_error_unexpected_variant(
-                    core::any::type_name::<Self>(),
-                    &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
-                    found,
-                )
-            },
+            | found => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                found,
+            ),
         }
     }
 }
