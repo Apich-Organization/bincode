@@ -1,3 +1,5 @@
+#![allow(unsafe_code)]
+
 use crate::config::Config;
 use crate::config::internal::InternalFingerprintGuard;
 use crate::de::BorrowDecode;
@@ -162,7 +164,7 @@ where
     #[inline(always)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 2) {
-            let val = u16::from_ne_bytes([buf[0], buf[1]]);
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u16>()) };
             Reader::consume(self, 2);
             Ok(val)
         } else {
@@ -175,7 +177,7 @@ where
     #[inline(always)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 4) {
-            let val = u32::from_ne_bytes([buf[0], buf[1], buf[2], buf[3]]);
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u32>()) };
             Reader::consume(self, 4);
             Ok(val)
         } else {
@@ -188,9 +190,7 @@ where
     #[inline(always)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 8) {
-            let val = u64::from_ne_bytes([
-                buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7],
-            ]);
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u64>()) };
             Reader::consume(self, 8);
             Ok(val)
         } else {
@@ -203,10 +203,7 @@ where
     #[inline(always)]
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
         if let Some(buf) = Reader::peek_read(self, 16) {
-            let val = u128::from_ne_bytes([
-                buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9],
-                buf[10], buf[11], buf[12], buf[13], buf[14], buf[15],
-            ]);
+            let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u128>()) };
             Reader::consume(self, 16);
             Ok(val)
         } else {

@@ -45,7 +45,7 @@ static-size = []
 zero-copy = []
 
 [lints.clippy]
-empty-line-after-doc-comments = "allow"
+empty_line_after_doc_comments = "allow"
 
 [dependencies]
 virtue = { package = "virtue-next", version = "0.1.3" }

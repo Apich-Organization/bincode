@@ -24,6 +24,62 @@ impl Writer for crate::alloc::vec::Vec<u8> {
         self.push(value);
         Ok(())
     }
+
+    #[inline(always)]
+    fn write_u16(
+        &mut self,
+        value: u16,
+    ) -> Result<(), EncodeError> {
+        self.reserve(2);
+        unsafe {
+            let len = self.len();
+            core::ptr::write_unaligned(self.as_mut_ptr().add(len).cast::<u16>(), value);
+            self.set_len(len + 2);
+        }
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u32(
+        &mut self,
+        value: u32,
+    ) -> Result<(), EncodeError> {
+        self.reserve(4);
+        unsafe {
+            let len = self.len();
+            core::ptr::write_unaligned(self.as_mut_ptr().add(len).cast::<u32>(), value);
+            self.set_len(len + 4);
+        }
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u64(
+        &mut self,
+        value: u64,
+    ) -> Result<(), EncodeError> {
+        self.reserve(8);
+        unsafe {
+            let len = self.len();
+            core::ptr::write_unaligned(self.as_mut_ptr().add(len).cast::<u64>(), value);
+            self.set_len(len + 8);
+        }
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_u128(
+        &mut self,
+        value: u128,
+    ) -> Result<(), EncodeError> {
+        self.reserve(16);
+        unsafe {
+            let len = self.len();
+            core::ptr::write_unaligned(self.as_mut_ptr().add(len).cast::<u128>(), value);
+            self.set_len(len + 16);
+        }
+        Ok(())
+    }
 }
 
 /// Trait that indicates that a struct can be used as a destination to encode data too. This is used by [Encode]
