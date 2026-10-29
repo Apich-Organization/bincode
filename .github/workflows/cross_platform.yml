@@ -55,7 +55,7 @@ jobs:
       - name: Install Dependencies
         run: |
           cargo install cargo-zigbuild --locked
-          sudo apt-get update && sudo apt-get install -y binfmt-support qemu-user-static qemu-user qemu-system-misc gcc-aarch64-linux-gnu libc6-dev-arm64-cross gcc-riscv64-linux-gnu libc6-dev-riscv64-cross
+          sudo apt-get update && sudo apt-get install -y qemu-user-static qemu-user gcc-aarch64-linux-gnu libc6-dev-arm64-cross gcc-riscv64-linux-gnu libc6-dev-riscv64-cross
 
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
 
