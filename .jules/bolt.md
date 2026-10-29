@@ -1,0 +1,3 @@
+## 2024-10-29 - Improve BufReader performance for bincode-next
+**Learning:** `std::io::BufReader<R>` custom `read_u*` overrides in `src/features/impl_std.rs` use `Reader::peek_read(self, n)`. This can cause indirection and dynamic dispatch overhead when it could just be checking the buffer directly using `std::io::BufRead::fill_buf(self)` and `self.buffer().get(..n)`. This has a measurable impact on varint decoding speed. Also learned we cannot use `.buffer()` on the trait, we must use it on the concrete `BufReader` type (inherent method).
+**Action:** Replace `Reader::peek_read` with direct buffer checking in `std::io::BufReader<R>` overrides (`read_u8`, `read_u16`, `read_u32`, `read_u64`, `read_u128`).
