@@ -158,7 +158,13 @@ where
             Ok(val)
         } else {
             let mut byte = [0u8; 1];
-            std::io::Read::read_exact(self, &mut byte).map_err(|inner| { if inner.kind() == std::io::ErrorKind::UnexpectedEof { crate::error::cold_decode_error_unexpected_end::<()>(1).unwrap_err() } else { crate::error::cold_decode_error_io::<()>(inner, 1).unwrap_err() } })?;
+            std::io::Read::read_exact(self, &mut byte).map_err(|inner| {
+                if inner.kind() == std::io::ErrorKind::UnexpectedEof {
+                    crate::error::cold_decode_error_unexpected_end::<()>(1).unwrap_err()
+                } else {
+                    crate::error::cold_decode_error_io::<()>(inner, 1).unwrap_err()
+                }
+            })?;
             Ok(byte[0])
         }
     }
@@ -175,7 +181,13 @@ where
             Ok(val)
         } else {
             let mut bytes = [0u8; 2];
-            std::io::Read::read_exact(self, &mut bytes).map_err(|inner| { if inner.kind() == std::io::ErrorKind::UnexpectedEof { crate::error::cold_decode_error_unexpected_end::<()>(bytes.len()).unwrap_err() } else { crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err() } })?;
+            std::io::Read::read_exact(self, &mut bytes).map_err(|inner| {
+                if inner.kind() == std::io::ErrorKind::UnexpectedEof {
+                    crate::error::cold_decode_error_unexpected_end::<()>(bytes.len()).unwrap_err()
+                } else {
+                    crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err()
+                }
+            })?;
             Ok(u16::from_ne_bytes(bytes))
         }
     }
@@ -192,7 +204,13 @@ where
             Ok(val)
         } else {
             let mut bytes = [0u8; 4];
-            std::io::Read::read_exact(self, &mut bytes).map_err(|inner| { if inner.kind() == std::io::ErrorKind::UnexpectedEof { crate::error::cold_decode_error_unexpected_end::<()>(bytes.len()).unwrap_err() } else { crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err() } })?;
+            std::io::Read::read_exact(self, &mut bytes).map_err(|inner| {
+                if inner.kind() == std::io::ErrorKind::UnexpectedEof {
+                    crate::error::cold_decode_error_unexpected_end::<()>(bytes.len()).unwrap_err()
+                } else {
+                    crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err()
+                }
+            })?;
             Ok(u32::from_ne_bytes(bytes))
         }
     }
@@ -209,7 +227,13 @@ where
             Ok(val)
         } else {
             let mut bytes = [0u8; 8];
-            std::io::Read::read_exact(self, &mut bytes).map_err(|inner| { if inner.kind() == std::io::ErrorKind::UnexpectedEof { crate::error::cold_decode_error_unexpected_end::<()>(bytes.len()).unwrap_err() } else { crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err() } })?;
+            std::io::Read::read_exact(self, &mut bytes).map_err(|inner| {
+                if inner.kind() == std::io::ErrorKind::UnexpectedEof {
+                    crate::error::cold_decode_error_unexpected_end::<()>(bytes.len()).unwrap_err()
+                } else {
+                    crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err()
+                }
+            })?;
             Ok(u64::from_ne_bytes(bytes))
         }
     }
@@ -226,7 +250,13 @@ where
             Ok(val)
         } else {
             let mut bytes = [0u8; 16];
-            std::io::Read::read_exact(self, &mut bytes).map_err(|inner| { if inner.kind() == std::io::ErrorKind::UnexpectedEof { crate::error::cold_decode_error_unexpected_end::<()>(bytes.len()).unwrap_err() } else { crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err() } })?;
+            std::io::Read::read_exact(self, &mut bytes).map_err(|inner| {
+                if inner.kind() == std::io::ErrorKind::UnexpectedEof {
+                    crate::error::cold_decode_error_unexpected_end::<()>(bytes.len()).unwrap_err()
+                } else {
+                    crate::error::cold_decode_error_io::<()>(inner, bytes.len()).unwrap_err()
+                }
+            })?;
             Ok(u128::from_ne_bytes(bytes))
         }
     }
