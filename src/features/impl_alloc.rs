@@ -14,7 +14,9 @@ use crate::enc::Encode;
 use crate::enc::Encoder;
 use crate::enc::write::SizeWriter;
 use crate::enc::write::Writer;
-use crate::enc::{self};
+use crate::enc::{
+    self,
+};
 use crate::error::DecodeError;
 use crate::error::EncodeError;
 use crate::impl_borrow_decode;

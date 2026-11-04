@@ -8,7 +8,9 @@
 //! Any modifications done are purely to make the code compatible with bincode
 
 use core::mem::MaybeUninit;
-use core::mem::{self};
+use core::mem::{
+    self,
+};
 
 struct Guard<'a, T, const N: usize> {
     array_mut: &'a mut [MaybeUninit<T>; N],
