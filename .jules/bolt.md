@@ -1,0 +1,4 @@
+
+## 2024-05-19 - BufReader read_u* override optimization via fill_buf
+**Learning:** Overriding `read_u*` functions for `std::io::BufReader<R>` in `src/features/impl_std.rs` by directly checking if `self.buffer().len() < N` and manually calling `std::io::BufRead::fill_buf(self)` instead of using `Reader::peek_read(self, N)` avoids dynamic dispatch/indirection and improves performance significantly. Specifically, for varint parsing, `bufreader_varint_u8` and other variants show around 14% to 20% performance improvement.
+**Action:** When working on `bincode-next` or similar crates, if there's a custom override of `Reader` methods (e.g. `read_u*`) for an instance of `BufReader`, check if replacing `peek_read` with direct buffer handling (`self.buffer().is_empty()` and `std::io::BufRead::fill_buf`) improves speed.
