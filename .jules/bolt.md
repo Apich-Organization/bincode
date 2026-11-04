@@ -1,0 +1,3 @@
+## 2024-11-04 - BufReader Custom read_u* Overrides
+**Learning:** In `bincode-next`, optimizing `std::io::BufReader<R>` custom `read_u*` overrides by replacing `Reader::peek_read(self, n)` with manual buffering checks (`std::io::BufRead::fill_buf(self)` and `self.buffer().get(..n)`) avoids indirection/dynamic dispatch overhead and measurably improves varint decoding performance (e.g. ~10% improvement on `bufreader_varint_u8`).
+**Action:** When implementing custom overrides for the `Reader` trait (e.g., inside `BufReader` implementations), avoid calling safe trait abstractions like `peek_read` directly if you can perform the manual buffering/checking more directly. Use explicitly qualified trait syntax to avoid ambiguity.

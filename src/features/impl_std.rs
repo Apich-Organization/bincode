@@ -148,11 +148,17 @@ where
         <Self as std::io::BufRead>::consume(self, n);
     }
 
+    #[allow(clippy::collapsible_if)]
     #[inline(always)]
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 1) {
+        if self.buffer().is_empty() {
+            if let Err(e) = std::io::BufRead::fill_buf(self) {
+                return Err(crate::error::cold_decode_error_io::<()>(e, 1).unwrap_err());
+            }
+        }
+        if let Some(buf) = self.buffer().get(..1) {
             let val = buf[0];
-            Reader::consume(self, 1);
+            <Self as std::io::BufRead>::consume(self, 1);
             Ok(val)
         } else {
             let mut byte = [0u8; 1];
@@ -161,11 +167,17 @@ where
         }
     }
 
+    #[allow(clippy::collapsible_if)]
     #[inline(always)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 2) {
+        if self.buffer().len() < 2 {
+            if let Err(e) = std::io::BufRead::fill_buf(self) {
+                return Err(crate::error::cold_decode_error_io::<()>(e, 2).unwrap_err());
+            }
+        }
+        if let Some(buf) = self.buffer().get(..2) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u16>()) };
-            Reader::consume(self, 2);
+            <Self as std::io::BufRead>::consume(self, 2);
             Ok(val)
         } else {
             let mut bytes = [0u8; 2];
@@ -174,11 +186,17 @@ where
         }
     }
 
+    #[allow(clippy::collapsible_if)]
     #[inline(always)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 4) {
+        if self.buffer().len() < 4 {
+            if let Err(e) = std::io::BufRead::fill_buf(self) {
+                return Err(crate::error::cold_decode_error_io::<()>(e, 4).unwrap_err());
+            }
+        }
+        if let Some(buf) = self.buffer().get(..4) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u32>()) };
-            Reader::consume(self, 4);
+            <Self as std::io::BufRead>::consume(self, 4);
             Ok(val)
         } else {
             let mut bytes = [0u8; 4];
@@ -187,11 +205,17 @@ where
         }
     }
 
+    #[allow(clippy::collapsible_if)]
     #[inline(always)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 8) {
+        if self.buffer().len() < 8 {
+            if let Err(e) = std::io::BufRead::fill_buf(self) {
+                return Err(crate::error::cold_decode_error_io::<()>(e, 8).unwrap_err());
+            }
+        }
+        if let Some(buf) = self.buffer().get(..8) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u64>()) };
-            Reader::consume(self, 8);
+            <Self as std::io::BufRead>::consume(self, 8);
             Ok(val)
         } else {
             let mut bytes = [0u8; 8];
@@ -200,11 +224,17 @@ where
         }
     }
 
+    #[allow(clippy::collapsible_if)]
     #[inline(always)]
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 16) {
+        if self.buffer().len() < 16 {
+            if let Err(e) = std::io::BufRead::fill_buf(self) {
+                return Err(crate::error::cold_decode_error_io::<()>(e, 16).unwrap_err());
+            }
+        }
+        if let Some(buf) = self.buffer().get(..16) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u128>()) };
-            Reader::consume(self, 16);
+            <Self as std::io::BufRead>::consume(self, 16);
             Ok(val)
         } else {
             let mut bytes = [0u8; 16];
@@ -535,13 +565,11 @@ impl<Context> Decode<Context> for IpAddr {
         match u32::decode(decoder)? {
             | 0 => Ok(Self::V4(Ipv4Addr::decode(decoder)?)),
             | 1 => Ok(Self::V6(Ipv6Addr::decode(decoder)?)),
-            | found => {
-                crate::error::cold_decode_error_unexpected_variant(
-                    core::any::type_name::<Self>(),
-                    &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
-                    found,
-                )
-            },
+            | found => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                found,
+            ),
         }
     }
 }
@@ -612,13 +640,11 @@ impl<Context> Decode<Context> for SocketAddr {
         match u32::decode(decoder)? {
             | 0 => Ok(Self::V4(SocketAddrV4::decode(decoder)?)),
             | 1 => Ok(Self::V6(SocketAddrV6::decode(decoder)?)),
-            | found => {
-                crate::error::cold_decode_error_unexpected_variant(
-                    core::any::type_name::<Self>(),
-                    &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
-                    found,
-                )
-            },
+            | found => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                found,
+            ),
         }
     }
 }
