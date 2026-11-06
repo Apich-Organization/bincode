@@ -151,9 +151,8 @@ where
     #[inline(always)]
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
         if self.buffer().is_empty() {
-            std::io::BufRead::fill_buf(self).map_err(|inner| {
-                crate::error::cold_decode_error_io::<()>(inner, 1).unwrap_err()
-            })?;
+            std::io::BufRead::fill_buf(self)
+                .map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, 1).unwrap_err())?;
         }
         if let Some(buf) = self.buffer().get(..1) {
             let val = buf[0];
@@ -176,9 +175,8 @@ where
     #[allow(unsafe_code)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
         if self.buffer().len() < 2 {
-            std::io::BufRead::fill_buf(self).map_err(|inner| {
-                crate::error::cold_decode_error_io::<()>(inner, 2).unwrap_err()
-            })?;
+            std::io::BufRead::fill_buf(self)
+                .map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, 2).unwrap_err())?;
         }
         if let Some(buf) = self.buffer().get(..2) {
             // SAFETY: We checked the buffer length and fallback to read_exact if not enough bytes.
@@ -202,9 +200,8 @@ where
     #[allow(unsafe_code)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
         if self.buffer().len() < 4 {
-            std::io::BufRead::fill_buf(self).map_err(|inner| {
-                crate::error::cold_decode_error_io::<()>(inner, 4).unwrap_err()
-            })?;
+            std::io::BufRead::fill_buf(self)
+                .map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, 4).unwrap_err())?;
         }
         if let Some(buf) = self.buffer().get(..4) {
             // SAFETY: We checked the buffer length and fallback to read_exact if not enough bytes.
@@ -228,9 +225,8 @@ where
     #[allow(unsafe_code)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
         if self.buffer().len() < 8 {
-            std::io::BufRead::fill_buf(self).map_err(|inner| {
-                crate::error::cold_decode_error_io::<()>(inner, 8).unwrap_err()
-            })?;
+            std::io::BufRead::fill_buf(self)
+                .map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, 8).unwrap_err())?;
         }
         if let Some(buf) = self.buffer().get(..8) {
             // SAFETY: We checked the buffer length and fallback to read_exact if not enough bytes.
@@ -598,13 +594,11 @@ impl<Context> Decode<Context> for IpAddr {
         match u32::decode(decoder)? {
             | 0 => Ok(Self::V4(Ipv4Addr::decode(decoder)?)),
             | 1 => Ok(Self::V6(Ipv6Addr::decode(decoder)?)),
-            | found => {
-                crate::error::cold_decode_error_unexpected_variant(
-                    core::any::type_name::<Self>(),
-                    &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
-                    found,
-                )
-            },
+            | found => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                found,
+            ),
         }
     }
 }
@@ -675,13 +669,11 @@ impl<Context> Decode<Context> for SocketAddr {
         match u32::decode(decoder)? {
             | 0 => Ok(Self::V4(SocketAddrV4::decode(decoder)?)),
             | 1 => Ok(Self::V6(SocketAddrV6::decode(decoder)?)),
-            | found => {
-                crate::error::cold_decode_error_unexpected_variant(
-                    core::any::type_name::<Self>(),
-                    &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
-                    found,
-                )
-            },
+            | found => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                found,
+            ),
         }
     }
 }
