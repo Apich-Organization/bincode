@@ -1,0 +1,3 @@
+## 2026-11-08 - [Optimize `BufReader` custom `read_u*` override indirection]
+**Learning:** When implementing custom overrides for `Reader` in `std::io::BufReader<R>` in `bincode-next`, relying on `Reader::peek_read(self, n)` introduces unnecessary dynamic dispatch/indirection overhead. Instead, manual buffering checks (`std::io::BufRead::fill_buf(self)` and `self.buffer().get(..n)`) can measurably improve performance (especially in tight decoding loops like varint), while avoiding borrow checker issues.
+**Action:** When implementing tight loops or custom reader overrides over `BufReader`, manually perform buffering and bound checks instead of relying on default trait methods to remove indirection overhead.
