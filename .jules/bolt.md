@@ -1,0 +1,3 @@
+## 2025-01-24 - Avoid dynamic dispatch overhead in BufReader varint decoding
+**Learning:** In `bincode-next`, optimizing `std::io::BufReader<R>` custom `read_u*` overrides by replacing `Reader::peek_read(self, n)` with manual buffering checks (`std::io::BufRead::fill_buf(self)` and `self.buffer().get(..n)`) avoids indirection/dynamic dispatch overhead and measurably improves varint decoding performance.
+**Action:** Always prefer direct trait inherent methods like `self.buffer()` with length checking and `fill_buf` over trait method wrappers when implementing custom read operations for `BufReader` in high-performance contexts.

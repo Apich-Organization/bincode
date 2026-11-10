@@ -1,17 +1,17 @@
 #![allow(unsafe_code)]
 
-use crate::config::Config;
 use crate::config::internal::InternalFingerprintGuard;
+use crate::config::Config;
+use crate::de::read::Reader;
 use crate::de::BorrowDecode;
 use crate::de::BorrowDecoder;
 use crate::de::Decode;
 use crate::de::Decoder;
 use crate::de::DecoderImpl;
-use crate::de::read::Reader;
+use crate::enc::write::Writer;
 use crate::enc::Encode;
 use crate::enc::Encoder;
 use crate::enc::EncoderImpl;
-use crate::enc::write::Writer;
 use crate::error::DecodeError;
 use crate::error::EncodeError;
 use crate::impl_borrow_decode;
@@ -148,67 +148,115 @@ where
         <Self as std::io::BufRead>::consume(self, n);
     }
 
+    // OPTIMIZATION: Manually checking the buffer and using `fill_buf` directly
+    // instead of relying on `Reader::peek_read` avoids trait indirection overhead
+    // and significantly improves varint decoding performance for BufReader.
     #[inline(always)]
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 1) {
+        if self.buffer().is_empty() {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
+        if let Some(buf) = self.buffer().get(..1) {
             let val = buf[0];
-            Reader::consume(self, 1);
+            <Self as std::io::BufRead>::consume(self, 1);
             Ok(val)
         } else {
             let mut byte = [0u8; 1];
-            Reader::read(self, &mut byte)?;
+            std::io::Read::read_exact(self, &mut byte).map_err(|inner| {
+                if inner.kind() == std::io::ErrorKind::UnexpectedEof {
+                    crate::error::cold_decode_error_unexpected_end::<()>(1).unwrap_err()
+                } else {
+                    crate::error::cold_decode_error_io::<()>(inner, 1).unwrap_err()
+                }
+            })?;
             Ok(byte[0])
         }
     }
 
     #[inline(always)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 2) {
+        if self.buffer().len() < 2 {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
+        if let Some(buf) = self.buffer().get(..2) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u16>()) };
-            Reader::consume(self, 2);
+            <Self as std::io::BufRead>::consume(self, 2);
             Ok(val)
         } else {
             let mut bytes = [0u8; 2];
-            Reader::read(self, &mut bytes)?;
+            std::io::Read::read_exact(self, &mut bytes).map_err(|inner| {
+                if inner.kind() == std::io::ErrorKind::UnexpectedEof {
+                    crate::error::cold_decode_error_unexpected_end::<()>(2).unwrap_err()
+                } else {
+                    crate::error::cold_decode_error_io::<()>(inner, 2).unwrap_err()
+                }
+            })?;
             Ok(u16::from_ne_bytes(bytes))
         }
     }
 
     #[inline(always)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 4) {
+        if self.buffer().len() < 4 {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
+        if let Some(buf) = self.buffer().get(..4) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u32>()) };
-            Reader::consume(self, 4);
+            <Self as std::io::BufRead>::consume(self, 4);
             Ok(val)
         } else {
             let mut bytes = [0u8; 4];
-            Reader::read(self, &mut bytes)?;
+            std::io::Read::read_exact(self, &mut bytes).map_err(|inner| {
+                if inner.kind() == std::io::ErrorKind::UnexpectedEof {
+                    crate::error::cold_decode_error_unexpected_end::<()>(4).unwrap_err()
+                } else {
+                    crate::error::cold_decode_error_io::<()>(inner, 4).unwrap_err()
+                }
+            })?;
             Ok(u32::from_ne_bytes(bytes))
         }
     }
 
     #[inline(always)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 8) {
+        if self.buffer().len() < 8 {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
+        if let Some(buf) = self.buffer().get(..8) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u64>()) };
-            Reader::consume(self, 8);
+            <Self as std::io::BufRead>::consume(self, 8);
             Ok(val)
         } else {
             let mut bytes = [0u8; 8];
-            Reader::read(self, &mut bytes)?;
+            std::io::Read::read_exact(self, &mut bytes).map_err(|inner| {
+                if inner.kind() == std::io::ErrorKind::UnexpectedEof {
+                    crate::error::cold_decode_error_unexpected_end::<()>(8).unwrap_err()
+                } else {
+                    crate::error::cold_decode_error_io::<()>(inner, 8).unwrap_err()
+                }
+            })?;
             Ok(u64::from_ne_bytes(bytes))
         }
     }
 
     #[inline(always)]
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 16) {
+        if self.buffer().len() < 16 {
+            let _ = std::io::BufRead::fill_buf(self);
+        }
+        if let Some(buf) = self.buffer().get(..16) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u128>()) };
-            Reader::consume(self, 16);
+            <Self as std::io::BufRead>::consume(self, 16);
             Ok(val)
         } else {
             let mut bytes = [0u8; 16];
-            Reader::read(self, &mut bytes)?;
+            std::io::Read::read_exact(self, &mut bytes).map_err(|inner| {
+                if inner.kind() == std::io::ErrorKind::UnexpectedEof {
+                    crate::error::cold_decode_error_unexpected_end::<()>(16).unwrap_err()
+                } else {
+                    crate::error::cold_decode_error_io::<()>(inner, 16).unwrap_err()
+                }
+            })?;
             Ok(u128::from_ne_bytes(bytes))
         }
     }
@@ -535,13 +583,11 @@ impl<Context> Decode<Context> for IpAddr {
         match u32::decode(decoder)? {
             | 0 => Ok(Self::V4(Ipv4Addr::decode(decoder)?)),
             | 1 => Ok(Self::V6(Ipv6Addr::decode(decoder)?)),
-            | found => {
-                crate::error::cold_decode_error_unexpected_variant(
-                    core::any::type_name::<Self>(),
-                    &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
-                    found,
-                )
-            },
+            | found => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                found,
+            ),
         }
     }
 }
@@ -612,13 +658,11 @@ impl<Context> Decode<Context> for SocketAddr {
         match u32::decode(decoder)? {
             | 0 => Ok(Self::V4(SocketAddrV4::decode(decoder)?)),
             | 1 => Ok(Self::V6(SocketAddrV6::decode(decoder)?)),
-            | found => {
-                crate::error::cold_decode_error_unexpected_variant(
-                    core::any::type_name::<Self>(),
-                    &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
-                    found,
-                )
-            },
+            | found => crate::error::cold_decode_error_unexpected_variant(
+                core::any::type_name::<Self>(),
+                &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                found,
+            ),
         }
     }
 }
