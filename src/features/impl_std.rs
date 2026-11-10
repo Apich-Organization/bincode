@@ -1,17 +1,17 @@
 #![allow(unsafe_code)]
 
-use crate::config::internal::InternalFingerprintGuard;
 use crate::config::Config;
-use crate::de::read::Reader;
+use crate::config::internal::InternalFingerprintGuard;
 use crate::de::BorrowDecode;
 use crate::de::BorrowDecoder;
 use crate::de::Decode;
 use crate::de::Decoder;
 use crate::de::DecoderImpl;
-use crate::enc::write::Writer;
+use crate::de::read::Reader;
 use crate::enc::Encode;
 use crate::enc::Encoder;
 use crate::enc::EncoderImpl;
+use crate::enc::write::Writer;
 use crate::error::DecodeError;
 use crate::error::EncodeError;
 use crate::impl_borrow_decode;
@@ -583,11 +583,13 @@ impl<Context> Decode<Context> for IpAddr {
         match u32::decode(decoder)? {
             | 0 => Ok(Self::V4(Ipv4Addr::decode(decoder)?)),
             | 1 => Ok(Self::V6(Ipv6Addr::decode(decoder)?)),
-            | found => crate::error::cold_decode_error_unexpected_variant(
-                core::any::type_name::<Self>(),
-                &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
-                found,
-            ),
+            | found => {
+                crate::error::cold_decode_error_unexpected_variant(
+                    core::any::type_name::<Self>(),
+                    &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                    found,
+                )
+            },
         }
     }
 }
@@ -658,11 +660,13 @@ impl<Context> Decode<Context> for SocketAddr {
         match u32::decode(decoder)? {
             | 0 => Ok(Self::V4(SocketAddrV4::decode(decoder)?)),
             | 1 => Ok(Self::V6(SocketAddrV6::decode(decoder)?)),
-            | found => crate::error::cold_decode_error_unexpected_variant(
-                core::any::type_name::<Self>(),
-                &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
-                found,
-            ),
+            | found => {
+                crate::error::cold_decode_error_unexpected_variant(
+                    core::any::type_name::<Self>(),
+                    &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                    found,
+                )
+            },
         }
     }
 }
