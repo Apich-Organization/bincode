@@ -48,7 +48,7 @@ jobs:
           targets: ${{ matrix.platform }}
 
       - name: Setup Zig
-        uses: goto-bus-stop/setup-zig@a1a24d55b0a31ebbf188fb7c81a58cbf8350ca96 # v2.2.1
+        uses: goto-bus-stop/setup-zig@a5b3ea2cbac9938b813735f47053b110b65f7c32 # v2.2.1
         with:
           version: 0.13.0
 
