@@ -890,7 +890,7 @@ where
                                 // Architecture-specific prefetching for large batches
                                 #[cfg(target_arch = "x86_64")]
                                 unsafe {
-                                    if j % 8 == 0 {
+                                    if j % 8 == 0 && reader.slice.len() > 64 {
                                         core::arch::x86_64::_mm_prefetch(
                                             reader.slice.as_ptr().add(64).cast::<i8>(),
                                             core::arch::x86_64::_MM_HINT_T0,
