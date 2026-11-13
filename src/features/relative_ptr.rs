@@ -44,10 +44,42 @@ impl<T: StaticSize, const N: usize> StaticSize for [T; N] {
 pub unsafe trait ZeroCopy: StaticSize {
     /// The required alignment for this type.
     const ALIGN: usize;
+
+    /// Writes the object representation of `self` into `dst` (exactly `Self::SIZE` bytes,
+    /// already zero-initialized by the caller).
+    ///
+    /// The default implementation copies the whole representation, which is only sound for types
+    /// without padding. Types that may contain padding (such as `#[derive(ZeroCopy)]` types) must
+    /// override this to copy field by field so that padding bytes are never read.
+    fn write_repr(
+        &self,
+        dst: &mut [u8],
+    ) where
+        Self: Sized,
+    {
+        assert_eq!(dst.len(), Self::SIZE);
+        let bytes = unsafe {
+            core::slice::from_raw_parts(core::ptr::from_ref(self).cast::<u8>(), Self::SIZE)
+        };
+        dst.copy_from_slice(bytes);
+    }
 }
 
 unsafe impl<T: ZeroCopy, const N: usize> ZeroCopy for [T; N] {
     const ALIGN: usize = T::ALIGN;
+
+    fn write_repr(
+        &self,
+        dst: &mut [u8],
+    ) {
+        assert_eq!(dst.len(), Self::SIZE);
+        if T::SIZE == 0 {
+            return;
+        }
+        for (item, chunk) in self.iter().zip(dst.chunks_exact_mut(T::SIZE)) {
+            item.write_repr(chunk);
+        }
+    }
 }
 
 /// Trait for handling endianness in zero-copy types.
@@ -1175,9 +1207,10 @@ impl ZeroBuilder {
         val: &T,
     ) {
         let size = T::SIZE;
-        let bytes =
-            unsafe { core::slice::from_raw_parts(core::ptr::from_ref(val).cast::<u8>(), size) };
-        self.data[offset..offset + size].copy_from_slice(bytes);
+        let dst = &mut self.data[offset..offset + size];
+        // Padding bytes are never read from `val`; they are deterministically zeroed.
+        dst.fill(0);
+        val.write_repr(dst);
     }
 
     /// Pushes a value onto the builder and returns its offset.
