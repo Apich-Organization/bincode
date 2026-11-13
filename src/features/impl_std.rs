@@ -150,7 +150,11 @@ where
 
     #[inline(always)]
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 1).filter(|b| b.len() >= 1) {
+        if self.buffer().len() < 1 {
+            std::io::BufRead::fill_buf(self)
+                .map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, 1).unwrap_err())?;
+        }
+        if let Some(buf) = self.buffer().get(..1) {
             let val = buf[0];
             Reader::consume(self, 1);
             Ok(val)
@@ -163,7 +167,11 @@ where
 
     #[inline(always)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 2).filter(|b| b.len() >= 2) {
+        if self.buffer().len() < 2 {
+            std::io::BufRead::fill_buf(self)
+                .map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, 2).unwrap_err())?;
+        }
+        if let Some(buf) = self.buffer().get(..2) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u16>()) };
             Reader::consume(self, 2);
             Ok(val)
@@ -176,7 +184,11 @@ where
 
     #[inline(always)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 4).filter(|b| b.len() >= 4) {
+        if self.buffer().len() < 4 {
+            std::io::BufRead::fill_buf(self)
+                .map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, 4).unwrap_err())?;
+        }
+        if let Some(buf) = self.buffer().get(..4) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u32>()) };
             Reader::consume(self, 4);
             Ok(val)
@@ -189,7 +201,11 @@ where
 
     #[inline(always)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 8).filter(|b| b.len() >= 8) {
+        if self.buffer().len() < 8 {
+            std::io::BufRead::fill_buf(self)
+                .map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, 8).unwrap_err())?;
+        }
+        if let Some(buf) = self.buffer().get(..8) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u64>()) };
             Reader::consume(self, 8);
             Ok(val)
@@ -202,7 +218,12 @@ where
 
     #[inline(always)]
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
-        if let Some(buf) = Reader::peek_read(self, 16).filter(|b| b.len() >= 16) {
+        if self.buffer().len() < 16 {
+            std::io::BufRead::fill_buf(self).map_err(|inner| {
+                crate::error::cold_decode_error_io::<()>(inner, 16).unwrap_err()
+            })?;
+        }
+        if let Some(buf) = self.buffer().get(..16) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u128>()) };
             Reader::consume(self, 16);
             Ok(val)

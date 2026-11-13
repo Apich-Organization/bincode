@@ -24,7 +24,7 @@ pub struct V2 {
 }
 
 #[test]
-fn test_issue_179_backward_compatibility() {
+fn test_issue_179_missing_fields_are_rejected() {
     let v1 = V1 {
         a: 42,
         b: "hello".to_string(),
@@ -32,11 +32,21 @@ fn test_issue_179_backward_compatibility() {
 
     let encoded_v1 = bincode::serde::encode_to_vec(&v1, bincode::config::standard()).unwrap();
 
-    let (decoded_v2, _): (V2, usize) =
-        bincode::serde::decode_from_slice(&encoded_v1, bincode::config::standard()).unwrap();
+    // Without field metadata, missing trailing fields cannot be distinguished from truncation,
+    // even when they have serde defaults.
+    let result =
+        bincode::serde::decode_from_slice::<V2, _>(&encoded_v1, bincode::config::standard());
+    assert!(matches!(
+        result,
+        Err(bincode::error::DecodeError::UnexpectedEnd { .. })
+    ));
 
-    assert_eq!(decoded_v2.a, 42);
-    assert_eq!(decoded_v2.b, "hello");
-    assert_eq!(decoded_v2.c, 0); // Default value
-    assert_eq!(decoded_v2.d, None); // Default value
+    let result = bincode::serde::decode_from_reader::<V2, _, _>(
+        bincode::de::read::SliceReader::new(&encoded_v1),
+        bincode::config::standard(),
+    );
+    assert!(matches!(
+        result,
+        Err(bincode::error::DecodeError::UnexpectedEnd { .. })
+    ));
 }
