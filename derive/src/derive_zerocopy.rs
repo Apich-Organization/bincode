@@ -44,12 +44,131 @@ impl DeriveZeroCopy {
         generator: &mut Generator,
     ) -> Result<()> {
         let crate_name = &self.attributes.crate_name;
-        generator
+        let mut impl_for = generator
             .impl_for(format!("{}::relative_ptr::ZeroCopy", crate_name))
-            .make_unsafe()
+            .make_unsafe();
+        impl_for
             .generate_const("ALIGN", "usize")
             .with_value(|builder| {
                 builder.push_parsed("core::mem::align_of::<Self>()")?;
+                Ok(())
+            })?;
+
+        // Field-wise `write_repr` so padding bytes are never read from the (partially
+        // uninitialized) value; the destination is already zeroed.
+        let tag_type = if self.repr.is_u8 {
+            "u8"
+        } else if self.repr.is_u16 {
+            "u16"
+        } else if self.repr.is_u32 {
+            "u32"
+        } else if self.repr.is_u64 {
+            "u64"
+        } else if self.repr.is_i8 {
+            "i8"
+        } else if self.repr.is_i16 {
+            "i16"
+        } else if self.repr.is_i32 {
+            "i32"
+        } else if self.repr.is_i64 {
+            "i64"
+        } else {
+            "u32"
+        };
+        let cn = crate_name.to_string();
+        impl_for
+            .generate_fn("write_repr")
+            .with_arg("&self", "")
+            .with_arg("dst", "&mut [u8]")
+            .body(|fn_body: &mut StreamBuilder| {
+                fn_body.push_parsed(
+                    "assert_eq!(dst.len(), core::mem::size_of::<Self>());",
+                )?;
+                if let Some(variants) = self.variants.as_ref() {
+                    fn_body.push_parsed(format!(
+                        "let data_offset = if core::mem::align_of::<Self>() > core::mem::size_of::<{t}>() {{ core::mem::align_of::<Self>() }} else {{ core::mem::size_of::<{t}>() }};",
+                        t = tag_type
+                    ))?;
+                    fn_body.push_parsed("match self")?;
+                    fn_body.group(Delimiter::Brace, |m: &mut StreamBuilder| {
+                        for (variant_index, variant) in variants.iter().enumerate() {
+                            m.push_parsed(format!("Self::{}", variant.name))?;
+                            let mut writes = String::new();
+                            let mut def = String::new();
+                            match variant.fields.as_ref() {
+                                | Some(Fields::Struct(s)) => {
+                                    m.group(Delimiter::Brace, |b: &mut StreamBuilder| {
+                                        for (ident, _) in s.iter() {
+                                            b.push_parsed(format!("{},", ident))?;
+                                        }
+                                        Ok(())
+                                    })?;
+                                    def.push_str("#[repr(C)] struct __VariantFields {");
+                                    for (ident, f) in s.iter() {
+                                        def.push_str(&format!("{}: {},", ident, f.type_string()));
+                                        writes.push_str(&format!(
+                                            "{cn}::relative_ptr::ZeroCopy::write_repr({id}, &mut dst[data_offset + core::mem::offset_of!(__VariantFields, {id})..data_offset + core::mem::offset_of!(__VariantFields, {id}) + core::mem::size_of::<{ty}>()]);",
+                                            cn = cn, id = ident, ty = f.type_string()
+                                        ));
+                                    }
+                                    def.push('}');
+                                },
+                                | Some(Fields::Tuple(t)) => {
+                                    m.group(Delimiter::Parenthesis, |b: &mut StreamBuilder| {
+                                        for i in 0..t.len() {
+                                            b.push_parsed(format!("__field_{},", i))?;
+                                        }
+                                        Ok(())
+                                    })?;
+                                    def.push_str("#[repr(C)] struct __VariantFields(");
+                                    for f in t.iter() {
+                                        def.push_str(&format!("{},", f.type_string()));
+                                    }
+                                    def.push_str(");");
+                                    for (i, f) in t.iter().enumerate() {
+                                        writes.push_str(&format!(
+                                            "{cn}::relative_ptr::ZeroCopy::write_repr(__field_{i}, &mut dst[data_offset + core::mem::offset_of!(__VariantFields, {i})..data_offset + core::mem::offset_of!(__VariantFields, {i}) + core::mem::size_of::<{ty}>()]);",
+                                            cn = cn, i = i, ty = f.type_string()
+                                        ));
+                                    }
+                                },
+                                | None => {},
+                            }
+                            m.puncts("=>");
+                            m.group(Delimiter::Brace, |arm: &mut StreamBuilder| {
+                                arm.push_parsed(format!(
+                                    "let __tag = (({} as u32) as {}).to_ne_bytes(); dst[..__tag.len()].copy_from_slice(&__tag);",
+                                    variant_index, tag_type
+                                ))?;
+                                if !def.is_empty() {
+                                    arm.push_parsed(def.clone())?;
+                                    arm.push_parsed(writes.clone())?;
+                                }
+                                Ok(())
+                            })?;
+                            m.punct(',');
+                        }
+                        Ok(())
+                    })?;
+                } else if let Some(fields) = self.fields.as_ref() {
+                    let items: Vec<(String, String)> = match fields {
+                        | Fields::Struct(s) => s
+                            .iter()
+                            .map(|(i, f)| (i.to_string(), f.type_string()))
+                            .collect(),
+                        | Fields::Tuple(t) => t
+                            .iter()
+                            .enumerate()
+                            .map(|(i, f)| (i.to_string(), f.type_string()))
+                            .collect(),
+                    };
+                    for (name, ty) in items {
+                        fn_body.push_parsed(format!(
+                            "{cn}::relative_ptr::ZeroCopy::write_repr(&self.{n}, &mut dst[core::mem::offset_of!(Self, {n})..core::mem::offset_of!(Self, {n}) + core::mem::size_of::<{ty}>()]);",
+                            cn = cn, n = name, ty = ty
+                        ))?;
+                    }
+                }
                 Ok(())
             })?;
         Ok(())

@@ -75,6 +75,26 @@ pub unsafe trait ZeroCopy: StaticSize {
     /// The required alignment for this type.
     const ALIGN: usize;
 
+    /// Writes the object representation of `self` into `dst` (exactly `Self::SIZE` bytes,
+    /// already zero-initialized by the caller).
+    ///
+    /// The default implementation copies the whole representation, which is only sound for types
+    /// without padding. Types that may contain padding (such as `#[derive(ZeroCopy)]` types) must
+    /// override this to copy field by field so that padding bytes are never read.
+    #[inline]
+    fn write_repr(
+        &self,
+        dst: &mut [u8],
+    ) where
+        Self: Sized,
+    {
+        assert_eq!(dst.len(), Self::SIZE);
+        let bytes = unsafe {
+            core::slice::from_raw_parts(core::ptr::from_ref(self).cast::<u8>(), Self::SIZE)
+        };
+        dst.copy_from_slice(bytes);
+    }
+
     /// Returns `true` if `bytes` (exactly `Self::SIZE` bytes, in native representation) form a
     /// valid value of `Self`. Types with invalid bit patterns (e.g. `bool`, `char`) must override
     /// this; it is checked before any reference to `Self` is created from untrusted bytes.
@@ -87,6 +107,20 @@ pub unsafe trait ZeroCopy: StaticSize {
 
 unsafe impl<T: ZeroCopy, const N: usize> ZeroCopy for [T; N] {
     const ALIGN: usize = T::ALIGN;
+
+    #[inline]
+    fn write_repr(
+        &self,
+        dst: &mut [u8],
+    ) {
+        assert_eq!(dst.len(), Self::SIZE);
+        if T::SIZE == 0 {
+            return;
+        }
+        for (item, chunk) in self.iter().zip(dst.chunks_exact_mut(T::SIZE)) {
+            item.write_repr(chunk);
+        }
+    }
 
     #[inline]
     fn is_valid_repr(bytes: &[u8]) -> bool {
@@ -1232,9 +1266,10 @@ impl ZeroBuilder {
         val: &T,
     ) {
         let size = T::SIZE;
-        let bytes =
-            unsafe { core::slice::from_raw_parts(core::ptr::from_ref(val).cast::<u8>(), size) };
-        self.data[offset..offset + size].copy_from_slice(bytes);
+        let dst = &mut self.data[offset..offset + size];
+        // Padding bytes are never read from `val`; they are deterministically zeroed.
+        dst.fill(0);
+        val.write_repr(dst);
     }
 
     /// Pushes a value onto the builder and returns its offset.
