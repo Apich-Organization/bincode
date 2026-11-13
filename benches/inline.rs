@@ -17,5 +17,82 @@ fn inline_decoder_claim_bytes_read(c: &mut Criterion) {
     });
 }
 
+fn bulk_reader_decode(c: &mut Criterion) {
+    use bincode::de::read::Reader;
+    use bincode::de::read::SliceReader;
+    use bincode::error::DecodeError;
+
+    // A reader with no peek support exercises the initialized-buffer fallback.
+    struct ReadOnly<'a>(SliceReader<'a>);
+    impl Reader for ReadOnly<'_> {
+        fn read(
+            &mut self,
+            bytes: &mut [u8],
+        ) -> Result<(), DecodeError> {
+            self.0.read(bytes)
+        }
+    }
+
+    let config = config::legacy();
+    let bytes = bincode::encode_to_vec(vec![42u8; 4096], config).unwrap();
+    c.bench_function("bulk_reader_decode/vec_buffered", |b| {
+        b.iter(|| {
+            black_box(bincode::decode_from_slice::<Vec<u8>, _>(black_box(&bytes), config).unwrap())
+        })
+    });
+    c.bench_function("bulk_reader_decode/vec_custom", |b| {
+        b.iter(|| {
+            let reader = ReadOnly(SliceReader::new(black_box(&bytes)));
+            black_box(bincode::decode_from_reader::<Vec<u8>, _, _>(reader, config).unwrap())
+        })
+    });
+    c.bench_function("bulk_reader_decode/array_custom", |b| {
+        b.iter(|| {
+            let reader = ReadOnly(SliceReader::new(black_box(&bytes[8..])));
+            black_box(bincode::decode_from_reader::<[u8; 4096], _, _>(reader, config).unwrap())
+        })
+    });
+    let bytes = bincode::encode_to_vec("x".repeat(4096), config).unwrap();
+    c.bench_function("bulk_reader_decode/string_custom", |b| {
+        b.iter(|| {
+            let reader = ReadOnly(SliceReader::new(black_box(&bytes)));
+            black_box(bincode::decode_from_reader::<String, _, _>(reader, config).unwrap())
+        })
+    });
+}
+
+criterion_group!(benches, inline_decoder_claim_bytes_read, bulk_reader_decode);
+
+#[cfg(feature = "serde")]
+fn serde_sequence_decode(c: &mut Criterion) {
+    let config = config::legacy();
+    let bytes = bincode::serde::encode_to_vec(vec![42u8; 1024], config).unwrap();
+
+    c.bench_function("serde_sequence_decode/slice", |b| {
+        b.iter(|| {
+            let result =
+                bincode::serde::decode_from_slice::<Vec<u8>, _>(black_box(&bytes), config).unwrap();
+            black_box(result);
+        })
+    });
+
+    c.bench_function("serde_sequence_decode/reader", |b| {
+        b.iter(|| {
+            let reader = bincode::de::read::SliceReader::new(black_box(&bytes));
+            let result =
+                bincode::serde::decode_from_reader::<Vec<u8>, _, _>(reader, config).unwrap();
+            black_box(result);
+        })
+    });
+}
+
+#[cfg(feature = "serde")]
+criterion_group!(
+    benches,
+    inline_decoder_claim_bytes_read,
+    serde_sequence_decode
+);
+#[cfg(not(feature = "serde"))]
 criterion_group!(benches, inline_decoder_claim_bytes_read);
+
 criterion_main!(benches);

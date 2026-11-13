@@ -12,7 +12,7 @@ pub fn decode_u16<R: Reader>(
     read: &mut R,
     endian: Endianness,
 ) -> Result<u16, DecodeError> {
-    if let Some(bytes) = read.peek_read(2) {
+    if let Some(bytes) = read.peek_read(2).filter(|b| b.len() >= 2) {
         let val = unsafe {
             let val = bytes.as_ptr().cast::<u16>().read_unaligned();
             match endian {
@@ -47,7 +47,7 @@ pub fn decode_u32<R: Reader>(
     read: &mut R,
     endian: Endianness,
 ) -> Result<u32, DecodeError> {
-    if let Some(bytes) = read.peek_read(4) {
+    if let Some(bytes) = read.peek_read(4).filter(|b| b.len() >= 4) {
         let val = unsafe {
             let val = bytes.as_ptr().cast::<u32>().read_unaligned();
             match endian {
@@ -82,7 +82,7 @@ pub fn decode_u64<R: Reader>(
     read: &mut R,
     endian: Endianness,
 ) -> Result<u64, DecodeError> {
-    if let Some(bytes) = read.peek_read(8) {
+    if let Some(bytes) = read.peek_read(8).filter(|b| b.len() >= 8) {
         let val = unsafe {
             let val = bytes.as_ptr().cast::<u64>().read_unaligned();
             match endian {
@@ -117,7 +117,7 @@ pub fn decode_u128<R: Reader>(
     read: &mut R,
     endian: Endianness,
 ) -> Result<u128, DecodeError> {
-    if let Some(bytes) = read.peek_read(16) {
+    if let Some(bytes) = read.peek_read(16).filter(|b| b.len() >= 16) {
         let val = unsafe {
             let val = bytes.as_ptr().cast::<u128>().read_unaligned();
             match endian {
@@ -163,7 +163,7 @@ pub fn decode_i16<R: Reader>(
     read: &mut R,
     endian: Endianness,
 ) -> Result<i16, DecodeError> {
-    if let Some(bytes) = read.peek_read(2) {
+    if let Some(bytes) = read.peek_read(2).filter(|b| b.len() >= 2) {
         let val = unsafe {
             let val = bytes.as_ptr().cast::<i16>().read_unaligned();
             match endian {
@@ -198,7 +198,7 @@ pub fn decode_i32<R: Reader>(
     read: &mut R,
     endian: Endianness,
 ) -> Result<i32, DecodeError> {
-    if let Some(bytes) = read.peek_read(4) {
+    if let Some(bytes) = read.peek_read(4).filter(|b| b.len() >= 4) {
         let val = unsafe {
             let val = bytes.as_ptr().cast::<i32>().read_unaligned();
             match endian {
@@ -233,7 +233,7 @@ pub fn decode_i64<R: Reader>(
     read: &mut R,
     endian: Endianness,
 ) -> Result<i64, DecodeError> {
-    if let Some(bytes) = read.peek_read(8) {
+    if let Some(bytes) = read.peek_read(8).filter(|b| b.len() >= 8) {
         let val = unsafe {
             let val = bytes.as_ptr().cast::<i64>().read_unaligned();
             match endian {
@@ -268,7 +268,7 @@ pub fn decode_i128<R: Reader>(
     read: &mut R,
     endian: Endianness,
 ) -> Result<i128, DecodeError> {
-    if let Some(bytes) = read.peek_read(16) {
+    if let Some(bytes) = read.peek_read(16).filter(|b| b.len() >= 16) {
         let val = unsafe {
             let val = bytes.as_ptr().cast::<i128>().read_unaligned();
             match endian {
