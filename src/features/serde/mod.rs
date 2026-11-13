@@ -52,6 +52,10 @@
 //!
 //! **Using any of the above attributes can and will cause issues with bincode and will result in lost data**. Consider using bincode's own derive macro instead.
 //!
+//! Missing trailing struct fields return `UnexpectedEnd`, even with `#[serde(default)]`.
+//! Bincode does not encode field names or struct field counts, so it cannot distinguish missing
+//! fields from truncated input. Use explicit schema versioning to decode older struct layouts.
+//!
 //! ### `deserialize_any` and Self-Describing Formats
 //!
 //! Bincode is not a self-describing format (it does not store type metadata with the data map like JSON does). Because of this, it **does not support `deserialize_any`**.

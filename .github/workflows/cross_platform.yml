@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
 
@@ -55,9 +55,9 @@ jobs:
       - name: Install Dependencies
         run: |
           cargo install cargo-zigbuild --locked
-          sudo apt-get update && sudo apt-get install -y qemu-user-static libc6-arm64-cross libc6-riscv64-cross gcc-riscv64-linux-gnu
+          sudo apt-get update && sudo apt-get install -y qemu-user qemu-user-binfmt libc6-arm64-cross libc6-riscv64-cross gcc-riscv64-linux-gnu
 
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - uses: Swatinem/rust-cache@c8037a86dde8214a8310e9f54a8fc61ab362aa31 # v2
 
       - name: Run Tests
         shell: bash
@@ -115,7 +115,7 @@ jobs:
           fi
 
           if [ -n "${{ matrix.qemu_arch }}" ]; then
-            export CARGO_TARGET_${ENV_NAME}_RUNNER="qemu-${{ matrix.qemu_arch }}-static"
+            export CARGO_TARGET_${ENV_NAME}_RUNNER="qemu-${{ matrix.qemu_arch }}"
             # QEMU needs the path to the cross-compiled dynamic libraries
             if [[ "${{ matrix.platform }}" == *"aarch64"* ]]; then
               export QEMU_LD_PREFIX=/usr/aarch64-linux-gnu
