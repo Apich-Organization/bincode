@@ -245,14 +245,14 @@ pub fn varint_decode_u16<R: Reader>(
 ) -> Result<u16, DecodeError> {
     // By checking for 1 byte first, we avoid falling back to the slow cold path
     // when decoding small values near the end of the buffer where peek_read(MAX_SIZE) would fail.
-    if let Some(bytes) = read.peek_read(1) {
+    if let Some(bytes) = read.peek_read(1).filter(|b| b.len() >= 1) {
         let b = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(u16::from(b));
         }
     }
-    if let Some(bytes) = read.peek_read(3) {
+    if let Some(bytes) = read.peek_read(3).filter(|b| b.len() >= 3) {
         let b = unsafe { *bytes.as_ptr() };
         if crate::utils::is_unlikely!(b == U16_BYTE) {
             let v = unsafe {
@@ -277,14 +277,14 @@ pub fn varint_decode_u32<R: Reader>(
 ) -> Result<u32, DecodeError> {
     // By checking for 1 byte first, we avoid falling back to the slow cold path
     // when decoding small values near the end of the buffer where peek_read(MAX_SIZE) would fail.
-    if let Some(bytes) = read.peek_read(1) {
+    if let Some(bytes) = read.peek_read(1).filter(|b| b.len() >= 1) {
         let b = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(u32::from(b));
         }
     }
-    if let Some(bytes) = read.peek_read(5) {
+    if let Some(bytes) = read.peek_read(5).filter(|b| b.len() >= 5) {
         let b = unsafe { *bytes.as_ptr() };
         // Prevents falling back to the slow, non-inlined cold path
         // when we already have enough bytes buffered.
@@ -323,14 +323,14 @@ pub fn varint_decode_u64<R: Reader>(
 ) -> Result<u64, DecodeError> {
     // By checking for 1 byte first, we avoid falling back to the slow cold path
     // when decoding small values near the end of the buffer where peek_read(MAX_SIZE) would fail.
-    if let Some(bytes) = read.peek_read(1) {
+    if let Some(bytes) = read.peek_read(1).filter(|b| b.len() >= 1) {
         let b = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(u64::from(b));
         }
     }
-    if let Some(bytes) = read.peek_read(9) {
+    if let Some(bytes) = read.peek_read(9).filter(|b| b.len() >= 9) {
         let b = unsafe { *bytes.as_ptr() };
         // Avoids falling back to the cold path when intermediate sizes are decoded
         // but sufficient bytes are already buffered by peek_read.
@@ -381,14 +381,14 @@ pub fn varint_decode_usize<R: Reader>(
 ) -> Result<usize, DecodeError> {
     // By checking for 1 byte first, we avoid falling back to the slow cold path
     // when decoding small values near the end of the buffer where peek_read(MAX_SIZE) would fail.
-    if let Some(bytes) = read.peek_read(1) {
+    if let Some(bytes) = read.peek_read(1).filter(|b| b.len() >= 1) {
         let b = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(b as usize);
         }
     }
-    if let Some(bytes) = read.peek_read(9) {
+    if let Some(bytes) = read.peek_read(9).filter(|b| b.len() >= 9) {
         let b = unsafe { *bytes.as_ptr() };
         if crate::utils::is_unlikely!(b == U16_BYTE) {
             let v = unsafe {
@@ -443,14 +443,14 @@ pub fn varint_decode_u128<R: Reader>(
 ) -> Result<u128, DecodeError> {
     // By checking for 1 byte first, we avoid falling back to the slow cold path
     // when decoding small values near the end of the buffer where peek_read(MAX_SIZE) would fail.
-    if let Some(bytes) = read.peek_read(1) {
+    if let Some(bytes) = read.peek_read(1).filter(|b| b.len() >= 1) {
         let b = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(b <= SINGLE_BYTE_MAX) {
             read.consume(1);
             return Ok(u128::from(b));
         }
     }
-    if let Some(bytes) = read.peek_read(17) {
+    if let Some(bytes) = read.peek_read(17).filter(|b| b.len() >= 17) {
         let b = unsafe { *bytes.as_ptr() };
         // Avoids falling back to the cold path when smaller values are decoded
         // within a large u128 frame and sufficient bytes are buffered.

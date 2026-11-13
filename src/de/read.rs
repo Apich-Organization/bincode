@@ -68,7 +68,7 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
-        if let Some(buf) = self.peek_read(1) {
+        if let Some(buf) = self.peek_read(1).filter(|b| b.len() >= 1) {
             let val = buf[0];
             self.consume(1);
             Ok(val)
@@ -86,7 +86,7 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
-        if let Some(buf) = self.peek_read(2) {
+        if let Some(buf) = self.peek_read(2).filter(|b| b.len() >= 2) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u16>()) };
             self.consume(2);
             Ok(val)
@@ -104,7 +104,7 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
-        if let Some(buf) = self.peek_read(4) {
+        if let Some(buf) = self.peek_read(4).filter(|b| b.len() >= 4) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u32>()) };
             self.consume(4);
             Ok(val)
@@ -122,7 +122,7 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
-        if let Some(buf) = self.peek_read(8) {
+        if let Some(buf) = self.peek_read(8).filter(|b| b.len() >= 8) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u64>()) };
             self.consume(8);
             Ok(val)
@@ -140,7 +140,7 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u128(&mut self) -> Result<u128, DecodeError> {
-        if let Some(buf) = self.peek_read(16) {
+        if let Some(buf) = self.peek_read(16).filter(|b| b.len() >= 16) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u128>()) };
             self.consume(16);
             Ok(val)
@@ -173,7 +173,7 @@ pub trait Reader {
     /// Returns the next byte without consuming it.
     #[inline(always)]
     fn peek_u8(&mut self) -> Option<u8> {
-        self.peek_read(1).map(|b| b[0])
+        self.peek_read(1).and_then(|b| b.first().copied())
     }
 }
 
@@ -194,7 +194,7 @@ where
         &mut self,
         n: usize,
     ) -> Option<&[u8]> {
-        (**self).peek_read(n)
+        (**self).peek_read(n).filter(|b| b.len() >= n)
     }
 
     #[inline(always)]
