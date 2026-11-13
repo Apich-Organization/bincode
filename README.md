@@ -31,7 +31,7 @@ Add `bincode-next` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bincode-next = "3.1.1"
+bincode-next = "3.1"
 ```
 
 ### Basic Encode / Decode
@@ -389,59 +389,6 @@ async fn main() {
     assert_eq!(entity, decoded);
 }
 ```
-
----
-
-## Performance Optimizations
-
-Bincode-Next includes advanced optimizations for extreme performance:
-- **SIMD Varint Scanning**: Accelerates decoding of collections (like `Vec<u64>`) by scanning for small values using SSE2 or NEON instructions.
-- **Bulk Native Copy**: Automatically detects when data can be copied directly from memory (e.g., slices of primitives with matching endianness) to avoid element-wise processing.
-- **Uninitialized Memory**: Utilizes `MaybeUninit` and `set_len` optimizations for `Vec` decoding to avoid redundant zero-initialization.
-
-```shell
-git clone https://github.com/Apich-Organization/bincode.git
-cd bincode
-cargo bench --bench extreme_perf
-cargo bench --bench complex
-```
-
-TL;DR: Please visit [https://bincode-next.apich.org/](https://bincode-next.apich.org/) for more detailed information.
-
-### CBOR Encoding & Decoding
-
-| Implementation | Encode (µs) | **Relative Speed (Enc)** | Decode (µs) | **Relative Speed (Dec)** |
-| --- | --- | --- | --- | --- |
-| `bincode-next` | 5.64 | **1.00x** | 30.47 | **1.00x** |
-| `bincode-next` (det.) | 5.68 | 1.01x | 30.49 | 1.00x |
-| `minicbor` | 9.36 | 1.66x | 41.42 | 1.36x |
-| `cbor4ii` | 11.98 | 2.12x | 63.54 | 2.09x |
-
----
-
-### Complex World Benchmarks
-
-*Baseline: `bincode-next` (fixed) for encoding, `bincode-next` (varint) for decoding.*
-
-| Implementation | Encode (µs) | **Rel. Speed** | Decode (µs) | **Rel. Speed** |
-| --- | --- | --- | --- | --- |
-| `bincode-next` (fixed) | 3.23 | **1.00x** | 20.63 | 1.10x |
-| `bincode-next` (varint) | 3.44 | 1.07x | 18.74 | **1.00x** |
-| `bincode-v1` (serde) | 3.31 | 1.02x | 18.96 | 1.01x |
-| `bincode-v2` (fixed) | 3.43 | 1.06x | 18.71 | 1.00x |
-| `bincode-v2` (varint) | 4.22 | 1.31x | 25.00 | 1.33x |
-| `bincode-next` (cbor) | 5.99 | 1.85x | 24.82 | 1.32x |
-| `bincode-next` (cbor-det) | 6.01 | 1.86x | 24.68 | 1.32x |
-
----
-
-### Postcard Comparison
-
-| Implementation | Encode (µs) | **Rel. Speed (Enc)** | Decode (µs) | **Rel. Speed (Dec)** |
-| --- | --- | --- | --- | --- |
-| `bincode-next` (fixed) | 3.58 | **1.00x** | 25.03 | **1.00x** |
-| `bincode-next` (varint) | 5.06 | 1.41x | 25.49 | 1.02x |
-| `postcard` | 8.38 | 2.34x | 30.96 | 1.24x |
 
 ## About Security and Code Quality
 
