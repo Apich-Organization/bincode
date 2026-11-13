@@ -115,7 +115,7 @@ futures = "0.3"
 postcard = { version = "1.1", features = ["alloc", "use-std"] }
 cbor4ii = { version = "1.2", features = ["serde1"] }
 minicbor = { version = "2.2", features = ["derive", "alloc"] }
-dtact = "0.2"
+dtact = "0.3"
 
 [[bench]]
 name = "varint"
