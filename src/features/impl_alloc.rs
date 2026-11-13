@@ -552,12 +552,13 @@ where
                     let chunk_len = decoder.decode_byte_slice_len()?;
                     decoder.claim_bytes_read(chunk_len)?;
                     let start = vec.len();
-                    // SAFETY: T is u8/i8, so it's safe to copy bytes into it.
+                    // SAFETY: T is u8/i8 and reserve provides space for chunk_len bytes.
+                    // read_uninit initializes the entire chunk before set_len exposes it as T.
                     unsafe {
                         vec.reserve(chunk_len);
                         let ptr = vec.as_mut_ptr().add(start).cast::<u8>();
-                        let slice = core::slice::from_raw_parts_mut(ptr, chunk_len);
-                        decoder.reader().read(slice)?;
+                        let slice = core::slice::from_raw_parts_mut(ptr.cast(), chunk_len);
+                        crate::de::read::read_uninit(decoder.reader(), slice)?;
                         vec.set_len(start + chunk_len);
                     }
                 }
@@ -600,11 +601,13 @@ where
             || (!is_bincode && is_u8 && major == 2)
         {
             let mut vec = Self::with_capacity(len);
+            // SAFETY: the allocation holds len primitive values with no invalid bit patterns.
+            // read_uninit initializes every byte before set_len exposes those values.
             unsafe {
                 let bytes_to_read = len * core::mem::size_of::<T>();
                 let ptr = vec.as_mut_ptr().cast::<u8>();
-                let slice = core::slice::from_raw_parts_mut(ptr, bytes_to_read);
-                decoder.reader().read(slice)?;
+                let slice = core::slice::from_raw_parts_mut(ptr.cast(), bytes_to_read);
+                crate::de::read::read_uninit(decoder.reader(), slice)?;
                 vec.set_len(len);
             }
             Ok(vec)
@@ -797,12 +800,13 @@ where
                     let chunk_len = decoder.decode_byte_slice_len()?;
                     decoder.claim_bytes_read(chunk_len)?;
                     let start = vec.len();
-                    // SAFETY: T is u8/i8, so it's safe to copy bytes into it.
+                    // SAFETY: T is u8/i8 and reserve provides space for chunk_len bytes.
+                    // read_uninit initializes the entire chunk before set_len exposes it as T.
                     unsafe {
                         vec.reserve(chunk_len);
                         let ptr = vec.as_mut_ptr().add(start).cast::<u8>();
-                        let slice = core::slice::from_raw_parts_mut(ptr, chunk_len);
-                        decoder.reader().read(slice)?;
+                        let slice = core::slice::from_raw_parts_mut(ptr.cast(), chunk_len);
+                        crate::de::read::read_uninit(decoder.reader(), slice)?;
                         vec.set_len(start + chunk_len);
                     }
                 }
@@ -846,11 +850,13 @@ where
             || (!is_bincode && is_u8 && major == 2)
         {
             let mut vec = Self::with_capacity(len);
+            // SAFETY: the allocation holds len primitive values with no invalid bit patterns.
+            // read_uninit initializes every byte before set_len exposes those values.
             unsafe {
                 let bytes_to_read = len * core::mem::size_of::<T>();
                 let ptr = vec.as_mut_ptr().cast::<u8>();
-                let slice = core::slice::from_raw_parts_mut(ptr, bytes_to_read);
-                decoder.reader().read(slice)?;
+                let slice = core::slice::from_raw_parts_mut(ptr.cast(), bytes_to_read);
+                crate::de::read::read_uninit(decoder.reader(), slice)?;
                 vec.set_len(len);
             }
             Ok(vec)
@@ -1083,11 +1089,9 @@ impl<Context> Decode<Context> for String {
         }
         decoder.claim_container_read::<u8>(len)?;
         let mut bytes = Vec::with_capacity(len);
+        crate::de::read::read_uninit(decoder.reader(), &mut bytes.spare_capacity_mut()[..len])?;
+        // SAFETY: read_uninit initialized all len bytes in the vector's spare capacity.
         unsafe {
-            let ptr = bytes.as_mut_ptr();
-            decoder
-                .reader()
-                .read(core::slice::from_raw_parts_mut(ptr, len))?;
             bytes.set_len(len);
         }
         Self::from_utf8(bytes)

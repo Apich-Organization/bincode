@@ -151,9 +151,8 @@ where
     #[inline(always)]
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
         if self.buffer().len() < 1 {
-            std::io::BufRead::fill_buf(self).map_err(|inner| {
-                crate::error::cold_decode_error_io::<()>(inner, 1).unwrap_err()
-            })?;
+            std::io::BufRead::fill_buf(self)
+                .map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, 1).unwrap_err())?;
         }
         if let Some(buf) = self.buffer().get(..1) {
             let val = buf[0];
@@ -169,9 +168,8 @@ where
     #[inline(always)]
     fn read_u16(&mut self) -> Result<u16, DecodeError> {
         if self.buffer().len() < 2 {
-            std::io::BufRead::fill_buf(self).map_err(|inner| {
-                crate::error::cold_decode_error_io::<()>(inner, 2).unwrap_err()
-            })?;
+            std::io::BufRead::fill_buf(self)
+                .map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, 2).unwrap_err())?;
         }
         if let Some(buf) = self.buffer().get(..2) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u16>()) };
@@ -187,9 +185,8 @@ where
     #[inline(always)]
     fn read_u32(&mut self) -> Result<u32, DecodeError> {
         if self.buffer().len() < 4 {
-            std::io::BufRead::fill_buf(self).map_err(|inner| {
-                crate::error::cold_decode_error_io::<()>(inner, 4).unwrap_err()
-            })?;
+            std::io::BufRead::fill_buf(self)
+                .map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, 4).unwrap_err())?;
         }
         if let Some(buf) = self.buffer().get(..4) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u32>()) };
@@ -205,9 +202,8 @@ where
     #[inline(always)]
     fn read_u64(&mut self) -> Result<u64, DecodeError> {
         if self.buffer().len() < 8 {
-            std::io::BufRead::fill_buf(self).map_err(|inner| {
-                crate::error::cold_decode_error_io::<()>(inner, 8).unwrap_err()
-            })?;
+            std::io::BufRead::fill_buf(self)
+                .map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, 8).unwrap_err())?;
         }
         if let Some(buf) = self.buffer().get(..8) {
             let val = unsafe { core::ptr::read_unaligned(buf.as_ptr().cast::<u64>()) };

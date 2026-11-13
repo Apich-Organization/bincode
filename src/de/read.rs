@@ -13,10 +13,45 @@
 #![allow(unsafe_code)]
 
 use crate::error::DecodeError;
+use core::mem::MaybeUninit;
+
+/// Read into uninitialized storage without exposing uninitialized bytes to a safe reader.
+/// On success, every byte in `destination` is initialized, even if `read` did not write it.
+#[inline(always)]
+pub(crate) fn read_uninit<R: Reader>(
+    reader: &mut R,
+    destination: &mut [MaybeUninit<u8>],
+) -> Result<(), DecodeError> {
+    let len = destination.len();
+    if let Some(source) = reader.peek_read(len) {
+        // Reader is safe to implement, so do not trust the returned slice's length for safety.
+        let Some(source) = source.get(..len) else {
+            return crate::error::cold_decode_error_unexpected_end(len - source.len());
+        };
+        // SAFETY: source contains len initialized bytes, and destination is a distinct, writable
+        // slice of the same length. Copying into MaybeUninit storage initializes these bytes.
+        unsafe {
+            core::ptr::copy_nonoverlapping(
+                source.as_ptr(),
+                destination.as_mut_ptr().cast::<u8>(),
+                len,
+            );
+        }
+        reader.consume(len);
+        Ok(())
+    } else {
+        destination.fill(MaybeUninit::new(0));
+        // SAFETY: every byte was initialized above, and MaybeUninit<u8> has the layout of u8.
+        let bytes =
+            unsafe { core::slice::from_raw_parts_mut(destination.as_mut_ptr().cast::<u8>(), len) };
+        reader.read(bytes)
+    }
+}
 
 /// A reader for owned data. See the module documentation for more information.
 pub trait Reader {
     /// Fill the given `bytes` argument with values. Exactly the length of the given slice must be filled, or else an error must be returned.
+    /// The buffer is initialized, and implementations may inspect its contents before writing.
     ///
     /// # Errors
     ///
