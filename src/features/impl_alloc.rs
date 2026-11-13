@@ -633,7 +633,11 @@ where
                 if let Some(ms) = max_size {
                     // Try the "Ultimate Batch" peek first.
                     // This is extremely fast as it eliminates almost all overhead.
-                    if let Some(bytes) = decoder.reader().peek_read(len * ms) {
+                    if let Some(bytes) = decoder
+                        .reader()
+                        .peek_read(len * ms)
+                        .filter(|b| b.len() >= len * ms)
+                    {
                         let mut reader = crate::de::read::SliceReader::new(bytes);
                         let endian = D::C::ENDIAN;
 
@@ -717,7 +721,7 @@ where
                     || unty::type_equal::<T, i64>()
                     || unty::type_equal::<T, usize>()
                     || unty::type_equal::<T, isize>())
-                && let Some(bytes) = decoder.reader().peek_read(len)
+                && let Some(bytes) = decoder.reader().peek_read(len).filter(|b| b.len() >= len)
             {
                 let scan = crate::varint::simd::scan_single_byte_varints(bytes);
                 let to_decode = scan.single_byte_count.min(len);
@@ -877,7 +881,10 @@ where
                 };
 
                 if let Some(ms) = max_size
-                    && let Some(bytes) = decoder.reader().peek_read(len * ms)
+                    && let Some(bytes) = decoder
+                        .reader()
+                        .peek_read(len * ms)
+                        .filter(|b| b.len() >= len * ms)
                 {
                     let mut reader = crate::de::read::SliceReader::new(bytes);
                     let endian = D::C::ENDIAN;
@@ -959,7 +966,7 @@ where
                     || unty::type_equal::<T, i64>()
                     || unty::type_equal::<T, usize>()
                     || unty::type_equal::<T, isize>())
-                && let Some(bytes) = decoder.reader().peek_read(len)
+                && let Some(bytes) = decoder.reader().peek_read(len).filter(|b| b.len() >= len)
             {
                 let scan = crate::varint::simd::scan_single_byte_varints(bytes);
                 let to_decode = scan.single_byte_count.min(len);
