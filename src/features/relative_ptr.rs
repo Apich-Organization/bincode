@@ -20,6 +20,7 @@ macro_rules! impl_static_size {
             impl StaticSize for $t {
                 const SIZE: usize = core::mem::size_of::<$t>();
             }
+            // Every bit pattern is a valid value for these types.
             unsafe impl ZeroCopy for $t {
                 const ALIGN: usize = core::mem::align_of::<$t>();
             }
@@ -28,8 +29,37 @@ macro_rules! impl_static_size {
 }
 
 impl_static_size!(
-    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, char, bool
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
 );
+
+impl StaticSize for bool {
+    const SIZE: usize = core::mem::size_of::<bool>();
+}
+// `bool` has invalid bit patterns, so `is_valid_repr` must be checked before a reference is formed.
+unsafe impl ZeroCopy for bool {
+    const ALIGN: usize = core::mem::align_of::<bool>();
+
+    #[inline]
+    fn is_valid_repr(bytes: &[u8]) -> bool {
+        bytes.len() == Self::SIZE && bytes[0] <= 1
+    }
+}
+
+impl StaticSize for char {
+    const SIZE: usize = core::mem::size_of::<char>();
+}
+// `char` has invalid bit patterns (surrogates, > 0x10FFFF).
+unsafe impl ZeroCopy for char {
+    const ALIGN: usize = core::mem::align_of::<char>();
+
+    #[inline]
+    fn is_valid_repr(bytes: &[u8]) -> bool {
+        match <[u8; 4]>::try_from(bytes) {
+            | Ok(raw) => char::from_u32(u32::from_ne_bytes(raw)).is_some(),
+            | Err(_) => false,
+        }
+    }
+}
 
 impl<T: StaticSize, const N: usize> StaticSize for [T; N] {
     const SIZE: usize = T::SIZE * N;
@@ -44,10 +74,24 @@ impl<T: StaticSize, const N: usize> StaticSize for [T; N] {
 pub unsafe trait ZeroCopy: StaticSize {
     /// The required alignment for this type.
     const ALIGN: usize;
+
+    /// Returns `true` if `bytes` (exactly `Self::SIZE` bytes, in native representation) form a
+    /// valid value of `Self`. Types with invalid bit patterns (e.g. `bool`, `char`) must override
+    /// this; it is checked before any reference to `Self` is created from untrusted bytes.
+    #[inline]
+    fn is_valid_repr(bytes: &[u8]) -> bool {
+        let _ = bytes;
+        true
+    }
 }
 
 unsafe impl<T: ZeroCopy, const N: usize> ZeroCopy for [T; N] {
     const ALIGN: usize = T::ALIGN;
+
+    #[inline]
+    fn is_valid_repr(bytes: &[u8]) -> bool {
+        bytes.len() == T::SIZE * N && bytes.chunks_exact(T::SIZE.max(1)).all(T::is_valid_repr)
+    }
 }
 
 /// Trait for handling endianness in zero-copy types.
@@ -459,8 +503,15 @@ impl<T, const ALIGN: usize, E: Endian> RelativePtr<T, ALIGN, E> {
         let target_offset_in_buffer = target_addr - buffer_start;
         let target_ptr = unsafe { buffer.as_ptr().add(target_offset_in_buffer) };
 
+        // Reject representations that are not a valid `T` (e.g. bool != 0/1, invalid char)
+        // before any reference is formed.
+        let target_bytes = unsafe { core::slice::from_raw_parts(target_ptr, T::SIZE) };
+        if !T::is_valid_repr(target_bytes) {
+            return None;
+        }
+
         // Safe because we bounds checked against the buffer, alignment checked,
-        // and we derive the lifetime from the buffer.
+        // representation validated, and we derive the lifetime from the buffer.
         Some(unsafe { &*target_ptr.cast::<T>() })
     }
 }
@@ -611,6 +662,12 @@ impl<T: ZeroCopy, const ALIGN: usize, E: Endian> ZeroSlice<T, ALIGN, E> {
 
         let target_end = target_offset.checked_add(total_size)?;
         if target_end > buffer.len() {
+            return None;
+        }
+
+        // Validate every element's representation before forming the slice.
+        let all_bytes = &buffer[target_offset..target_end];
+        if T::SIZE > 0 && !all_bytes.chunks_exact(T::SIZE).all(T::is_valid_repr) {
             return None;
         }
 
