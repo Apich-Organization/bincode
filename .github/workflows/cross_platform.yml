@@ -55,7 +55,7 @@ jobs:
       - name: Install Dependencies
         run: |
           cargo install cargo-zigbuild --locked
-          sudo apt-get update && sudo apt-get install -y qemu-user-static libc6-arm64-cross libc6-riscv64-cross gcc-riscv64-linux-gnu
+          sudo apt-get update && sudo apt-get install -y qemu-user qemu-user-binfmt libc6-arm64-cross libc6-riscv64-cross gcc-riscv64-linux-gnu
 
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
 
@@ -115,7 +115,7 @@ jobs:
           fi
 
           if [ -n "${{ matrix.qemu_arch }}" ]; then
-            export CARGO_TARGET_${ENV_NAME}_RUNNER="qemu-${{ matrix.qemu_arch }}-static"
+            export CARGO_TARGET_${ENV_NAME}_RUNNER="qemu-${{ matrix.qemu_arch }}"
             # QEMU needs the path to the cross-compiled dynamic libraries
             if [[ "${{ matrix.platform }}" == *"aarch64"* ]]; then
               export QEMU_LD_PREFIX=/usr/aarch64-linux-gnu
