@@ -67,8 +67,8 @@ jobs:
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
-      - name: cargo fmt
-        run: cargo fmt --all -- --check
+      - name: cargo +nightly fmt
+        run: cargo +nightly fmt --all -- --check
       - name: cargo clippy
         run: cargo clippy --all-features
 
