@@ -94,3 +94,28 @@ fn cbor_indefinite_array_charges_element_size() {
     let (b, _): (Vec<i32>, _) = decode_from_slice(&indefinite, big).unwrap();
     assert_eq!(a, b);
 }
+
+#[derive(bincode_next::Fingerprint, Encode, Decode, PartialEq, Debug)]
+struct Fp {
+    a: u32,
+    b: String,
+}
+
+/// `features_config` fuzzer: the seed passed to `with_fingerprint_and_seed` was ignored when
+/// computing the schema hash, so every seed accepted every other seed's data.
+#[test]
+fn fingerprint_seed_changes_schema_hash() {
+    let v = Fp {
+        a: 1,
+        b: "x".into(),
+    };
+    let s1 = config::standard().with_fingerprint_and_seed::<1>();
+    let s2 = config::standard().with_fingerprint_and_seed::<2>();
+    let enc = encode_to_vec(&v, s1).unwrap();
+    assert_eq!(decode_from_slice::<Fp, _>(&enc, s1).unwrap().0, v);
+    assert!(decode_from_slice::<Fp, _>(&enc, s2).is_err());
+    // The default seed (0) is unchanged by `with_fingerprint`.
+    let d = config::standard().with_fingerprint();
+    let z = config::standard().with_fingerprint_and_seed::<0>();
+    assert_eq!(encode_to_vec(&v, d).unwrap(), encode_to_vec(&v, z).unwrap());
+}

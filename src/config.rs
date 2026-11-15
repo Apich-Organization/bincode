@@ -963,9 +963,17 @@ pub mod internal {
         L: InternalLimitConfig,
         B: InternalBitPackingConfig,
         O: InternalBitOrderingConfig,
+        F: InternalFingerprintConfig,
         FO: InternalFormatConfig,
     {
         const CONFIG_HASH: u64 = {
+            // The user-chosen fingerprint seed must change the schema hash, otherwise
+            // `with_fingerprint_and_seed` would be a no-op. Seed 0 (the default) keeps
+            // the historical hash.
+            let seed = match F::FINGERPRINT_MODE {
+                | super::FingerprintMode::Enabled { seed } => seed,
+                | _ => 0,
+            };
             let format_byte: u8 = match FO::FORMAT {
                 | super::Format::Bincode => 0,
                 | super::Format::BincodeDeterministic => 1,
@@ -993,7 +1001,7 @@ pub mod internal {
                     opts.allow_indefinite as u8,
                     opts.strict_tags as u8,
                 ],
-                &rapidhash::v3::RapidSecrets::seed_cpp(0),
+                &rapidhash::v3::RapidSecrets::seed_cpp(seed),
             )
         };
     }
