@@ -694,7 +694,7 @@ pub trait Encoder: Sealed + crate::error_path::BincodeErrorPathCovered<1> {
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode | Format::BincodeDeterministic => self.encode_u8(idx as u8),
+            | Format::Bincode | Format::BincodeDeterministic => self.encode_u32(idx),
             | Format::Cbor | Format::CborDeterministic => {
                 cbor::encode_u32::<_, Self::C>(self.writer(), idx)
             },

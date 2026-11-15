@@ -719,10 +719,8 @@ pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     #[inline(always)]
     fn decode_variant_index(&mut self) -> Result<u32, DecodeError> {
         match <Self::C as crate::config::InternalFormatConfig>::FORMAT {
-            | Format::Bincode | Format::BincodeDeterministic => {
-                self.claim_bytes_read(1)?;
-                self.decode_u8().map(u32::from)
-            },
+            // Enum discriminants are `u32` (see docs/spec.md).
+            | Format::Bincode | Format::BincodeDeterministic => self.decode_u32(),
             | Format::Cbor | Format::CborDeterministic => {
                 self.claim_bytes_read(5)?;
                 cbor::decode_u32(self.reader())

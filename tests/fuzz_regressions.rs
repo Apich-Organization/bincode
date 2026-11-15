@@ -119,3 +119,28 @@ fn fingerprint_seed_changes_schema_hash() {
     let z = config::standard().with_fingerprint_and_seed::<0>();
     assert_eq!(encode_to_vec(&v, d).unwrap(), encode_to_vec(&v, z).unwrap());
 }
+
+/// `compat` fuzzer: `Result`'s variant tag was written as a single byte in every config, but the
+/// spec (and bincode 1.x / the serde path) use a `u32` discriminant, which is 4 bytes with
+/// fixed-width integers.
+#[test]
+fn result_variant_tag_is_u32() {
+    let ok: Result<u32, String> = Ok(7);
+    let err: Result<u32, String> = Err("x".into());
+    let legacy = config::legacy();
+    assert_eq!(encode_to_vec(&ok, legacy).unwrap(), [0, 0, 0, 0, 7, 0, 0, 0]);
+    assert_eq!(
+        encode_to_vec(&err, legacy).unwrap(),
+        [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, b'x']
+    );
+    // Varint configs: a small u32 is still one byte, so the standard encoding is unchanged.
+    assert_eq!(encode_to_vec(&ok, config::standard()).unwrap(), [0, 7]);
+    for v in [ok, err] {
+        for_each_cfg(&v);
+    }
+    fn for_each_cfg(v: &Result<u32, String>) {
+        let c = config::standard().with_big_endian().with_fixed_int_encoding();
+        let e = encode_to_vec(v, c).unwrap();
+        assert_eq!(&decode_from_slice::<Result<u32, String>, _>(&e, c).unwrap().0, v);
+    }
+}

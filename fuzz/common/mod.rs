@@ -84,6 +84,7 @@ pub struct Msg {
     pub map: BTreeMap<u16, Vec<u32>>,
     pub dq: VecDeque<u32>,
     pub boxed: Box<[u32]>,
+    pub res: Result<u32, String>,
 }
 
 /// Run `$body` once per entry of the wire-config matrix, with `$cfg` bound to a
