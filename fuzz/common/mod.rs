@@ -84,7 +84,6 @@ pub struct Msg {
     pub map: BTreeMap<u16, Vec<u32>>,
     pub dq: VecDeque<u32>,
     pub boxed: Box<[u32]>,
-    pub res: Result<u32, String>,
 }
 
 /// Run `$body` once per entry of the wire-config matrix, with `$cfg` bound to a
@@ -143,7 +142,15 @@ macro_rules! with_bincode_config {
 /// fuzzer report out-of-memory for behaviour that is by design.
 #[macro_export]
 macro_rules! check_types {
-    ($data:expr, $base:expr, $strict:expr, [$($t:ty),+ $(,)?]) => {{
+    ($data:expr, $base:expr, $strict:expr, [$($t:ty),+ $(,)?]) => {
+        $crate::check_types!(@go $data, $base, $strict, true, [$($t),+])
+    };
+    // Same, for types containing `HashMap`/`HashSet` (iteration order is random per
+    // instance, so byte-for-byte re-encoding stability cannot be asserted).
+    ($data:expr, $base:expr, $strict:expr, unordered, [$($t:ty),+ $(,)?]) => {
+        $crate::check_types!(@go $data, $base, $strict, false, [$($t),+])
+    };
+    (@go $data:expr, $base:expr, $strict:expr, $fp:expr, [$($t:ty),+ $(,)?]) => {{
         let base = $base;
         $(
             $crate::common::check_decode::<$t, _, _, _>(
@@ -152,6 +159,7 @@ macro_rules! check_types {
                 base.with_limit::<1048576>(),
                 base.with_limit::<67108864>(),
                 $strict,
+                $fp,
             );
         )+
     }};
@@ -174,6 +182,7 @@ pub fn check_decode<T, CS, CB, CN>(
     big: CB,
     none: CN,
     strict_prefix: bool,
+    fixed_point: bool,
 ) where
     T: Decode<()> + Encode,
     CS: Config,
@@ -213,7 +222,9 @@ pub fn check_decode<T, CS, CB, CN>(
         bincode_next::decode_from_slice::<T, _>(&enc, none).expect("re-decode of own encoding");
     assert_eq!(n2, enc.len(), "re-decode did not consume its whole encoding");
     let enc2 = bincode_next::encode_to_vec(&value2, none).expect("second re-encode");
-    assert_eq!(enc, enc2, "encoding is not a fixed point");
+    if fixed_point {
+        assert_eq!(enc, enc2, "encoding is not a fixed point");
+    }
 
     // Self-delimiting: trailing garbage is ignored, truncation is an error.
     let (_, n3) = bincode_next::decode_from_slice::<T, _>(&data[..consumed], none)

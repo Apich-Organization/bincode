@@ -128,4 +128,38 @@ fuzz_target!(|data: &[u8]| {
     };
     // Just ensure it doesn't crash on random data (since Validator should catch it)
     let _ = arbitrary_root.is_valid_deep(&buffer);
+
+    // 5. Corrupt the finished buffer. Deep validation must reject damage or, when it
+    //    accepts, every accessor must then be safe to call (ASAN + debug assertions
+    //    catch out-of-bounds / misaligned access).
+    let edits: Vec<(u16, u8)> = u.arbitrary().unwrap_or_default();
+    let mut corrupt: Vec<u8> = {
+        let bytes: &[u8] = &buffer;
+        bytes.to_vec()
+    };
+    for (at, v) in edits.iter().take(16) {
+        if !corrupt.is_empty() {
+            let i = usize::from(*at) % corrupt.len();
+            corrupt[i] = *v;
+        }
+    }
+    if let Ok(cut) = u.int_in_range(0..=corrupt.len() + 8) {
+        corrupt.truncate(cut);
+    }
+    if corrupt.len() >= root_offset + core::mem::size_of::<Root>() {
+        let root: Root = unsafe {
+            core::ptr::read_unaligned(corrupt.as_ptr().add(root_offset).cast::<Root>())
+        };
+        if root.is_valid_deep(&corrupt) {
+            if let Some(slice) = root.data.get(&corrupt) {
+                for item in slice.iter() {
+                    std::hint::black_box((item.a, item.b));
+                }
+            }
+            std::hint::black_box(root.name.get());
+            if let Some(ptr) = root.dynamic_name.get(&corrupt) {
+                std::hint::black_box(ptr.get(&corrupt));
+            }
+        }
+    }
 });

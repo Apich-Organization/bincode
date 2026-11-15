@@ -53,7 +53,12 @@ enum AllTypes {
     // Cow(Cow<'static, [u8]>), Blocked, see comment on decode
 }
 
+#[macro_use]
+#[path = "../common/mod.rs"]
+mod common;
+
 fuzz_target!(|data: &[u8]| {
+    // Legacy behaviour kept: plain decode + round trip under a small limit.
     let config = bincode_next::config::standard().with_limit::<1024>();
     let result: Result<(AllTypes, _), _> = bincode_next::decode_from_slice(data, config);
 
@@ -61,5 +66,14 @@ fuzz_target!(|data: &[u8]| {
         let encoded = bincode_next::encode_to_vec(&before, config).expect("round trip");
         let (after, _) = bincode_next::decode_from_slice(&encoded, config).unwrap();
         assert_eq!(before, after);
+    }
+
+    // Whole wire-config matrix: first byte selects endianness / int encoding /
+    // bit packing / legacy / deterministic; checks limit monotonicity, fixed-point
+    // re-encoding and self-delimiting decode.
+    if let Some((&sel, rest)) = data.split_first() {
+        with_bincode_config!(sel, |cfg| {
+            check_types!(rest, cfg, true, unordered, [AllTypes]);
+        });
     }
 });

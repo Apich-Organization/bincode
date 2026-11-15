@@ -1,9 +1,6 @@
 #![no_main]
 use arbitrary::Arbitrary;
 use arbitrary::Unstructured;
-use bincode_next::config::{
-    self,
-};
 use libfuzzer_sys::fuzz_target;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
@@ -129,115 +126,86 @@ impl PartialEq for FuzzType {
 
 impl Eq for FuzzType {}
 
-#[derive(Arbitrary, Debug)]
-struct FuzzConfig {
-    endian: bool,       // true = Big, false = Little
-    int_encoding: bool, // true = Varint, false = Fixint
-    limit: bool,        // true = 4KB limit, false = NoLimit
+#[macro_use]
+#[path = "../common/mod.rs"]
+mod common;
+
+/// CBOR may canonicalise NaN payloads and -0.0, so exact equality only holds after a
+/// first normalising pass: decode(enc(x)) must be a fixed point of enc/dec.
+fn roundtrip_normalising<C: bincode_next::config::Config>(
+    target: &FuzzType,
+    config: C,
+) where
+    C::Mode: bincode_next::config::InternalFingerprintGuard<FuzzType, C>,
+    for<'a> C::Mode: bincode_next::config::InternalFingerprintGuard<&'a FuzzType, C>,
+{
+    let e1 = bincode_next::encode_to_vec(target, config).expect("encode");
+    let (v1, n1): (FuzzType, usize) = bincode_next::decode_from_slice(&e1, config).expect("decode");
+    assert_eq!(n1, e1.len());
+    let e2 = bincode_next::encode_to_vec(&v1, config).expect("re-encode");
+    let (v2, _): (FuzzType, usize) = bincode_next::decode_from_slice(&e2, config).expect("re-decode");
+    assert_eq!(v1, v2, "CBOR round trip is not stable after normalisation");
 }
 
-macro_rules! do_roundtrip {
-    ($target_data:expr, $config:expr) => {{
-        let config = $config;
-        let target = $target_data;
-        let encoded = bincode_next::encode_to_vec(target, config).expect("Failed to encode");
-        let (decoded, len): (FuzzType, usize) =
-            bincode_next::decode_from_slice(&encoded, config).expect("Failed to decode");
+fn roundtrip<C: bincode_next::config::Config>(
+    target: &FuzzType,
+    config: C,
+) where
+    C::Mode: bincode_next::config::InternalFingerprintGuard<FuzzType, C>,
+    for<'a> C::Mode: bincode_next::config::InternalFingerprintGuard<&'a FuzzType, C>,
+{
+    let encoded = bincode_next::encode_to_vec(target, config).expect("Failed to encode");
+    let (decoded, len): (FuzzType, usize) =
+        bincode_next::decode_from_slice(&encoded, config).expect("Failed to decode");
+    assert_eq!(len, encoded.len(), "Decode length mismatch");
+    assert_eq!(target, &decoded, "Roundtrip value mismatch");
+}
 
-        assert_eq!(len, encoded.len(), "Decode length mismatch");
-        assert_eq!(target, &decoded, "Roundtrip value mismatch");
-    }};
+fn contains_v6(v: &FuzzType) -> bool {
+    match v {
+        | FuzzType::SocketAddrV6(_) | FuzzType::SocketAddr(std::net::SocketAddr::V6(_)) => true,
+        | FuzzType::Vec(x) | FuzzType::Nested(x) => x.iter().any(contains_v6),
+        | FuzzType::VecDeque(x) => x.iter().any(contains_v6),
+        | FuzzType::BoxSlice(x) => x.iter().any(contains_v6),
+        | FuzzType::Map(m) => m.values().any(contains_v6),
+        | FuzzType::Option(Some(x)) | FuzzType::Box(x) => contains_v6(x),
+        | FuzzType::Rc(x) => contains_v6(x),
+        | FuzzType::Arc(x) => contains_v6(x),
+        | _ => false,
+    }
 }
 
 fuzz_target!(|data: &[u8]| {
     let mut u = Unstructured::new(data);
-
-    // 1. Generate Config Choice
-    let fuzz_conf = match FuzzConfig::arbitrary(&mut u) {
-        | Ok(c) => c,
-        | Err(_) => return,
+    let Ok(sel) = u8::arbitrary(&mut u) else {
+        return;
+    };
+    let Ok(limit_sel) = u8::arbitrary(&mut u) else {
+        return;
+    };
+    let Ok(target_data) = FuzzType::arbitrary(&mut u) else {
+        return;
     };
 
-    // 2. Generate Data
-    let target_data = match FuzzType::arbitrary(&mut u) {
-        | Ok(d) => d,
-        | Err(_) => return,
-    };
-
-    // 3. Dispatch based on generated choice
-    // Bincode 3.0 uses static types for config, so we use a macro to handle each permutation.
-    match (fuzz_conf.endian, fuzz_conf.int_encoding, fuzz_conf.limit) {
-        | (true, true, true) => {
-            do_roundtrip!(
-                &target_data,
-                config::standard()
-                    .with_big_endian()
-                    .with_variable_int_encoding()
-                    .with_limit::<1048576>()
-            )
-        },
-        | (true, true, false) => {
-            do_roundtrip!(
-                &target_data,
-                config::standard()
-                    .with_big_endian()
-                    .with_variable_int_encoding()
-                    .with_no_limit()
-            )
-        },
-        | (true, false, true) => {
-            do_roundtrip!(
-                &target_data,
-                config::standard()
-                    .with_big_endian()
-                    .with_fixed_int_encoding()
-                    .with_limit::<1048576>()
-            )
-        },
-        | (true, false, false) => {
-            do_roundtrip!(
-                &target_data,
-                config::standard()
-                    .with_big_endian()
-                    .with_fixed_int_encoding()
-                    .with_no_limit()
-            )
-        },
-        | (false, true, true) => {
-            do_roundtrip!(
-                &target_data,
-                config::standard()
-                    .with_little_endian()
-                    .with_variable_int_encoding()
-                    .with_limit::<1048576>()
-            )
-        },
-        | (false, true, false) => {
-            do_roundtrip!(
-                &target_data,
-                config::standard()
-                    .with_little_endian()
-                    .with_variable_int_encoding()
-                    .with_no_limit()
-            )
-        },
-        | (false, false, true) => {
-            do_roundtrip!(
-                &target_data,
-                config::standard()
-                    .with_little_endian()
-                    .with_fixed_int_encoding()
-                    .with_limit::<1048576>()
-            )
-        },
-        | (false, false, false) => {
-            do_roundtrip!(
-                &target_data,
-                config::standard()
-                    .with_little_endian()
-                    .with_fixed_int_encoding()
-                    .with_no_limit()
-            )
-        },
+    // Note: the `legacy` config (selector 6) intentionally omits `SocketAddrV6`
+    // flowinfo/scope_id for bincode 1.x compatibility, so exact value equality is
+    // only asserted for the other configs.
+    // 8 wire configs (endian / int encoding / bit packing / legacy / deterministic),
+    // each with and without a limit, plus the CBOR family.
+    if sel & 7 == 6 && contains_v6(&target_data) {
+        return;
+    }
+    with_bincode_config!(sel, |cfg| {
+        if limit_sel & 1 == 0 {
+            roundtrip(&target_data, cfg.with_limit::<16777216>());
+        } else {
+            roundtrip(&target_data, cfg.with_no_limit());
+        }
+    });
+    use bincode_next::config::standard;
+    match limit_sel >> 1 & 3 {
+        | 0 => roundtrip_normalising(&target_data, standard().with_cbor_format().with_limit::<16777216>()),
+        | 1 => roundtrip_normalising(&target_data, standard().with_deterministic_cbor().with_no_limit()),
+        | _ => {},
     }
 });

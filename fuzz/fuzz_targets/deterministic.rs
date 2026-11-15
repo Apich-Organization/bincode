@@ -16,7 +16,38 @@ struct Payload {
     heap: Vec<u32>,
 }
 
+#[macro_use]
+#[path = "../common/mod.rs"]
+mod common;
+
 fuzz_target!(|data: &[u8]| {
+    // Limit-monotonicity / fixed-point / self-delimiting checks in both deterministic
+    // bincode modes (Core and LengthFirst) plus the explicit-mode constructors.
+    {
+        use bincode_next::config::standard;
+        check_types!(
+            data,
+            standard().with_deterministic_bincode(),
+            true,
+            [HashMap<Key, u8>, HashSet<Key>, BTreeMap<Key, String>, Payload]
+        );
+        check_types!(
+            data,
+            standard().with_deterministic_bincode_length_first(),
+            true,
+            [HashMap<Key, u8>, HashSet<Key>, BTreeSet<Vec<u8>>, Payload]
+        );
+        check_types!(
+            data,
+            standard()
+                .with_big_endian()
+                .with_fixed_int_encoding()
+                .with_bincode_deterministic_mode::<2>(),
+            true,
+            [HashMap<Key, u8>, Payload]
+        );
+    }
+
     use bincode_next::config::standard;
     let core = standard().with_deterministic_bincode().with_limit::<4096>();
     let lf = standard()

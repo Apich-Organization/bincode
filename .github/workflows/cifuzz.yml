@@ -13,12 +13,27 @@ permissions:
 
 jobs:
   fuzz:
-    name: Fuzz ${{ matrix.target }}
+    name: Fuzz ${{ matrix.target }}${{ matrix.variant }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        target: [roundtrip, compat, zero_copy, sync_roundtrip, async_fiber, deterministic, cbor, decode_raw, cbor_raw, reader_equiv, mutation, serde_raw]
+        target: [roundtrip, compat, zero_copy, sync_roundtrip, async_fiber, deterministic, cbor, decode_raw, cbor_raw, reader_equiv, mutation, serde_raw, features_config]
+        # Extra dimension so the `include` entries below create new jobs instead of
+        # being merged into the default ones.
+        variant: [""]
+        flags: [""]
+        include:
+          # Scalar (non-SIMD) fallbacks of the decoders.
+          - target: decode_raw
+            variant: -nosimd
+            flags: --no-default-features
+          - target: mutation
+            variant: -nosimd
+            flags: --no-default-features
+          - target: cbor_raw
+            variant: -nosimd
+            flags: --no-default-features
 
     steps:
       - name: Harden the runner (Audit all outbound calls)
@@ -72,17 +87,17 @@ jobs:
             # Long single fuzzer runs can hit memory limits or cause CPU starvation in shared CI runners.
             for i in {1..5}; do
               echo "Starting PR fuzzer iteration $i of 5..."
-              cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=3600 -rss_limit_mb=16384Mb
+              cargo +nightly fuzz run ${{ matrix.flags }} ${{ matrix.target }} -- -max_total_time=3600 -rss_limit_mb=16384Mb
             done
           else
             echo "Starting standard fuzzer iteration (1 hour)..."
-            cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=3600 -rss_limit_mb=16384Mb
+            cargo +nightly fuzz run ${{ matrix.flags }} ${{ matrix.target }} -- -max_total_time=3600 -rss_limit_mb=16384Mb
           fi
 
       - name: Upload Crash Artifacts
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: fuzzer-artifacts-${{ matrix.target }}
+          name: fuzzer-artifacts-${{ matrix.target }}${{ matrix.variant }}
           path: fuzz/artifacts/${{ matrix.target }}
           if-no-files-found: ignore

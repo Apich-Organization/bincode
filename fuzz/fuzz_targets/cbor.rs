@@ -26,7 +26,48 @@ fn same(
     e_ok && x.a == y.a && x.b == y.b && x.c == y.c && x.d == y.d && x.f == y.f
 }
 
+#[macro_use]
+#[path = "../common/mod.rs"]
+mod common;
+
 fuzz_target!(|data: &[u8]| {
+    // Option matrix: limit monotonicity (catches indefinite-length accounting bugs),
+    // fixed-point re-encoding and self-delimiting decode for every CBOR flavour.
+    {
+        use bincode_next::config::standard;
+        check_types!(data, standard().with_cbor_format(), true, [Doc]);
+        check_types!(data, standard().with_deterministic_cbor(), true, [Doc]);
+        check_types!(
+            data,
+            standard().with_cbor_options::<0, true, true, true, true, false>(),
+            true,
+            [Doc]
+        );
+        check_types!(
+            data,
+            standard().with_cbor_options::<2, true, true, true, false, true>(),
+            true,
+            [Doc]
+        );
+    }
+
+    // Deterministic CBOR must not depend on map insertion order.
+    {
+        let mut u = arbitrary::Unstructured::new(data);
+        if let Ok(entries) = u.arbitrary::<Vec<(String, u32)>>() {
+            let fwd: std::collections::HashMap<String, u32> = entries.iter().cloned().collect();
+            let rev: std::collections::HashMap<String, u32> =
+                entries.iter().rev().cloned().collect();
+            if fwd == rev {
+                let det = bincode_next::config::standard().with_deterministic_cbor();
+                assert_eq!(
+                    bincode_next::encode_to_vec(&fwd, det).unwrap(),
+                    bincode_next::encode_to_vec(&rev, det).unwrap()
+                );
+            }
+        }
+    }
+
     use bincode_next::config::standard;
     let cbor = standard().with_cbor_format().with_limit::<8192>();
     let det = standard().with_deterministic_cbor().with_limit::<8192>();
