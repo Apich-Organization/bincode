@@ -76,7 +76,13 @@ fuzz_target!(|data: &[u8]| {
             match (v1, v2) {
                 | (Ok(a), Ok(b)) => assert_eq!(a, b, "legacy encoding differs from bincode 1.x"),
                 | (Err(_), Err(_)) => {},
-                | (a, b) => panic!("encode validity mismatch: v1 ok={} next ok={}", a.is_ok(), b.is_ok()),
+                | (a, b) => {
+                    panic!(
+                        "encode validity mismatch: v1 ok={} next ok={}",
+                        a.is_ok(),
+                        b.is_ok()
+                    )
+                },
             }
         }
     }

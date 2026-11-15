@@ -23,10 +23,7 @@ use std::collections::VecDeque;
 pub enum Kind {
     Unit,
     Tuple(u32, i64),
-    Struct {
-        xs: Vec<i64>,
-        name: Option<String>,
-    },
+    Struct { xs: Vec<i64>, name: Option<String> },
     Nested(Box<Kind>),
 }
 
@@ -215,13 +212,21 @@ pub fn check_decode<T, CS, CB, CN>(
     let Ok((value, consumed)) = r_none else {
         return;
     };
-    assert!(consumed <= data.len(), "consumed {consumed} > input {}", data.len());
+    assert!(
+        consumed <= data.len(),
+        "consumed {consumed} > input {}",
+        data.len()
+    );
 
     // Re-encode and decode again; the encoding must be a fixed point.
     let enc = bincode_next::encode_to_vec(&value, none).expect("re-encode of decoded value");
     let (value2, n2) =
         bincode_next::decode_from_slice::<T, _>(&enc, none).expect("re-decode of own encoding");
-    assert_eq!(n2, enc.len(), "re-decode did not consume its whole encoding");
+    assert_eq!(
+        n2,
+        enc.len(),
+        "re-decode did not consume its whole encoding"
+    );
     let enc2 = bincode_next::encode_to_vec(&value2, none).expect("second re-encode");
     if fixed_point {
         assert_eq!(enc, enc2, "encoding is not a fixed point");

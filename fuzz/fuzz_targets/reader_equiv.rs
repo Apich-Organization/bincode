@@ -79,7 +79,11 @@ fn encode_apis<C: bincode_next::config::Config>(
     let via_io: Msg =
         bincode_next::decode_from_std_read(&mut rd, cfg).expect("decode_from_std_read");
     assert_eq!(bincode_next::encode_to_vec(&via_io, cfg).unwrap(), enc);
-    assert_eq!(rd.pos, enc.len(), "io reader over/under-read its own encoding");
+    assert_eq!(
+        rd.pos,
+        enc.len(),
+        "io reader over/under-read its own encoding"
+    );
 
     // A truncated stream must be an error.
     if !enc.is_empty() {
@@ -119,11 +123,13 @@ fn raw_parity<C: bincode_next::config::Config>(
             assert_eq!(n, rd.pos, "slice and io decode consumed different amounts");
         },
         | (Err(_), Err(_)) => {},
-        | (a, b) => panic!(
-            "slice/io disagree: slice ok={} io ok={}",
-            a.is_ok(),
-            b.is_ok()
-        ),
+        | (a, b) => {
+            panic!(
+                "slice/io disagree: slice ok={} io ok={}",
+                a.is_ok(),
+                b.is_ok()
+            )
+        },
     }
 }
 

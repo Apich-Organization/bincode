@@ -28,7 +28,10 @@ macro_rules! serde_checks {
             let (back, n): (Msg, usize) =
                 bincode_next::serde::decode_from_slice(&enc, huge).expect("serde decode");
             assert_eq!(n, enc.len());
-            assert_eq!(bincode_next::serde::encode_to_vec(&back, huge).unwrap(), enc);
+            assert_eq!(
+                bincode_next::serde::encode_to_vec(&back, huge).unwrap(),
+                enc
+            );
         }
 
         // 2. Raw bytes: limit monotonicity + fixed point.
@@ -37,13 +40,17 @@ macro_rules! serde_checks {
         let rh = bincode_next::serde::decode_from_slice::<Msg, _>($data, huge);
         if let Ok((_, a)) = &rs {
             assert_eq!(
-                rb.as_ref().expect("serde limit not monotonic (small->big)").1,
+                rb.as_ref()
+                    .expect("serde limit not monotonic (small->big)")
+                    .1,
                 *a
             );
         }
         if let Ok((_, a)) = &rb {
             assert_eq!(
-                rh.as_ref().expect("serde limit not monotonic (big->huge)").1,
+                rh.as_ref()
+                    .expect("serde limit not monotonic (big->huge)")
+                    .1,
                 *a
             );
         }
@@ -68,11 +75,13 @@ macro_rules! serde_checks {
                 );
             },
             | (Err(_), Err(_)) => {},
-            | (s, n) => panic!(
-                "serde/native validity mismatch: serde ok={} native ok={}",
-                s.is_ok(),
-                n.is_ok()
-            ),
+            | (s, n) => {
+                panic!(
+                    "serde/native validity mismatch: serde ok={} native ok={}",
+                    s.is_ok(),
+                    n.is_ok()
+                )
+            },
         }
     }};
 }

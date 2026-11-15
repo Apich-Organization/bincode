@@ -33,11 +33,11 @@ impl_static_size!(
 );
 
 impl StaticSize for bool {
-    const SIZE: usize = core::mem::size_of::<bool>();
+    const SIZE: usize = core::mem::size_of::<Self>();
 }
 // `bool` has invalid bit patterns, so `is_valid_repr` must be checked before a reference is formed.
 unsafe impl ZeroCopy for bool {
-    const ALIGN: usize = core::mem::align_of::<bool>();
+    const ALIGN: usize = core::mem::align_of::<Self>();
 
     #[inline]
     fn is_valid_repr(bytes: &[u8]) -> bool {
@@ -46,16 +46,16 @@ unsafe impl ZeroCopy for bool {
 }
 
 impl StaticSize for char {
-    const SIZE: usize = core::mem::size_of::<char>();
+    const SIZE: usize = core::mem::size_of::<Self>();
 }
 // `char` has invalid bit patterns (surrogates, > 0x10FFFF).
 unsafe impl ZeroCopy for char {
-    const ALIGN: usize = core::mem::align_of::<char>();
+    const ALIGN: usize = core::mem::align_of::<Self>();
 
     #[inline]
     fn is_valid_repr(bytes: &[u8]) -> bool {
         match <[u8; 4]>::try_from(bytes) {
-            | Ok(raw) => char::from_u32(u32::from_ne_bytes(raw)).is_some(),
+            | Ok(raw) => Self::from_u32(u32::from_ne_bytes(raw)).is_some(),
             | Err(_) => false,
         }
     }
@@ -99,6 +99,7 @@ pub unsafe trait ZeroCopy: StaticSize {
     /// valid value of `Self`. Types with invalid bit patterns (e.g. `bool`, `char`) must override
     /// this; it is checked before any reference to `Self` is created from untrusted bytes.
     #[inline]
+    #[must_use]
     fn is_valid_repr(bytes: &[u8]) -> bool {
         let _ = bytes;
         true

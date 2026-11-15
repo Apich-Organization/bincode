@@ -713,7 +713,7 @@ where
                         let consumed = bytes.len() - reader.slice.len();
                         decoder.reader().consume(consumed);
                         if <D::C as crate::config::InternalLimitConfig>::LIMIT.is_some() {
-                                // A varint element can occupy more bytes on the wire than its in-memory size
+                            // A varint element can occupy more bytes on the wire than its in-memory size
                             // (e.g. a `u32` takes 5), so `consumed` may exceed what was claimed.
                             decoder.unclaim_bytes_read(
                                 (len * core::mem::size_of::<T>()).saturating_sub(consumed),
@@ -968,11 +968,11 @@ where
                     let consumed = bytes.len() - reader.slice.len();
                     decoder.reader().consume(consumed);
                     if <D::C as crate::config::InternalLimitConfig>::LIMIT.is_some() {
-                            // A varint element can occupy more bytes on the wire than its in-memory size
-                            // (e.g. a `u32` takes 5), so `consumed` may exceed what was claimed.
-                            decoder.unclaim_bytes_read(
-                                (len * core::mem::size_of::<T>()).saturating_sub(consumed),
-                            );
+                        // A varint element can occupy more bytes on the wire than its in-memory size
+                        // (e.g. a `u32` takes 5), so `consumed` may exceed what was claimed.
+                        decoder.unclaim_bytes_read(
+                            (len * core::mem::size_of::<T>()).saturating_sub(consumed),
+                        );
                     }
                     return Ok(vec);
                 }

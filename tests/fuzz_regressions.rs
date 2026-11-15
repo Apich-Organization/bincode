@@ -74,10 +74,10 @@ fn cbor_indefinite_array_charges_element_size() {
 
     // 3000 one-byte ints: tiny on the wire, 12000 bytes as `Vec<i32>`.
     let mut indefinite = vec![0x9F];
-    indefinite.extend(std::iter::repeat(0x01).take(3000));
+    indefinite.extend(std::iter::repeat_n(0x01, 3000));
     indefinite.push(0xFF);
     let mut definite = vec![0x99, 0x0B, 0xB8]; // array(3000)
-    definite.extend(std::iter::repeat(0x01).take(3000));
+    definite.extend(std::iter::repeat_n(0x01, 3000));
 
     let cfg = config::standard().with_cbor_format().with_limit::<8192>();
     let a = decode_from_slice::<Vec<i32>, _>(&definite, cfg);
@@ -105,10 +105,7 @@ struct Fp {
 /// computing the schema hash, so every seed accepted every other seed's data.
 #[test]
 fn fingerprint_seed_changes_schema_hash() {
-    let v = Fp {
-        a: 1,
-        b: "x".into(),
-    };
+    let v = Fp { a: 1, b: "x".into() };
     let s1 = config::standard().with_fingerprint_and_seed::<1>();
     let s2 = config::standard().with_fingerprint_and_seed::<2>();
     let enc = encode_to_vec(&v, s1).unwrap();
@@ -128,7 +125,10 @@ fn result_variant_tag_is_u32() {
     let ok: Result<u32, String> = Ok(7);
     let err: Result<u32, String> = Err("x".into());
     let legacy = config::legacy();
-    assert_eq!(encode_to_vec(&ok, legacy).unwrap(), [0, 0, 0, 0, 7, 0, 0, 0]);
+    assert_eq!(
+        encode_to_vec(&ok, legacy).unwrap(),
+        [0, 0, 0, 0, 7, 0, 0, 0]
+    );
     assert_eq!(
         encode_to_vec(&err, legacy).unwrap(),
         [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, b'x']
@@ -139,8 +139,15 @@ fn result_variant_tag_is_u32() {
         for_each_cfg(&v);
     }
     fn for_each_cfg(v: &Result<u32, String>) {
-        let c = config::standard().with_big_endian().with_fixed_int_encoding();
+        let c = config::standard()
+            .with_big_endian()
+            .with_fixed_int_encoding();
         let e = encode_to_vec(v, c).unwrap();
-        assert_eq!(&decode_from_slice::<Result<u32, String>, _>(&e, c).unwrap().0, v);
+        assert_eq!(
+            &decode_from_slice::<Result<u32, String>, _>(&e, c)
+                .unwrap()
+                .0,
+            v
+        );
     }
 }

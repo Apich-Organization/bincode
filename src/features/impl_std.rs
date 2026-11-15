@@ -150,7 +150,7 @@ where
 
     #[inline(always)]
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
-        if self.buffer().len() < 1 {
+        if self.buffer().is_empty() {
             std::io::BufRead::fill_buf(self)
                 .map_err(|inner| crate::error::cold_decode_error_io::<()>(inner, 1).unwrap_err())?;
         }

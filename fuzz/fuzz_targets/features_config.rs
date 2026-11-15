@@ -21,7 +21,9 @@ use libfuzzer_sys::fuzz_target;
 #[path = "../common/mod.rs"]
 mod common;
 
-#[derive(Arbitrary, Fingerprint, bincode_next::Encode, bincode_next::Decode, PartialEq, Debug, Clone)]
+#[derive(
+    Arbitrary, Fingerprint, bincode_next::Encode, bincode_next::Decode, PartialEq, Debug, Clone,
+)]
 struct Rec {
     a: u32,
     b: String,
@@ -129,7 +131,10 @@ fn static_size_checks<C: bincode_next::config::Config>(
     let m = raw.len().min(CAP);
     arr[..m].copy_from_slice(&raw[..m]);
     if let Ok(v) = bincode_next::decode_from_slice_static::<Fixed, CAP, _>(&arr, cfg) {
-        assert!(v.d.0.len() <= 8 && v.e.0.len() <= 4, "decoded value exceeds capacity");
+        assert!(
+            v.d.0.len() <= 8 && v.e.0.len() <= 4,
+            "decoded value exceeds capacity"
+        );
         assert!(bincode_next::encode_to_vec(&v, cfg).is_ok());
     }
 }
@@ -158,7 +163,13 @@ fn borrow_checks<C: bincode_next::config::Config>(
             }
         },
         | (Err(_), Err(_)) => {},
-        | (a, b) => panic!("borrow/owned mismatch: borrow ok={} owned ok={}", a.is_ok(), b.is_ok()),
+        | (a, b) => {
+            panic!(
+                "borrow/owned mismatch: borrow ok={} owned ok={}",
+                a.is_ok(),
+                b.is_ok()
+            )
+        },
     }
 }
 
@@ -187,9 +198,18 @@ macro_rules! fingerprint_checks {
         // Arbitrary bytes behind a fingerprint check: no panic; accepted => stable.
         if let Ok((v, _)) = bincode_next::decode_from_slice::<Rec, _>($raw, raw_cfg) {
             let e = bincode_next::encode_to_vec(&v, raw_cfg).unwrap();
-            assert_eq!(bincode_next::decode_from_slice::<Rec, _>(&e, raw_cfg).unwrap().0, v);
+            assert_eq!(
+                bincode_next::decode_from_slice::<Rec, _>(&e, raw_cfg)
+                    .unwrap()
+                    .0,
+                v
+            );
         }
-        let _ = bincode_next::decode_from_slice::<Rec, _>($raw, base.with_fingerprint_and_seed::<7>().with_limit::<1048576>());
+        let _ = bincode_next::decode_from_slice::<Rec, _>(
+            $raw,
+            base.with_fingerprint_and_seed::<7>()
+                .with_limit::<1048576>(),
+        );
     }};
 }
 
@@ -209,10 +229,38 @@ fuzz_target!(|data: &[u8]| {
 
     // Fingerprint: four endian/int combinations.
     match sel & 3 {
-        | 0 => fingerprint_checks!(&rec, raw, standard().with_little_endian().with_variable_int_encoding(), 0),
-        | 1 => fingerprint_checks!(&rec, raw, standard().with_big_endian().with_variable_int_encoding(), 0),
-        | 2 => fingerprint_checks!(&rec, raw, standard().with_little_endian().with_fixed_int_encoding(), 0),
-        | _ => fingerprint_checks!(&rec, raw, standard().with_big_endian().with_fixed_int_encoding(), 0),
+        | 0 => {
+            fingerprint_checks!(
+                &rec,
+                raw,
+                standard().with_little_endian().with_variable_int_encoding(),
+                0
+            )
+        },
+        | 1 => {
+            fingerprint_checks!(
+                &rec,
+                raw,
+                standard().with_big_endian().with_variable_int_encoding(),
+                0
+            )
+        },
+        | 2 => {
+            fingerprint_checks!(
+                &rec,
+                raw,
+                standard().with_little_endian().with_fixed_int_encoding(),
+                0
+            )
+        },
+        | _ => {
+            fingerprint_checks!(
+                &rec,
+                raw,
+                standard().with_big_endian().with_fixed_int_encoding(),
+                0
+            )
+        },
     }
 
     with_bincode_config!(sel >> 2, |cfg| {

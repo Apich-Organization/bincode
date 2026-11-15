@@ -21,14 +21,34 @@ use common::Msg;
 
 #[derive(Arbitrary, Debug)]
 enum Edit {
-    Flip { at: u16, mask: u8 },
-    Set { at: u16, val: u8 },
-    Insert { at: u16, bytes: Vec<u8> },
-    Delete { at: u16, len: u8 },
-    Truncate { at: u16 },
-    Dup { at: u16, len: u8 },
+    Flip {
+        at: u16,
+        mask: u8,
+    },
+    Set {
+        at: u16,
+        val: u8,
+    },
+    Insert {
+        at: u16,
+        bytes: Vec<u8>,
+    },
+    Delete {
+        at: u16,
+        len: u8,
+    },
+    Truncate {
+        at: u16,
+    },
+    Dup {
+        at: u16,
+        len: u8,
+    },
     /// Overwrite with a maximal varint / length marker to simulate hostile lengths.
-    Hostile { at: u16, kind: u8 },
+    Hostile {
+        at: u16,
+        kind: u8,
+    },
 }
 
 fn apply(
@@ -77,7 +97,7 @@ fn apply(
                 | 1 => &[0xFA, 0xFF, 0xFF, 0xFF, 0xFF],                         // u32::MAX varint
                 | 2 => &[0xFC, 0xFF, 0xFF, 0xFF, 0x7F],                         // 2^31-1
                 | 3 => &[0x1B, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], // CBOR u64::MAX
-                | 4 => &[0x9F],                                                 // CBOR indefinite array
+                | 4 => &[0x9F], // CBOR indefinite array
                 | _ => &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF],
             };
             for (i, b) in marker.iter().enumerate() {

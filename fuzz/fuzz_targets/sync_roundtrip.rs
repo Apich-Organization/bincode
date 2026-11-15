@@ -143,7 +143,8 @@ fn roundtrip_normalising<C: bincode_next::config::Config>(
     let (v1, n1): (FuzzType, usize) = bincode_next::decode_from_slice(&e1, config).expect("decode");
     assert_eq!(n1, e1.len());
     let e2 = bincode_next::encode_to_vec(&v1, config).expect("re-encode");
-    let (v2, _): (FuzzType, usize) = bincode_next::decode_from_slice(&e2, config).expect("re-decode");
+    let (v2, _): (FuzzType, usize) =
+        bincode_next::decode_from_slice(&e2, config).expect("re-decode");
     assert_eq!(v1, v2, "CBOR round trip is not stable after normalisation");
 }
 
@@ -204,8 +205,18 @@ fuzz_target!(|data: &[u8]| {
     });
     use bincode_next::config::standard;
     match limit_sel >> 1 & 3 {
-        | 0 => roundtrip_normalising(&target_data, standard().with_cbor_format().with_limit::<16777216>()),
-        | 1 => roundtrip_normalising(&target_data, standard().with_deterministic_cbor().with_no_limit()),
+        | 0 => {
+            roundtrip_normalising(
+                &target_data,
+                standard().with_cbor_format().with_limit::<16777216>(),
+            )
+        },
+        | 1 => {
+            roundtrip_normalising(
+                &target_data,
+                standard().with_deterministic_cbor().with_no_limit(),
+            )
+        },
         | _ => {},
     }
 });

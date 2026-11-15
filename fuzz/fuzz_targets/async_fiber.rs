@@ -198,15 +198,19 @@ fn async_structured<C: bincode_next::config::Config>(
     };
     let decoded: FuzzType = match block_on(bincode_next::decode_async(config, reader)) {
         | Ok(d) => d,
-        | Err(e) => panic!("Async decode failed: {e:?}
-Pattern: {pattern:?}"),
+        | Err(e) => {
+            panic!(
+                "Async decode failed: {e:?}
+Pattern: {pattern:?}"
+            )
+        },
     };
     assert_eq!(target, &decoded, "Async roundtrip mismatch");
 
     // tokio flavour (feature `tokio`).
     let cursor = std::io::Cursor::new(encoded.as_slice());
-    let decoded: FuzzType = block_on(bincode_next::decode_async_tokio(config, cursor))
-        .expect("tokio decode failed");
+    let decoded: FuzzType =
+        block_on(bincode_next::decode_async_tokio(config, cursor)).expect("tokio decode failed");
     assert_eq!(target, &decoded, "tokio roundtrip mismatch");
 
     // Truncated input must be an error, never a hang or panic.
@@ -242,7 +246,13 @@ fn async_raw_parity<C: bincode_next::config::Config>(
         // Compare values (not bytes): HashMap/HashSet iteration order is random.
         | (Ok((a, _)), Ok(b)) => assert_eq!(a, b, "sync and async decode disagree"),
         | (Err(_), Err(_)) => {},
-        | (a, b) => panic!("sync/async validity mismatch: sync ok={} async ok={}", a.is_ok(), b.is_ok()),
+        | (a, b) => {
+            panic!(
+                "sync/async validity mismatch: sync ok={} async ok={}",
+                a.is_ok(),
+                b.is_ok()
+            )
+        },
     }
 }
 

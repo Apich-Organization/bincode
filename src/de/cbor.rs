@@ -20,7 +20,7 @@ use crate::error::cold_decode_error_unexpected_end;
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
 pub(crate) fn decode_header<R: Reader>(reader: &mut R) -> Result<(u8, u64, bool), DecodeError> {
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         let info = first & 0x1F;
         if crate::utils::is_likely!(info < 24) {
@@ -115,7 +115,7 @@ fn decode_header_cold<R: Reader>(reader: &mut R) -> Result<(u8, u64, bool), Deco
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
 pub(crate) fn decode_u8<R: Reader>(reader: &mut R) -> Result<u8, DecodeError> {
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(first < 24) {
             reader.consume(1);
@@ -151,7 +151,7 @@ fn decode_u8_cold<R: Reader>(reader: &mut R) -> Result<u8, DecodeError> {
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
 pub(crate) fn decode_u16<R: Reader>(reader: &mut R) -> Result<u16, DecodeError> {
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(first < 24) {
             reader.consume(1);
@@ -192,7 +192,7 @@ fn decode_u16_cold<R: Reader>(reader: &mut R) -> Result<u16, DecodeError> {
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
 pub(crate) fn decode_u32<R: Reader>(reader: &mut R) -> Result<u32, DecodeError> {
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(first < 24) {
             reader.consume(1);
@@ -238,7 +238,7 @@ fn decode_u32_cold<R: Reader>(reader: &mut R) -> Result<u32, DecodeError> {
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
 pub(crate) fn decode_u64<R: Reader>(reader: &mut R) -> Result<u64, DecodeError> {
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(first < 24) {
             reader.consume(1);
@@ -288,7 +288,7 @@ fn decode_u64_cold<R: Reader>(reader: &mut R) -> Result<u64, DecodeError> {
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
 pub(crate) fn decode_u128<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(first < 24) {
             reader.consume(1);
@@ -344,7 +344,7 @@ fn decode_u128_cold<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
 pub(crate) fn decode_i8<R: Reader>(reader: &mut R) -> Result<i8, DecodeError> {
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(first < 24) {
             reader.consume(1);
@@ -386,7 +386,7 @@ fn decode_i8_cold<R: Reader>(reader: &mut R) -> Result<i8, DecodeError> {
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
 pub(crate) fn decode_i16<R: Reader>(reader: &mut R) -> Result<i16, DecodeError> {
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(first < 24) {
             reader.consume(1);
@@ -457,7 +457,7 @@ fn decode_i16_cold<R: Reader>(reader: &mut R) -> Result<i16, DecodeError> {
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
 pub(crate) fn decode_i32<R: Reader>(reader: &mut R) -> Result<i32, DecodeError> {
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(first < 24) {
             reader.consume(1);
@@ -539,7 +539,7 @@ fn decode_i32_cold<R: Reader>(reader: &mut R) -> Result<i32, DecodeError> {
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
 pub(crate) fn decode_i64<R: Reader>(reader: &mut R) -> Result<i64, DecodeError> {
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(first < 24) {
             reader.consume(1);
@@ -631,7 +631,7 @@ fn decode_i64_cold<R: Reader>(reader: &mut R) -> Result<i64, DecodeError> {
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
 pub(crate) fn decode_i128<R: Reader>(reader: &mut R) -> Result<i128, DecodeError> {
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(first < 24) {
             reader.consume(1);
@@ -745,7 +745,7 @@ fn decode_bignum_bytes<R: Reader>(reader: &mut R) -> Result<u128, DecodeError> {
 /// Returns `DecodeError` if the encoding fails.
 #[inline(always)]
 pub(crate) fn decode_bool<R: Reader>(reader: &mut R) -> Result<bool, DecodeError> {
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let b = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!(b == 0xF4) {
             reader.consume(1);
@@ -877,7 +877,7 @@ fn decode_f64_cold<R: Reader>(reader: &mut R) -> Result<f64, DecodeError> {
 #[inline(always)]
 pub(crate) fn decode_slice_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
     const TAG: u8 = 4 << 5;
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!((TAG..TAG + 24).contains(&first)) {
             reader.consume(1);
@@ -940,7 +940,7 @@ fn decode_slice_len_cold<R: Reader>(reader: &mut R) -> Result<usize, DecodeError
 #[inline(always)]
 pub(crate) fn decode_map_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
     const TAG: u8 = 5 << 5;
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!((TAG..TAG + 24).contains(&first)) {
             reader.consume(1);
@@ -1003,7 +1003,7 @@ fn decode_map_len_cold<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> 
 #[inline(always)]
 pub(crate) fn decode_byte_slice_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
     const TAG: u8 = 2 << 5;
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!((TAG..TAG + 24).contains(&first)) {
             reader.consume(1);
@@ -1067,7 +1067,7 @@ fn decode_byte_slice_len_cold<R: Reader>(reader: &mut R) -> Result<usize, Decode
 pub(crate) fn decode_byte_slice_or_array_len<R: Reader>(
     reader: &mut R
 ) -> Result<(u8, usize), DecodeError> {
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         let major = first >> 5;
         let info = first & 0x1F;
@@ -1140,7 +1140,7 @@ fn decode_byte_slice_or_array_len_cold<R: Reader>(
 #[inline(always)]
 pub(crate) fn decode_str_len<R: Reader>(reader: &mut R) -> Result<usize, DecodeError> {
     const TAG: u8 = 3 << 5;
-    if let Some(bytes) = reader.peek_read(1).filter(|b| b.len() >= 1) {
+    if let Some(bytes) = reader.peek_read(1).filter(|b| !b.is_empty()) {
         let first = unsafe { *bytes.as_ptr() };
         if crate::utils::is_likely!((TAG..TAG + 24).contains(&first)) {
             reader.consume(1);

@@ -40,7 +40,17 @@ fuzz_target!(|data: &[u8]| {
         | 0 => run!(rest, standard().with_cbor_format()),
         | 1 => run!(rest, standard().with_deterministic_cbor()),
         // (det, preferred-serialization, canonical NaN, normalise -0, allow indefinite, strict tags)
-        | 2 => run!(rest, standard().with_cbor_options::<0, true, true, true, true, false>()),
-        | _ => run!(rest, standard().with_cbor_options::<2, true, true, true, false, true>()),
+        | 2 => {
+            run!(
+                rest,
+                standard().with_cbor_options::<0, true, true, true, true, false>()
+            )
+        },
+        | _ => {
+            run!(
+                rest,
+                standard().with_cbor_options::<2, true, true, true, false, true>()
+            )
+        },
     }
 });

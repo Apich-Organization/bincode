@@ -147,9 +147,8 @@ fuzz_target!(|data: &[u8]| {
         corrupt.truncate(cut);
     }
     if corrupt.len() >= root_offset + core::mem::size_of::<Root>() {
-        let root: Root = unsafe {
-            core::ptr::read_unaligned(corrupt.as_ptr().add(root_offset).cast::<Root>())
-        };
+        let root: Root =
+            unsafe { core::ptr::read_unaligned(corrupt.as_ptr().add(root_offset).cast::<Root>()) };
         if root.is_valid_deep(&corrupt) {
             if let Some(slice) = root.data.get(&corrupt) {
                 for item in slice.iter() {

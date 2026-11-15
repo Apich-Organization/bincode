@@ -3,11 +3,11 @@ extern crate bincode_next as bincode;
 use bincode::config;
 use criterion::BenchmarkId;
 use criterion::Criterion;
-use criterion::black_box;
 use criterion::criterion_group;
 use criterion::criterion_main;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::hint::black_box;
 
 fn make_map(n: u32) -> HashMap<u32, String> {
     (0..n)
