@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [roundtrip, compat, zero_copy, sync_roundtrip, async_fiber, deterministic]
+        target: [roundtrip, compat, zero_copy, sync_roundtrip, async_fiber, deterministic, cbor]
 
     steps:
       - name: Harden the runner (Audit all outbound calls)

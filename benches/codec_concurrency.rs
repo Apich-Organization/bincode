@@ -156,6 +156,7 @@ fn init_dtact() {
             64 * 1024,
             dtact::memory_management::SafetyLevel::Safety0,
             0,
+            4,
         )
         .expect("dtact ContextPool init failed");
         dtact::Runtime {

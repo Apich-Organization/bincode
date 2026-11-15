@@ -61,8 +61,6 @@ fn bulk_reader_decode(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, inline_decoder_claim_bytes_read, bulk_reader_decode);
-
 #[cfg(feature = "serde")]
 fn serde_sequence_decode(c: &mut Criterion) {
     let config = config::legacy();
@@ -90,9 +88,10 @@ fn serde_sequence_decode(c: &mut Criterion) {
 criterion_group!(
     benches,
     inline_decoder_claim_bytes_read,
+    bulk_reader_decode,
     serde_sequence_decode
 );
 #[cfg(not(feature = "serde"))]
-criterion_group!(benches, inline_decoder_claim_bytes_read);
+criterion_group!(benches, inline_decoder_claim_bytes_read, bulk_reader_decode);
 
 criterion_main!(benches);
