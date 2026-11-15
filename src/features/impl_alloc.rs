@@ -192,11 +192,11 @@ where
         encoder: &mut E,
     ) -> Result<(), EncodeError> {
         use crate::config::Format;
-        if matches!(
-            <E::C as crate::config::InternalFormatConfig>::FORMAT,
-            Format::CborDeterministic
-        ) {
+        let format = <E::C as crate::config::InternalFormatConfig>::FORMAT;
+        if format == Format::CborDeterministic {
             crate::enc::cbor::encode_slice_deterministic::<E, _, _>(encoder, self.iter())
+        } else if format == Format::BincodeDeterministic {
+            crate::enc::deterministic::encode_slice_deterministic::<E, _, _>(encoder, self.iter())
         } else {
             self.as_slice().encode(encoder)
         }

@@ -63,3 +63,9 @@ name = "async_fiber"
 path = "fuzz_targets/async_fiber.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "deterministic"
+path = "fuzz_targets/deterministic.rs"
+test = false
+doc = false
