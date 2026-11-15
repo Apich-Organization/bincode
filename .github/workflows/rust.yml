@@ -31,8 +31,12 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
       - uses: Swatinem/rust-cache@c8037a86dde8214a8310e9f54a8fc61ab362aa31 # v2
-      - name: cargo check (all-features)
-        run: cargo check --all-features
+      - name: cargo check (all-features, all targets)
+        run: cargo check --all-features --all-targets
+      - name: cargo check (no_std, no alloc)
+        run: cargo check --lib --no-default-features
+      - name: cargo check (no_std + alloc)
+        run: cargo check --lib --no-default-features --features alloc
 
   test:
     name: Test
@@ -50,8 +54,72 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
       - uses: Swatinem/rust-cache@c8037a86dde8214a8310e9f54a8fc61ab362aa31 # v2
-      - name: cargo test
+      - name: cargo test (all features, incl. doc tests)
         run: cargo test --all-features
+      - name: cargo test (default features)
+        run: cargo test
+
+  # Feature combinations: every optional feature on its own and in useful bundles.
+  feature-matrix:
+    name: Features (${{ matrix.features }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        features:
+          - std
+          - std,derive
+          - std,derive,serde
+          - std,derive,zero-copy
+          - std,derive,static-size
+          - std,derive,async-fiber
+          - std,derive,tokio
+          - std,derive,simd
+          - std,derive,hw-acceleration
+          - std,derive,serde,zero-copy,static-size,async-fiber,tokio
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+      - uses: Swatinem/rust-cache@c8037a86dde8214a8310e9f54a8fc61ab362aa31 # v2
+      - name: cargo test
+        run: cargo test --no-default-features --features ${{ matrix.features }} --lib --tests
+
+  # The fuzz crate is its own workspace; make sure every target keeps compiling,
+  # with and without SIMD, and that the fuzz-found regressions keep passing.
+  fuzz-build:
+    name: Fuzz targets build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2 # nightly
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@c8037a86dde8214a8310e9f54a8fc61ab362aa31 # v2
+        with:
+          workspaces: |
+            .
+            fuzz
+      - name: cargo check fuzz targets
+        working-directory: fuzz
+        run: cargo +nightly check --bins
+      - name: cargo check fuzz targets (no SIMD)
+        working-directory: fuzz
+        run: cargo +nightly check --bins --no-default-features
+      - name: cargo clippy fuzz targets
+        working-directory: fuzz
+        run: cargo +nightly clippy --bins
+      - name: fuzz regression tests
+        run: cargo test --test fuzz_regressions
 
   lints:
     name: Lints
@@ -69,8 +137,11 @@ jobs:
       - uses: Swatinem/rust-cache@c8037a86dde8214a8310e9f54a8fc61ab362aa31 # v2
       - name: cargo +nightly fmt
         run: cargo +nightly fmt --all -- --check
+      - name: cargo +nightly fmt (fuzz workspace)
+        working-directory: fuzz
+        run: cargo +nightly fmt --all -- --check
       - name: cargo clippy
-        run: cargo clippy --all-features
+        run: cargo clippy --all-features --all-targets
 
   compatibility:
     name: Compatibility
