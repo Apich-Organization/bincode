@@ -3,7 +3,7 @@ name = "bincode-fuzz"
 version = "0.0.0"
 authors = ["Automatically generated"]
 publish = false
-edition = "2018"
+edition = "2021"
 
 [package.metadata]
 cargo-fuzz = true
@@ -73,5 +73,35 @@ doc = false
 [[bin]]
 name = "cbor"
 path = "fuzz_targets/cbor.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "decode_raw"
+path = "fuzz_targets/decode_raw.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "cbor_raw"
+path = "fuzz_targets/cbor_raw.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "reader_equiv"
+path = "fuzz_targets/reader_equiv.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "mutation"
+path = "fuzz_targets/mutation.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "serde_raw"
+path = "fuzz_targets/serde_raw.rs"
 test = false
 doc = false
