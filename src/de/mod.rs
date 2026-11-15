@@ -176,6 +176,24 @@ macro_rules! impl_borrow_decode_with_context {
     };
 }
 
+/// Accounts for one element of an indefinite-length (CBOR) container.
+///
+/// Definite-length containers claim `len * size_of::<T>()` up front. Indefinite ones
+/// have no length, so each element's in-memory size is claimed as it is decoded;
+/// otherwise a compact indefinite encoding (1 wire byte per element) could be
+/// accepted under a limit that the equivalent definite encoding would exceed.
+/// One-byte elements are already charged exactly by their own decode.
+#[inline(always)]
+pub(crate) fn claim_indefinite_item<T, D: Decoder + ?Sized>(
+    decoder: &mut D
+) -> Result<(), DecodeError> {
+    if core::mem::size_of::<T>() > 1 {
+        decoder.claim_container_read::<T>(1)
+    } else {
+        Ok(())
+    }
+}
+
 /// Any source that can decode basic types. This type is most notably implemented for [Decoder].
 pub trait Decoder: Sealed + crate::error_path::BincodeErrorPathCovered<0> {
     /// The concrete [Reader] type

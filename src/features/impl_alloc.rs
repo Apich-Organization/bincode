@@ -222,6 +222,7 @@ where
         if !is_bincode && len == usize::MAX {
             let mut map = Self::new();
             while decoder.reader().peek_u8() != Some(0xFF) {
+                crate::de::claim_indefinite_item::<(K, V), _>(decoder)?;
                 let key = K::decode(decoder)?;
                 let value = V::decode(decoder)?;
                 map.insert(key, value);
@@ -268,6 +269,7 @@ where
         if !is_bincode && len == usize::MAX {
             let mut map = Self::new();
             while decoder.reader().peek_u8() != Some(0xFF) {
+                crate::de::claim_indefinite_item::<(K, V), _>(decoder)?;
                 let key = K::borrow_decode(decoder)?;
                 let value = V::borrow_decode(decoder)?;
                 map.insert(key, value);
@@ -347,6 +349,7 @@ where
         if !is_bincode && len == usize::MAX {
             let mut map = Self::new();
             while decoder.reader().peek_u8() != Some(0xFF) {
+                crate::de::claim_indefinite_item::<T, _>(decoder)?;
                 let key = T::decode(decoder)?;
                 map.insert(key);
             }
@@ -390,6 +393,7 @@ where
         if !is_bincode && len == usize::MAX {
             let mut map = Self::new();
             while decoder.reader().peek_u8() != Some(0xFF) {
+                crate::de::claim_indefinite_item::<T, _>(decoder)?;
                 let key = T::borrow_decode(decoder)?;
                 map.insert(key);
             }
@@ -564,6 +568,7 @@ where
                 }
             } else {
                 while decoder.reader().peek_u8() != Some(0xFF) {
+                    crate::de::claim_indefinite_item::<T, _>(decoder)?;
                     vec.push(T::decode(decoder)?);
                 }
             }
@@ -708,7 +713,11 @@ where
                         let consumed = bytes.len() - reader.slice.len();
                         decoder.reader().consume(consumed);
                         if <D::C as crate::config::InternalLimitConfig>::LIMIT.is_some() {
-                            decoder.unclaim_bytes_read(len * core::mem::size_of::<T>() - consumed);
+                                // A varint element can occupy more bytes on the wire than its in-memory size
+                            // (e.g. a `u32` takes 5), so `consumed` may exceed what was claimed.
+                            decoder.unclaim_bytes_read(
+                                (len * core::mem::size_of::<T>()).saturating_sub(consumed),
+                            );
                         }
                         return Ok(vec);
                     }
@@ -816,6 +825,7 @@ where
                 }
             } else {
                 while decoder.reader().peek_u8() != Some(0xFF) {
+                    crate::de::claim_indefinite_item::<T, _>(decoder)?;
                     vec.push(T::borrow_decode(decoder)?);
                 }
             }
@@ -958,7 +968,11 @@ where
                     let consumed = bytes.len() - reader.slice.len();
                     decoder.reader().consume(consumed);
                     if <D::C as crate::config::InternalLimitConfig>::LIMIT.is_some() {
-                        decoder.unclaim_bytes_read(len * core::mem::size_of::<T>() - consumed);
+                            // A varint element can occupy more bytes on the wire than its in-memory size
+                            // (e.g. a `u32` takes 5), so `consumed` may exceed what was claimed.
+                            decoder.unclaim_bytes_read(
+                                (len * core::mem::size_of::<T>()).saturating_sub(consumed),
+                            );
                     }
                     return Ok(vec);
                 }

@@ -753,6 +753,7 @@ where
         if !is_bincode && len == usize::MAX {
             let mut map = Self::with_hasher(S::default());
             while decoder.reader().peek_u8() != Some(0xFF) {
+                crate::de::claim_indefinite_item::<(K, V), _>(decoder)?;
                 let k = K::decode(decoder)?;
                 let v = V::decode(decoder)?;
                 map.insert(k, v);
@@ -801,6 +802,7 @@ where
         if !is_bincode && len == usize::MAX {
             let mut map = Self::with_hasher(S::default());
             while decoder.reader().peek_u8() != Some(0xFF) {
+                crate::de::claim_indefinite_item::<(K, V), _>(decoder)?;
                 let k = K::borrow_decode(decoder)?;
                 let v = V::borrow_decode(decoder)?;
                 map.insert(k, v);
@@ -847,6 +849,7 @@ where
         if !is_bincode && len == usize::MAX {
             let mut map = Self::with_hasher(S::default());
             while decoder.reader().peek_u8() != Some(0xFF) {
+                crate::de::claim_indefinite_item::<T, _>(decoder)?;
                 let key = T::decode(decoder)?;
                 map.insert(key);
             }
@@ -893,6 +896,7 @@ where
         if !is_bincode && len == usize::MAX {
             let mut map = Self::with_hasher(S::default());
             while decoder.reader().peek_u8() != Some(0xFF) {
+                crate::de::claim_indefinite_item::<T, _>(decoder)?;
                 let key = T::borrow_decode(decoder)?;
                 map.insert(key);
             }
