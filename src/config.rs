@@ -70,6 +70,44 @@ pub enum CborDeterministicMode {
     LengthFirst = 2,
 }
 
+/// The modes for deterministic encoding of the bincode format.
+///
+/// These only affect the *ordering* of unordered collections (`HashMap`,
+/// `HashSet`, ...) and collections that are re-sorted by their encoded bytes
+/// (e.g. `BinaryHeap`). The wire format stays plain bincode, so any mode can
+/// be decoded by a regular bincode decoder.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum BincodeDeterministicMode {
+    /// No deterministic encoding requirements.
+    None = 0,
+    /// Core deterministic encoding: map keys / set elements are sorted by the
+    /// bytewise lexicographic order of their bincode encodings.
+    Core = 1,
+    /// Length-first deterministic encoding: shorter encodings sort first, ties
+    /// are broken by bytewise lexicographic order (mirrors
+    /// [`CborDeterministicMode::LengthFirst`]).
+    LengthFirst = 2,
+}
+
+/// Detailed options for bincode encoding.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct BincodeOptions {
+    /// Deterministic encoding mode.
+    pub deterministic_mode: BincodeDeterministicMode,
+}
+
+impl BincodeOptions {
+    /// Default bincode options.
+    pub const DEFAULT: Self = Self {
+        deterministic_mode: BincodeDeterministicMode::None,
+    };
+    /// Default options for deterministic bincode.
+    pub const DETERMINISTIC: Self = Self {
+        deterministic_mode: BincodeDeterministicMode::Core,
+    };
+}
+
 /// Detailed options for CBOR encoding.
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -325,6 +363,25 @@ impl<E, I, L, B, O, F, FO> Configuration<E, I, L, B, O, F, FO> {
         generate()
     }
 
+    /// Sets the format to Bincode with a specific deterministic mode.
+    ///
+    /// `DET` is the `repr(u8)` value of a [`BincodeDeterministicMode`]
+    /// (`0` = none, `1` = core, `2` = length-first).
+    #[must_use]
+    pub const fn with_bincode_deterministic_mode<const DET: u8>(
+        self
+    ) -> Configuration<E, I, L, B, O, F, BincodeConfig<DET>> {
+        generate()
+    }
+
+    /// Sets the format to Bincode with length-first deterministic encoding.
+    #[must_use]
+    pub const fn with_deterministic_bincode_length_first(
+        self
+    ) -> Configuration<E, I, L, B, O, F, BincodeLengthFirstFormat> {
+        generate()
+    }
+
     /// Sets the format to CBOR with custom options.
     #[must_use]
     pub const fn with_cbor_options<
@@ -375,6 +432,10 @@ pub trait Config:
 
     /// Returns the format of this configuration
     fn format(&self) -> Format;
+
+    /// Returns the bincode options of this configuration.
+    /// Returns default options if the format is not deterministic bincode.
+    fn bincode_options(&self) -> BincodeOptions;
 
     /// Returns the CBOR options of this configuration.
     /// Returns default options if the format is not CBOR.
@@ -431,6 +492,10 @@ where
 
     fn cbor_options(&self) -> CborOptions {
         <T as InternalFormatConfig>::CBOR_OPTIONS
+    }
+
+    fn bincode_options(&self) -> BincodeOptions {
+        <T as InternalFormatConfig>::BINCODE_OPTIONS
     }
 
     fn is_compact_net(&self) -> bool {
@@ -559,21 +624,41 @@ impl<const EXPECTED: u64> InternalFingerprintConfig for FingerprintLegacy<EXPECT
 pub struct BincodeFormat;
 
 impl InternalFormatConfig for BincodeFormat {
+    const BINCODE_OPTIONS: BincodeOptions = BincodeOptions::DEFAULT;
     const CBOR_OPTIONS: CborOptions = CborOptions::DEFAULT;
     const FORMAT: Format = Format::Bincode;
     const IS_COMPACT_NET: bool = false;
 }
 
-/// Bincode format with deterministic encoding.
+/// Bincode configuration with a const generic deterministic mode.
 #[derive(Copy, Clone, Debug)]
 #[doc(hidden)]
-pub struct BincodeDeterministicFormat;
+pub struct BincodeConfig<const DET: u8>;
 
-impl InternalFormatConfig for BincodeDeterministicFormat {
+impl<const DET: u8> InternalFormatConfig for BincodeConfig<DET> {
+    const BINCODE_OPTIONS: BincodeOptions = BincodeOptions {
+        deterministic_mode: match DET {
+            | 1 => BincodeDeterministicMode::Core,
+            | 2 => BincodeDeterministicMode::LengthFirst,
+            | _ => BincodeDeterministicMode::None,
+        },
+    };
     const CBOR_OPTIONS: CborOptions = CborOptions::DEFAULT;
-    const FORMAT: Format = Format::BincodeDeterministic;
+    const FORMAT: Format = if DET == 0 {
+        Format::Bincode
+    } else {
+        Format::BincodeDeterministic
+    };
     const IS_COMPACT_NET: bool = false;
 }
+
+/// Bincode format with deterministic encoding (core mode).
+#[doc(hidden)]
+pub type BincodeDeterministicFormat = BincodeConfig<1>;
+
+/// Bincode format with length-first deterministic encoding.
+#[doc(hidden)]
+pub type BincodeLengthFirstFormat = BincodeConfig<2>;
 
 /// CBOR configuration with const generic options.
 #[derive(Copy, Clone, Debug)]
@@ -596,6 +681,7 @@ impl<
     const TAGS: bool,
 > InternalFormatConfig for CborConfig<DET, PREF, NAN, NZ, INDEF, TAGS>
 {
+    const BINCODE_OPTIONS: BincodeOptions = BincodeOptions::DEFAULT;
     const CBOR_OPTIONS: CborOptions = CborOptions {
         deterministic_mode: match DET {
             | 1 => CborDeterministicMode::Core,
@@ -622,6 +708,7 @@ impl<
 pub struct BincodeLegacyFormat;
 
 impl InternalFormatConfig for BincodeLegacyFormat {
+    const BINCODE_OPTIONS: BincodeOptions = BincodeOptions::DEFAULT;
     const CBOR_OPTIONS: CborOptions = CborOptions::DEFAULT;
     const FORMAT: Format = Format::Bincode;
     const IS_COMPACT_NET: bool = true;
@@ -876,9 +963,17 @@ pub mod internal {
         L: InternalLimitConfig,
         B: InternalBitPackingConfig,
         O: InternalBitOrderingConfig,
+        F: InternalFingerprintConfig,
         FO: InternalFormatConfig,
     {
         const CONFIG_HASH: u64 = {
+            // The user-chosen fingerprint seed must change the schema hash, otherwise
+            // `with_fingerprint_and_seed` would be a no-op. Seed 0 (the default) keeps
+            // the historical hash.
+            let seed = match F::FINGERPRINT_MODE {
+                | super::FingerprintMode::Enabled { seed } => seed,
+                | _ => 0,
+            };
             let format_byte: u8 = match FO::FORMAT {
                 | super::Format::Bincode => 0,
                 | super::Format::BincodeDeterministic => 1,
@@ -899,19 +994,21 @@ pub mod internal {
                     O::BIT_ORDERING as u8,
                     format_byte,
                     opts.deterministic_mode as u8,
+                    FO::BINCODE_OPTIONS.deterministic_mode as u8,
                     opts.preferred_float as u8,
                     opts.canonical_nan as u8,
                     opts.normalize_neg_zero as u8,
                     opts.allow_indefinite as u8,
                     opts.strict_tags as u8,
                 ],
-                &rapidhash::v3::RapidSecrets::seed_cpp(0),
+                &rapidhash::v3::RapidSecrets::seed_cpp(seed),
             )
         };
     }
 
     pub trait InternalFormatConfig {
         const FORMAT: super::Format;
+        const BINCODE_OPTIONS: super::BincodeOptions;
         const CBOR_OPTIONS: super::CborOptions;
         const IS_COMPACT_NET: bool;
     }
@@ -919,6 +1016,7 @@ pub mod internal {
     impl<E, I, L, B, O, F, FO: InternalFormatConfig> InternalFormatConfig
         for Configuration<E, I, L, B, O, F, FO>
     {
+        const BINCODE_OPTIONS: super::BincodeOptions = FO::BINCODE_OPTIONS;
         const CBOR_OPTIONS: super::CborOptions = FO::CBOR_OPTIONS;
         const FORMAT: super::Format = FO::FORMAT;
         const IS_COMPACT_NET: bool = FO::IS_COMPACT_NET;

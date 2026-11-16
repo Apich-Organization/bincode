@@ -220,6 +220,7 @@
 //! use bincode_next::ZeroCopyBuilder;
 //!
 //! /// Packet layout stored verbatim in the byte blob.
+//! #[cfg(all(feature = "zero-copy", feature = "alloc"))]
 //! #[derive(bincode_derive_next::ZeroCopy, Debug, PartialEq, Eq)]
 //! #[repr(C, u8)]
 //! enum Packet {
@@ -265,6 +266,9 @@
 //!     // All three packets live in one contiguous allocation — no heap per variant.
 //!     let _bytes = builder.finish();
 //! }
+//!
+//! #[cfg(not(all(feature = "zero-copy", feature = "alloc")))]
+//! fn main() {}
 //! ```
 //!
 //! For lower-level use, `RelativePtr<T, OFFSET_SIZE>` lets you embed self-relative
@@ -347,6 +351,9 @@
 //!         bincode_next::decode_from_slice_static(&buf, bincode_next::config::standard()).unwrap();
 //!     assert_eq!(val, decoded);
 //! }
+//!
+//! #[cfg(not(feature = "static-size"))]
+//! fn main() {}
 //! ```
 //!
 //! ---
@@ -448,18 +455,25 @@
 //! avoiding state-machine code generation overhead entirely.
 //!
 //! ```rust
+//! #[cfg(feature = "async-fiber")]
 //! use bincode_next::Decode;
+//! #[cfg(feature = "async-fiber")]
 //! use bincode_next::Encode;
+//! #[cfg(feature = "async-fiber")]
 //! use bincode_next::config;
+//! #[cfg(feature = "async-fiber")]
 //! use bincode_next::decode_async;
+//! #[cfg(feature = "async-fiber")]
 //! use bincode_next::encode_to_vec;
 //!
+//! #[cfg(feature = "async-fiber")]
 //! #[derive(Encode, Decode, PartialEq, Debug)]
 //! struct Entity {
 //!     x: f32,
 //!     y: f32,
 //! }
 //!
+//! #[cfg(feature = "async-fiber")]
 //! #[tokio::main]
 //! #[cfg_attr(miri, ignore)]
 //! async fn main() {
@@ -475,6 +489,9 @@
 //!     let decoded: Entity = decode_async(config::standard(), &mut reader).await.unwrap();
 //!     assert_eq!(entity, decoded);
 //! }
+//!
+//! #[cfg(not(feature = "async-fiber"))]
+//! fn main() {}
 //! ```
 
 // =========================================================================

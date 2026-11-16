@@ -5,9 +5,25 @@ use crate::enc::Encoder;
 use crate::enc::write::Writer;
 use crate::error::EncodeError;
 
+/// Compares two encoded entries according to the configured
+/// [`BincodeDeterministicMode`](crate::config::BincodeDeterministicMode).
+#[cfg(feature = "alloc")]
+#[inline(always)]
+fn compare_encoded<E: Encoder>(
+    a: &[u8],
+    b: &[u8],
+) -> core::cmp::Ordering {
+    use crate::config::BincodeDeterministicMode;
+    match <E::C as crate::config::InternalFormatConfig>::BINCODE_OPTIONS.deterministic_mode {
+        | BincodeDeterministicMode::LengthFirst => a.len().cmp(&b.len()).then_with(|| a.cmp(b)),
+        | _ => a.cmp(b),
+    }
+}
+
 /// Encode a map with deterministic ordering.
 ///
-/// Keys are sorted by the bytewise lexicographic order of their bincode encodings.
+/// Keys are sorted by the bytewise lexicographic order of their bincode encodings
+/// (or length-first, see [`BincodeDeterministicMode`](crate::config::BincodeDeterministicMode)).
 ///
 /// # Errors
 ///
@@ -40,7 +56,9 @@ where
         entries.push((start..buffer.len(), v));
     }
 
-    entries.sort_unstable_by_key(|(range, _)| &buffer[range.clone()]);
+    entries.sort_unstable_by(|(a, _), (b, _)| {
+        compare_encoded::<E>(&buffer[a.clone()], &buffer[b.clone()])
+    });
 
     for (range, v) in entries {
         encoder.writer().write(&buffer[range])?;
@@ -84,7 +102,7 @@ where
         indices.push(start..buffer.len());
     }
 
-    indices.sort_unstable_by_key(|range| &buffer[range.clone()]);
+    indices.sort_unstable_by(|a, b| compare_encoded::<E>(&buffer[a.clone()], &buffer[b.clone()]));
 
     for range in indices {
         encoder.writer().write(&buffer[range])?;

@@ -59,7 +59,34 @@ enum AllTypes {
     // Cow(Cow<'static, [u8]>), Blocked, see comment on decode
 }
 
+#[macro_use]
+#[path = "../common/mod.rs"]
+mod common;
+
 fuzz_target!(|data: &[u8]| {
+    // Encoding compatibility: for arbitrary values the legacy config must produce
+    // exactly the bytes bincode 1.x produces (and 1.x must read them back).
+    {
+        use arbitrary::Arbitrary;
+        let mut u = arbitrary::Unstructured::new(data);
+        if let Ok(msg) = common::Msg::arbitrary(&mut u) {
+            #[allow(deprecated)]
+            let v1 = bincodev1::config().serialize(&msg);
+            let v2 = bincode_next::encode_to_vec(&msg, bincode_next::config::legacy());
+            match (v1, v2) {
+                | (Ok(a), Ok(b)) => assert_eq!(a, b, "legacy encoding differs from bincode 1.x"),
+                | (Err(_), Err(_)) => {},
+                | (a, b) => {
+                    panic!(
+                        "encode validity mismatch: v1 ok={} next ok={}",
+                        a.is_ok(),
+                        b.is_ok()
+                    )
+                },
+            }
+        }
+    }
+
     let config = bincode_next::config::legacy().with_limit::<1024>();
     #[allow(deprecated)]
     let mut configv1 = bincodev1::config();

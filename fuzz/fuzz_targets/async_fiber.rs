@@ -175,41 +175,108 @@ impl<'a> AsyncRead for TortureReader<'a> {
     }
 }
 
-fuzz_target!(|data: &[u8]| {
-    let mut u = Unstructured::new(data);
+#[macro_use]
+#[path = "../common/mod.rs"]
+mod common;
 
-    // 1. Generate Target Data for Roundtrip
-    let target = match FuzzType::arbitrary(&mut u) {
-        | Ok(t) => t,
-        | Err(_) => return,
-    };
+fn async_structured<C: bincode_next::config::Config>(
+    target: &FuzzType,
+    config: C,
+    pattern: &[u8],
+) where
+    C::Mode: bincode_next::config::InternalFingerprintGuard<FuzzType, C>,
+    for<'a> C::Mode: bincode_next::config::InternalFingerprintGuard<&'a FuzzType, C>,
+{
+    let encoded = bincode_next::encode_to_vec(target, config).expect("Encode failed");
 
-    // 2. Generate Yield Pattern for AsyncRead
-    let pattern = match <Vec<u8>>::arbitrary(&mut u) {
-        | Ok(p) => p,
-        | Err(_) => return,
-    };
-
-    let config = bincode_next::config::standard();
-    let encoded = bincode_next::encode_to_vec(&target, config).expect("Encode failed");
-
-    // 3. Roundtrip Async via Fiber
+    // Fiber-based futures-io decode with forced yields at arbitrary points.
     let reader = TortureReader {
         data: &encoded,
         pos: 0,
-        yield_pattern: &pattern,
+        yield_pattern: pattern,
         pattern_pos: 0,
     };
-
     let decoded: FuzzType = match block_on(bincode_next::decode_async(config, reader)) {
         | Ok(d) => d,
         | Err(e) => {
             panic!(
-                "Async decode failed: {:?}\nEncoded: {:?}\nPattern: {:?}",
-                e, encoded, pattern
+                "Async decode failed: {e:?}
+Pattern: {pattern:?}"
             )
         },
     };
+    assert_eq!(target, &decoded, "Async roundtrip mismatch");
 
-    assert_eq!(target, decoded, "Async roundtrip mismatch");
+    // tokio flavour (feature `tokio`).
+    let cursor = std::io::Cursor::new(encoded.as_slice());
+    let decoded: FuzzType =
+        block_on(bincode_next::decode_async_tokio(config, cursor)).expect("tokio decode failed");
+    assert_eq!(target, &decoded, "tokio roundtrip mismatch");
+
+    // Truncated input must be an error, never a hang or panic.
+    if !encoded.is_empty() {
+        let reader = TortureReader {
+            data: &encoded[..encoded.len() - 1],
+            pos: 0,
+            yield_pattern: pattern,
+            pattern_pos: 0,
+        };
+        let r: Result<FuzzType, _> = block_on(bincode_next::decode_async(config, reader));
+        assert!(r.is_err(), "truncated async input decoded successfully");
+    }
+}
+
+fn async_raw_parity<C: bincode_next::config::Config>(
+    raw: &[u8],
+    config: C,
+    pattern: &[u8],
+) where
+    C::Mode: bincode_next::config::InternalFingerprintGuard<FuzzType, C>,
+    for<'a> C::Mode: bincode_next::config::InternalFingerprintGuard<&'a FuzzType, C>,
+{
+    let sync = bincode_next::decode_from_slice::<FuzzType, _>(raw, config);
+    let reader = TortureReader {
+        data: raw,
+        pos: 0,
+        yield_pattern: pattern,
+        pattern_pos: 0,
+    };
+    let asyn: Result<FuzzType, _> = block_on(bincode_next::decode_async(config, reader));
+    match (sync, asyn) {
+        // Compare values (not bytes): HashMap/HashSet iteration order is random.
+        | (Ok((a, _)), Ok(b)) => assert_eq!(a, b, "sync and async decode disagree"),
+        | (Err(_), Err(_)) => {},
+        | (a, b) => {
+            panic!(
+                "sync/async validity mismatch: sync ok={} async ok={}",
+                a.is_ok(),
+                b.is_ok()
+            )
+        },
+    }
+}
+
+fuzz_target!(|data: &[u8]| {
+    let mut u = Unstructured::new(data);
+    let Ok(sel) = u8::arbitrary(&mut u) else {
+        return;
+    };
+    let Ok(pattern) = <Vec<u8>>::arbitrary(&mut u) else {
+        return;
+    };
+    if bool::arbitrary(&mut u).unwrap_or(true) {
+        // `legacy` (selector 6) drops SocketAddrV6 flowinfo/scope_id by design.
+        let sel = if sel & 7 == 6 { 0 } else { sel };
+        let Ok(target) = FuzzType::arbitrary(&mut u) else {
+            return;
+        };
+        with_bincode_config!(sel, |cfg| {
+            async_structured(&target, cfg.with_limit::<16777216>(), &pattern);
+        });
+    } else {
+        let raw = u.take_rest();
+        with_bincode_config!(sel, |cfg| {
+            async_raw_parity(raw, cfg.with_limit::<1048576>(), &pattern);
+        });
+    }
 });

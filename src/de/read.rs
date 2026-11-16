@@ -68,7 +68,7 @@ pub trait Reader {
     /// Returns an error if the operation fails.
     #[inline(always)]
     fn read_u8(&mut self) -> Result<u8, DecodeError> {
-        if let Some(buf) = self.peek_read(1).filter(|b| b.len() >= 1) {
+        if let Some(buf) = self.peek_read(1).filter(|b| !b.is_empty()) {
             let val = buf[0];
             self.consume(1);
             Ok(val)

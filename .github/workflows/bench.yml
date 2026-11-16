@@ -6,6 +6,7 @@ on:
     paths:
       - "src/**"
       - "benches/**"
+      - "Cargo.toml"
       - "derive/**"
       - ".github/workflows/bench.yml"
   pull_request:
@@ -34,8 +35,15 @@ jobs:
       - name: Cache Cargo registry + build
         uses: Swatinem/rust-cache@c8037a86dde8214a8310e9f54a8fc61ab362aa31 # v2
 
+      # Every bench target must compile, even those that are too slow/noisy to run on CI.
+      - name: Build all benchmarks
+        run: cargo bench --all-features --no-run
+
       - name: Run Criterion benchmarks
-        run: cargo bench --all-features --bench cbor_comparison --bench postcard_comparison --bench complex
+        run: >
+          cargo bench --all-features
+          --bench cbor_comparison --bench postcard_comparison --bench complex
+          --bench deterministic --bench varint --bench inline --bench string
 
       - name: Upload criterion report artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
