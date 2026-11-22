@@ -34,6 +34,7 @@ rust-version = "1.90.0"
 publish = true
 
 repository = "https://github.com/Apich-Organization/bincode"
+homepage = "https://bincode-next.apich.org"
 documentation = "https://docs.rs/bincode_next"
 readme = "./README.md"
 categories = ["encoding", "data-structures", "no-std"]
