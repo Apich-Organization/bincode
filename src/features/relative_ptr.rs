@@ -125,7 +125,16 @@ unsafe impl<T: ZeroCopy, const N: usize> ZeroCopy for [T; N] {
 
     #[inline]
     fn is_valid_repr(bytes: &[u8]) -> bool {
-        bytes.len() == T::SIZE * N && bytes.chunks_exact(T::SIZE.max(1)).all(T::is_valid_repr)
+        if bytes.len() != T::SIZE * N {
+            return false;
+        }
+        if T::SIZE == 0 {
+            if N > 0 {
+                return T::is_valid_repr(&[]);
+            }
+            return true;
+        }
+        bytes.chunks_exact(T::SIZE).all(T::is_valid_repr)
     }
 }
 
@@ -702,7 +711,11 @@ impl<T: ZeroCopy, const ALIGN: usize, E: Endian> ZeroSlice<T, ALIGN, E> {
 
         // Validate every element's representation before forming the slice.
         let all_bytes = &buffer[target_offset..target_end];
-        if T::SIZE > 0 && !all_bytes.chunks_exact(T::SIZE).all(T::is_valid_repr) {
+        if T::SIZE == 0 {
+            if slice_len > 0 && !T::is_valid_repr(&[]) {
+                return None;
+            }
+        } else if !all_bytes.chunks_exact(T::SIZE).all(T::is_valid_repr) {
             return None;
         }
 
