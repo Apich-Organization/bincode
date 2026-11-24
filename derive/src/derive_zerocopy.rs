@@ -171,6 +171,108 @@ impl DeriveZeroCopy {
                 }
                 Ok(())
             })?;
+
+        impl_for
+            .generate_fn("is_valid_repr")
+            .with_arg("bytes", "&[u8]")
+            .with_return_type("bool")
+            .body(|fn_body: &mut StreamBuilder| {
+                fn_body.push_parsed(
+                    "if bytes.len() != core::mem::size_of::<Self>() { return false; }",
+                )?;
+                if let Some(variants) = self.variants.as_ref() {
+                    if variants.is_empty() {
+                        fn_body.push_parsed("false")?;
+                        return Ok(());
+                    }
+                    fn_body.push_parsed(format!(
+                        "let tag = match <[u8; core::mem::size_of::<{t}>()]>::try_from(&bytes[..core::mem::size_of::<{t}>()]) {{ Ok(b) => {t}::from_ne_bytes(b), Err(_) => return false, }};",
+                        t = tag_type
+                    ))?;
+                    fn_body.push_parsed(format!(
+                        "let _data_offset = if core::mem::align_of::<Self>() > core::mem::size_of::<{t}>() {{ core::mem::align_of::<Self>() }} else {{ core::mem::size_of::<{t}>() }};",
+                        t = tag_type
+                    ))?;
+                    fn_body.push_parsed("match tag")?;
+                    fn_body.group(Delimiter::Brace, |m: &mut StreamBuilder| {
+                        for (variant_index, variant) in variants.iter().enumerate() {
+                            m.push_parsed(format!("{}_{} =>", variant_index, tag_type))?;
+                            m.group(Delimiter::Brace, |arm: &mut StreamBuilder| {
+                                match variant.fields.as_ref() {
+                                    Some(Fields::Struct(s)) => {
+                                        let mut def = String::from("#[repr(C)] struct __VariantFields {");
+                                        for (ident, f) in s.iter() {
+                                            def.push_str(&format!("{}: {},", ident, f.type_string()));
+                                        }
+                                        def.push('}');
+                                        arm.push_parsed(def)?;
+                                        for (ident, f) in s.iter() {
+                                            arm.push_parsed(format!(
+                                                "if !<{ty} as {cn}::relative_ptr::ZeroCopy>::is_valid_repr(&bytes[_data_offset + core::mem::offset_of!(__VariantFields, {id}).._data_offset + core::mem::offset_of!(__VariantFields, {id}) + core::mem::size_of::<{ty}>()]) {{ return false; }}",
+                                                cn = cn,
+                                                id = ident,
+                                                ty = f.type_string(),
+                                            ))?;
+                                        }
+                                        arm.push_parsed("true")?;
+                                    },
+                                    Some(Fields::Tuple(t)) => {
+                                        let mut def = String::from("#[repr(C)] struct __VariantFields(");
+                                        for f in t.iter() {
+                                            def.push_str(&format!("{},", f.type_string()));
+                                        }
+                                        def.push_str(");");
+                                        arm.push_parsed(def)?;
+                                        for (i, f) in t.iter().enumerate() {
+                                            arm.push_parsed(format!(
+                                                "if !<{ty} as {cn}::relative_ptr::ZeroCopy>::is_valid_repr(&bytes[_data_offset + core::mem::offset_of!(__VariantFields, {i}).._data_offset + core::mem::offset_of!(__VariantFields, {i}) + core::mem::size_of::<{ty}>()]) {{ return false; }}",
+                                                cn = cn,
+                                                i = i,
+                                                ty = f.type_string(),
+                                            ))?;
+                                        }
+                                        arm.push_parsed("true")?;
+                                    },
+                                    None => {
+                                        arm.push_parsed("true")?;
+                                    },
+                                }
+                                Ok(())
+                            })?;
+                            m.punct(',');
+                        }
+                        m.push_parsed("_ => false,")?;
+                        Ok(())
+                    })?;
+                } else if let Some(fields) = self.fields.as_ref() {
+                    match fields {
+                        Fields::Struct(s) => {
+                            for (ident, f) in s.iter() {
+                                fn_body.push_parsed(format!(
+                                    "if !<{ty} as {cn}::relative_ptr::ZeroCopy>::is_valid_repr(&bytes[core::mem::offset_of!(Self, {id})..core::mem::offset_of!(Self, {id}) + core::mem::size_of::<{ty}>()]) {{ return false; }}",
+                                    cn = cn,
+                                    id = ident,
+                                    ty = f.type_string(),
+                                ))?;
+                            }
+                        },
+                        Fields::Tuple(t) => {
+                            for (i, f) in t.iter().enumerate() {
+                                fn_body.push_parsed(format!(
+                                    "if !<{ty} as {cn}::relative_ptr::ZeroCopy>::is_valid_repr(&bytes[core::mem::offset_of!(Self, {i})..core::mem::offset_of!(Self, {i}) + core::mem::size_of::<{ty}>()]) {{ return false; }}",
+                                    cn = cn,
+                                    i = i,
+                                    ty = f.type_string(),
+                                ))?;
+                            }
+                        },
+                    }
+                    fn_body.push_parsed("true")?;
+                } else {
+                    fn_body.push_parsed("true")?;
+                }
+                Ok(())
+            })?;
         Ok(())
     }
 
