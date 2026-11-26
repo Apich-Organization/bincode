@@ -57,7 +57,7 @@ jobs:
           cargo install cargo-zigbuild --locked
           sudo apt-get update && sudo apt-get install -y qemu-user qemu-user-binfmt libc6-arm64-cross libc6-riscv64-cross gcc-riscv64-linux-gnu
 
-      - uses: Swatinem/rust-cache@eedcf2fb1c22f010a0eb66b92f378c110977f266 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
 
       - name: Run Tests
         shell: bash
